@@ -13,7 +13,8 @@ const STYLES: Record<ClearedStatus, string> = {
 };
 
 /** The small circle in each row: empty, ticked (cleared) or locked (reconciled). */
-export function ClearedToggle({ status, onToggle }: { status: ClearedStatus; onToggle: () => void }) {
+/** `large` gives a bigger touch target, for phones. */
+export function ClearedToggle({ status, onToggle, large = false }: { status: ClearedStatus; onToggle: () => void; large?: boolean }) {
   return (
     <button
       type="button"
@@ -21,7 +22,7 @@ export function ClearedToggle({ status, onToggle }: { status: ClearedStatus; onT
       title={LABELS[status]}
       aria-label={LABELS[status]}
       aria-pressed={status !== 'uncleared'}
-      className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] leading-none ${STYLES[status]}`}
+      className={`flex shrink-0 items-center justify-center rounded-full text-[11px] leading-none ${large ? 'h-7 w-7' : 'h-5 w-5'} ${STYLES[status]}`}
     >
       {status === 'reconciled' ? (
         <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden="true">

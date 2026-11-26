@@ -2,6 +2,14 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.5.2 – 2026-11-26
+
+### Added
+- Transactions tab on phones: transactions show as cards (tap one to edit, repeat or delete), a round + button opens the form full-screen, and filters fold away behind a button.
+
+### Fixed
+- Phones no longer zoom in when a text field is tapped.
+
 ## 0.5.1 – 2026-11-26
 
 ### Added

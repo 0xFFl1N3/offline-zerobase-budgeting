@@ -51,6 +51,10 @@ export function TransactionsView() {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<TxFilters>(NO_FILTERS);
   const [importing, setImporting] = useState(false);
+  /** Phones: the add/edit form opens full-screen, filters fold away, and a tapped transaction shows its actions. */
+  const [formOpen, setFormOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [openTx, setOpenTx] = useState<string | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const filterAccount = filters.accountId;
   const setFilter = (patch: Partial<TxFilters>) => setFilters((f) => ({ ...f, ...patch }));
@@ -64,6 +68,7 @@ export function TransactionsView() {
     setRepeat('');
     setEditingId(null);
     setError(null);
+    setFormOpen(false);
   };
 
   const submit = (e: FormEvent) => {
@@ -90,6 +95,7 @@ export function TransactionsView() {
     setSplitRows(t.splits ? t.splits.map((p) => ({ categoryId: p.categoryId, text: (Math.abs(p.amount) / 100).toFixed(2) })) : null);
     setEditingId(t.id);
     setError(null);
+    setFormOpen(true);
   };
 
   const rows = useMemo(() => filterTransactions(state, filters), [state, filters]);
@@ -97,6 +103,28 @@ export function TransactionsView() {
   const shown = rows.filter((t) => t.transferAccountId === null);
   const totalOut = shown.filter((t) => t.amount < 0).reduce((sum, t) => sum - t.amount, 0);
   const totalIn = shown.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+
+  /** What each listed transaction shows, for the table and for the phone list. */
+  const items = rows.map((t) => {
+    // For the destination account of a transfer, show the money as an inflow.
+    const mirrored = filterAccount !== 'all' && t.transferAccountId === filterAccount && t.accountId !== filterAccount;
+    const amount = mirrored ? -t.amount : t.amount;
+    // The status shown is the selected account's side; with all accounts, the sending side.
+    const side = mirrored ? filterAccount : t.accountId;
+    const status = clearedStatus(t, side);
+    const toggle = () => {
+      if (status === 'reconciled') {
+        if (window.confirm('This transaction is reconciled. Unlock it and mark it as cleared?')) void setCleared(t.id, side, 'cleared');
+      } else void setCleared(t.id, side, status === 'cleared' ? 'uncleared' : 'cleared');
+    };
+    const remove = () => {
+      const question = isReconciled(t) ? 'This transaction is reconciled. Delete it anyway? The account will no longer match the reconciled statement.' : 'Delete this transaction?';
+      if (window.confirm(question)) void removeTransaction(t.id);
+    };
+    return { t, amount, status, toggle, remove };
+  });
+  const activeFilters = hasActiveFilters(filters);
+  const phoneFields = 'max-md:*:w-full max-md:[&_input]:w-full max-md:[&_select]:w-full';
 
   // With one account selected, show its balance after each transaction.
   const balances = useMemo(
@@ -127,19 +155,47 @@ export function TransactionsView() {
   const accountName = (id: string) => state.accounts.find((a) => a.id === id)?.name ?? '?';
 
   return (
-    <section className="p-6">
+    <section className="p-3 md:p-6">
       <DueBanner />
 
-      <form onSubmit={submit} className="rounded-lg bg-white p-4 shadow-sm">
+      {/* Phones: filter and import buttons; adding is the round + button. */}
+      <div className="mb-3 flex gap-2 md:hidden">
+        <button type="button" onClick={() => setFiltersOpen((v) => !v)} aria-expanded={filtersOpen} className="rounded border border-slate-300 bg-white px-3 py-2 text-sm">
+          Filters{activeFilters ? ' (on)' : ''}
+        </button>
+        {!importing && (
+          <button type="button" onClick={() => { setImporting(true); setImportMessage(null); }} className="rounded border border-slate-300 bg-white px-3 py-2 text-sm">
+            Import CSV
+          </button>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          reset();
+          setFormOpen(true);
+        }}
+        aria-label="Add transaction"
+        className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-sky-600 text-3xl leading-none text-white shadow-lg hover:bg-sky-700 md:hidden"
+      >
+        +
+      </button>
+
+      {/* On phones the form opens full-screen; on larger screens it is always shown. */}
+      <form
+        onSubmit={submit}
+        className={`bg-white p-4 md:static md:block md:rounded-lg md:shadow-sm ${formOpen ? 'fixed inset-0 z-40 overflow-y-auto' : 'hidden'}`}
+      >
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold">{editingId ? 'Edit transaction' : 'Add transaction'}</h2>
+          <h2 className="text-base font-semibold md:text-sm">{editingId ? 'Edit transaction' : 'Add transaction'}</h2>
           {!importing && (
-            <button type="button" onClick={() => { setImporting(true); setImportMessage(null); }} className="text-sm text-sky-700 hover:underline">
+            <button type="button" onClick={() => { setImporting(true); setImportMessage(null); }} className="hidden text-sm text-sky-700 hover:underline md:inline">
               Import from bank (CSV)…
             </button>
           )}
+          <button type="button" onClick={() => reset()} className="text-sm text-slate-600 md:hidden">Close</button>
         </div>
-        <div className="mt-3 flex flex-wrap items-end gap-3">
+        <div className={`mt-3 flex flex-wrap items-end gap-3 ${phoneFields}`}>
           <label className="text-xs font-medium text-slate-600">
             Type
             <select value={form.kind} onChange={(e) => {
@@ -296,7 +352,7 @@ export function TransactionsView() {
 
       <RecurringList />
 
-      <div className="mt-6 flex flex-wrap items-end gap-3">
+      <div className={`mt-3 flex-wrap items-end gap-3 md:mt-6 md:flex ${filtersOpen ? 'flex' : 'hidden'} ${phoneFields}`}>
         <label className="text-xs font-medium text-slate-600">
           Account
           <select aria-label="Filter by account" value={filters.accountId} onChange={(e) => setFilter({ accountId: e.target.value })} className={`${field} mt-1 block`}>
@@ -357,7 +413,7 @@ export function TransactionsView() {
         <p className="mt-1 text-xs text-slate-500">Pick one account above to see its cleared balance and reconcile it.</p>
       )}
 
-      <div className="mt-2 overflow-x-auto rounded-lg bg-white shadow-sm">
+      <div className="mt-2 hidden overflow-x-auto rounded-lg bg-white shadow-sm md:block">
         <table className="w-full text-sm">
           <thead className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <tr>
@@ -381,18 +437,7 @@ export function TransactionsView() {
                 </td>
               </tr>
             )}
-            {rows.map((t) => {
-              // For the destination account of a transfer, show the money as an inflow.
-              const mirrored = filterAccount !== 'all' && t.transferAccountId === filterAccount && t.accountId !== filterAccount;
-              const amount = mirrored ? -t.amount : t.amount;
-              // The status shown is the selected account's side; with all accounts, the sending side.
-              const side = mirrored ? filterAccount : t.accountId;
-              const status = clearedStatus(t, side);
-              const toggle = () => {
-                if (status === 'reconciled') {
-                  if (window.confirm('This transaction is reconciled. Unlock it and mark it as cleared?')) void setCleared(t.id, side, 'cleared');
-                } else void setCleared(t.id, side, status === 'cleared' ? 'uncleared' : 'cleared');
-              };
+            {items.map(({ t, amount, status, toggle, remove }) => {
               return (
                 <Fragment key={t.id}>
                 <tr className="border-b border-slate-100 last:border-b-0">
@@ -408,14 +453,7 @@ export function TransactionsView() {
                   <td className="px-4 py-2 whitespace-nowrap text-right">
                     <button type="button" onClick={() => startEdit(t)} className="text-sky-700 hover:underline">Edit</button>
                     <button type="button" onClick={() => setRepeatingId(repeatingId === t.id ? null : t.id)} className="ml-3 text-sky-700 hover:underline">Repeat…</button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const question = isReconciled(t) ? 'This transaction is reconciled. Delete it anyway? The account will no longer match the reconciled statement.' : 'Delete this transaction?';
-                        if (window.confirm(question)) void removeTransaction(t.id);
-                      }}
-                      className="ml-3 text-red-600 hover:underline"
-                    >
+                    <button type="button" onClick={remove} className="ml-3 text-red-600 hover:underline">
                       Delete
                     </button>
                   </td>
@@ -433,6 +471,42 @@ export function TransactionsView() {
           </tbody>
         </table>
       </div>
+
+      {/* Phones: one card per transaction; tap it for Edit, Repeat and Delete. */}
+      <ul className="mt-2 divide-y divide-slate-100 rounded-lg bg-white shadow-sm md:hidden">
+        {rows.length === 0 && (
+          <li className="px-3 py-6 text-sm text-slate-500">{activeFilters ? 'No transactions match these filters.' : 'No transactions yet.'}</li>
+        )}
+        {items.map(({ t, amount, status, toggle, remove }) => (
+          <li key={t.id}>
+            <div className="flex items-start gap-2 px-3 py-2.5 text-sm">
+              <ClearedToggle status={status} onToggle={toggle} large />
+              <button type="button" onClick={() => setOpenTx(openTx === t.id ? null : t.id)} aria-expanded={openTx === t.id} className="min-w-0 flex-1 text-left">
+                <span className="flex items-baseline gap-2">
+                  <span className="min-w-0 flex-1 truncate font-medium">{t.payee || categoryLabel(state, t)}</span>
+                  <span className={`shrink-0 tabular-nums ${amount > 0 ? 'text-emerald-700' : ''}`}>{formatMoney(amount, currency)}</span>
+                </span>
+                <span className="mt-0.5 flex gap-2 text-xs text-slate-500">
+                  <span className="min-w-0 flex-1 truncate">
+                    {t.date} · {categoryLabel(state, t)}
+                    {filterAccount === 'all' && ` · ${accountName(t.accountId)}`}
+                  </span>
+                  {balances && <span className="shrink-0 tabular-nums">{formatMoney(balances.get(t.id) ?? 0, currency)}</span>}
+                </span>
+                {t.memo && <span className="mt-0.5 block truncate text-xs text-slate-500">{t.memo}</span>}
+              </button>
+            </div>
+            {openTx === t.id && (
+              <div className="flex gap-1 px-10 pb-2.5">
+                <button type="button" onClick={() => startEdit(t)} className="rounded px-2 py-1.5 text-sm text-sky-700 hover:bg-sky-50">Edit</button>
+                <button type="button" onClick={() => setRepeatingId(repeatingId === t.id ? null : t.id)} className="rounded px-2 py-1.5 text-sm text-sky-700 hover:bg-sky-50">Repeat…</button>
+                <button type="button" onClick={remove} className="rounded px-2 py-1.5 text-sm text-red-600 hover:bg-red-50">Delete</button>
+              </div>
+            )}
+            {repeatingId === t.id && <MakeRecurringForm transaction={t} onDone={() => setRepeatingId(null)} />}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
