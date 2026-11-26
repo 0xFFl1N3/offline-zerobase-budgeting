@@ -1,16 +1,15 @@
+import { useState } from 'react';
 import { categoryActivity, categoryAssigned, categoryAvailable, readyToAssign } from '../../engine/budget.ts';
 import { formatMoney } from '../../engine/money.ts';
+import { formatMonth } from '../../engine/months.ts';
 import type { Cents } from '../../engine/types.ts';
 import { InlineAdd } from '../../components/InlineAdd.tsx';
 import { MoneyField } from '../../components/MoneyField.tsx';
 import { useBudgetStore } from '../../store/budgetStore.ts';
+import { GoalEditor } from './GoalEditor.tsx';
+import { GoalProgress } from './GoalProgress.tsx';
 
 const COLUMNS = 'grid grid-cols-[1fr_8rem_8rem_8rem] items-center gap-2';
-
-function monthLabel(month: string) {
-  const [y, m] = month.split('-').map(Number) as [number, number];
-  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-}
 
 function ReadyToAssignPill({ amount, currency }: { amount: Cents; currency: 'EUR' | 'USD' }) {
   const tone =
@@ -40,6 +39,7 @@ export function BudgetView() {
   const addGroup = useBudgetStore((s) => s.addGroup);
   const addCategory = useBudgetStore((s) => s.addCategory);
 
+  const [editingGoal, setEditingGoal] = useState<string | null>(null);
   const rta = readyToAssign(state, month);
   const groups = state.groups.filter((g) => !g.archived);
 
@@ -50,7 +50,7 @@ export function BudgetView() {
           <button type="button" aria-label="Previous month" onClick={() => shiftMonth(-1)} className="rounded px-2 py-1 hover:bg-slate-200">
             ‹
           </button>
-          <h2 className="min-w-44 text-center text-lg font-semibold">{monthLabel(month)}</h2>
+          <h2 className="min-w-44 text-center text-lg font-semibold">{formatMonth(month)}</h2>
           <button type="button" aria-label="Next month" onClick={() => shiftMonth(1)} className="rounded px-2 py-1 hover:bg-slate-200">
             ›
           </button>
@@ -85,9 +85,22 @@ export function BudgetView() {
               </div>
               {cats.map((cat) => {
                 const available = categoryAvailable(state, cat.id, month);
+                const goal = state.goals.find((g) => g.categoryId === cat.id);
                 return (
-                  <div key={cat.id} className={`${COLUMNS} px-4 py-1 text-sm`}>
-                    <span className="pl-4">{cat.name}</span>
+                  <div key={cat.id}>
+                  <div className={`${COLUMNS} px-4 py-1 text-sm`}>
+                    <div className="pl-4">
+                      <div>{cat.name}</div>
+                      {goal ? (
+                        <button type="button" aria-label={`Edit goal for ${cat.name}`} onClick={() => setEditingGoal(cat.id)} className="block w-full text-left">
+                          <GoalProgress state={state} goal={goal} month={month} currency={currency} />
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => setEditingGoal(cat.id)} className="text-xs text-sky-700 hover:underline">
+                          Set goal
+                        </button>
+                      )}
+                    </div>
                     <MoneyField
                       ariaLabel={`Assigned to ${cat.name}`}
                       value={categoryAssigned(state, cat.id, month)}
@@ -99,6 +112,8 @@ export function BudgetView() {
                     <span className={`px-2 text-right tabular-nums ${availableTone(available)}`}>
                       {formatMoney(available, currency)}
                     </span>
+                  </div>
+                  {editingGoal === cat.id && <GoalEditor category={cat} goal={goal} onClose={() => setEditingGoal(null)} />}
                   </div>
                 );
               })}

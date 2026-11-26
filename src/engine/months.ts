@@ -21,3 +21,9 @@ export function monthsBetween(from: Month, to: Month): number {
 export function toISODate(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+/** 'YYYY-MM' as e.g. "November 2026" in the user's locale. */
+export function formatMonth(month: Month): string {
+  const [y, m] = month.split('-').map(Number) as [number, number];
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
