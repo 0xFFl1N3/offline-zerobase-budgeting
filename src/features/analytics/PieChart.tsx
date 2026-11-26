@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Slice } from '../../engine/analytics.ts';
-import { formatMoney, type Currency } from '../../engine/money.ts';
+import { formatMoney, formatPercent, type Currency } from '../../engine/money.ts';
+import { t } from '../../i18n/i18n.ts';
 import { OTHER_COLOR } from './colors.ts';
 
 interface Props {
@@ -26,7 +27,9 @@ function slicePath(from: number, to: number): string {
   return `M ${CENTER} ${CENTER} L ${x0} ${y0} A ${RADIUS} ${RADIUS} 0 ${large} 1 ${x1} ${y1} Z`;
 }
 
-export function PieChart({ slices, total, currency, colors, label }: Props) {
+export function PieChart({ slices: raw, total, currency, colors, label }: Props) {
+  // The combined slice is named in the current language.
+  const slices = raw.map((s) => (s.isOther ? { ...s, label: t('analytics.other') } : s));
   const [active, setActive] = useState<string | null>(null);
   const colorOf = (s: Slice) => (s.isOther ? OTHER_COLOR : (colors.get(s.id) ?? OTHER_COLOR));
   const fmt = (c: number) => formatMoney(c, currency);
@@ -39,7 +42,7 @@ export function PieChart({ slices, total, currency, colors, label }: Props) {
     return arc;
   });
 
-  const describe = (s: Slice) => `${s.label}: ${fmt(s.amount)}, ${s.percent}%`;
+  const describe = (s: Slice) => `${s.label}: ${fmt(s.amount)}, ${formatPercent(s.percent)}`;
   const activeSlice = slices.find((s) => s.id === active) ?? null;
 
   return (
@@ -87,7 +90,7 @@ export function PieChart({ slices, total, currency, colors, label }: Props) {
               <span className="h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: colorOf(s) }} aria-hidden="true" />
               <span className="min-w-0 flex-1 truncate">{s.label}</span>
               <span className="tabular-nums text-slate-700">{fmt(s.amount)}</span>
-              <span className="w-12 text-right tabular-nums text-slate-500">{s.percent}%</span>
+              <span className="w-14 text-right tabular-nums text-slate-500">{formatPercent(s.percent)}</span>
             </li>
           ))}
         </ul>

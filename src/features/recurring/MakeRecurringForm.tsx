@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { formatDate } from '../../engine/months.ts';
 import { FREQUENCIES } from '../../engine/recurring.ts';
 import { t } from '../../i18n/i18n.ts';
+import { errorText } from '../../i18n/errors.ts';
 import type { Frequency, Transaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 
@@ -18,7 +19,7 @@ export function MakeRecurringForm({ transaction, onDone }: { transaction: Transa
       await makeRecurring(transaction.id, frequency, endDate || null);
       onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('account.errorGeneric'));
+      setError(errorText(e));
     }
   };
 

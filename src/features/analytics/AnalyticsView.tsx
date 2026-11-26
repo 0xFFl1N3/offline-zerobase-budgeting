@@ -4,6 +4,7 @@ import { formatMoney } from '../../engine/money.ts';
 import { formatMonth, formatMonthRange } from '../../engine/months.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { biggestCategory, incomeVsSpending, netWorth, reportMonths, spendingTrend, topPayees, type RangeKey, type TrendTarget } from '../../engine/reports.ts';
+import { t } from '../../i18n/i18n.ts';
 import { useIsDark } from '../../theme.ts';
 import { buildColorMap } from './colors.ts';
 import { IncomeSpendingChart } from './IncomeSpendingChart.tsx';
@@ -18,14 +19,14 @@ const KINDS: ReportKind[] = ['month', 'year-to-date', 'monthly-average'];
 function titleFor(report: SpendingReport): { title: string; subtitle: string; totalLabel: string } {
   switch (report.kind) {
     case 'month':
-      return { title: 'This month', subtitle: formatMonth(report.toMonth), totalLabel: 'spent' };
+      return { title: t('analytics.thisMonth'), subtitle: formatMonth(report.toMonth), totalLabel: t('analytics.spent') };
     case 'year-to-date':
-      return { title: 'Year to date', subtitle: formatMonthRange(report.fromMonth, report.toMonth), totalLabel: 'spent' };
+      return { title: t('analytics.yearToDate'), subtitle: formatMonthRange(report.fromMonth, report.toMonth), totalLabel: t('analytics.spent') };
     case 'monthly-average':
       return {
-        title: 'Monthly average',
-        subtitle: `${formatMonthRange(report.fromMonth, report.toMonth)} · ${report.divisor} month${report.divisor === 1 ? '' : 's'} with data`,
-        totalLabel: 'per month',
+        title: t('analytics.monthlyAverage'),
+        subtitle: t('analytics.monthsWithData', { range: formatMonthRange(report.fromMonth, report.toMonth), count: report.divisor }),
+        totalLabel: t('analytics.perMonth'),
       };
   }
 }
@@ -72,20 +73,19 @@ export function AnalyticsView() {
     <section className="p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <button type="button" aria-label="Previous month" onClick={() => shiftMonth(-1)} className="rounded px-2 py-1 hover:bg-slate-200">‹</button>
+          <button type="button" aria-label={t('budget.prevMonth')} onClick={() => shiftMonth(-1)} className="rounded px-2 py-1 hover:bg-slate-200">‹</button>
           <h2 className="min-w-44 text-center text-lg font-semibold">{formatMonth(month)}</h2>
-          <button type="button" aria-label="Next month" onClick={() => shiftMonth(1)} className="rounded px-2 py-1 hover:bg-slate-200">›</button>
+          <button type="button" aria-label={t('budget.nextMonth')} onClick={() => shiftMonth(1)} className="rounded px-2 py-1 hover:bg-slate-200">›</button>
         </div>
-        <div className="inline-flex overflow-hidden rounded border border-slate-300" role="group" aria-label="Group spending by">
-          {toggle('category', 'By category')}
-          {toggle('group', 'By group')}
+        <div className="inline-flex overflow-hidden rounded border border-slate-300" role="group" aria-label={t('analytics.groupBy')}>
+          {toggle('category', t('analytics.byCategory'))}
+          {toggle('group', t('analytics.byGroup'))}
         </div>
       </div>
 
       {uncategorized > 0 && (
         <p className="mt-4 rounded bg-amber-50 p-3 text-sm text-amber-800">
-          {uncategorized} outflow{uncategorized === 1 ? '' : 's'} this year {uncategorized === 1 ? 'has' : 'have'} no category and
-          {uncategorized === 1 ? ' is' : ' are'} not shown. Edit {uncategorized === 1 ? 'it' : 'them'} on the Transactions tab to assign one.
+          {t('analytics.uncategorized', { count: uncategorized })}
         </p>
       )}
 
@@ -97,7 +97,7 @@ export function AnalyticsView() {
               <h3 className="text-sm font-semibold">{title}</h3>
               <p className="text-xs text-slate-500">{subtitle}</p>
               {report.slices.length === 0 ? (
-                <p className="mt-6 text-sm text-slate-500">No spending in this period.</p>
+                <p className="mt-6 text-sm text-slate-500">{t('analytics.noSpending')}</p>
               ) : (
                 <>
                   <p className="mt-3 text-3xl font-semibold tabular-nums">
@@ -109,7 +109,7 @@ export function AnalyticsView() {
                       total={report.total}
                       currency={currency}
                       colors={colors}
-                      label={`${title}: spending ${groupBy === 'group' ? 'by group' : 'by category'}, ${subtitle}`}
+                      label={t('analytics.pieLabel', { title, by: t(groupBy === 'group' ? 'analytics.byGroupLower' : 'analytics.byCategoryLower'), subtitle })}
                     />
                   </div>
                 </>
@@ -121,7 +121,7 @@ export function AnalyticsView() {
 
       <div className="mt-10 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold">Over time</h2>
+          <h2 className="text-lg font-semibold">{t('analytics.overTime')}</h2>
           <p className="text-xs text-slate-500">{formatMonthRange(months[0]!, months.at(-1)!)}</p>
         </div>
         <RangeSwitch value={range} onChange={setRange} />

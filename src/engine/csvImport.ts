@@ -3,12 +3,6 @@ import type { BudgetState, Cents, Transaction } from './types.ts';
 
 export type DateFormat = 'DMY' | 'MDY' | 'YMD';
 
-export const DATE_FORMAT_LABELS: Record<DateFormat, string> = {
-  DMY: 'Day.Month.Year (26.11.2026)',
-  MDY: 'Month/Day/Year (11/26/2026)',
-  YMD: 'Year-Month-Day (2026-11-26)',
-};
-
 /** Which column holds what. Column numbers count from 0; null = not in the file. */
 export interface ColumnMapping {
   date: number;

@@ -1,7 +1,6 @@
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { parseCsv } from '../../engine/csv.ts';
 import {
-  DATE_FORMAT_LABELS,
   findMatches,
   findTable,
   guessMapping,
@@ -18,6 +17,9 @@ import {
 import { formatMoney } from '../../engine/money.ts';
 import { accountBalances } from '../../engine/reconcile.ts';
 import { categoryLabel } from '../transactions/labels.ts';
+import { formatDate } from '../../engine/months.ts';
+import { errorText } from '../../i18n/errors.ts';
+import { t } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 
 const field = 'rounded border border-slate-300 bg-white px-2 py-1 text-sm';
@@ -79,7 +81,7 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
     const found = findTable(parseCsv(await readText(file)));
     if (!found) {
       setTable(null);
-      return setError('No transactions found in this file. It needs a header row followed by rows that start with a date.');
+      return setError(t('import.noTable'));
     }
     setFileName(file.name);
     setTable(found);
@@ -129,12 +131,13 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
       const updated = chosenUpdates.map((row) => updateFromRow(updateOf(row)!, row));
       const name = state.accounts.find((a) => a.id === accountId)?.name ?? '';
       const parts = [
-        added.length > 0 ? `imported ${added.length} transaction${added.length === 1 ? '' : 's'}` : '',
-        updated.length > 0 ? `updated ${updated.length} pending one${updated.length === 1 ? '' : 's'}` : '',
-      ].filter(Boolean).join(' and ');
-      void importTransactions([...added, ...updated]).then(() => onClose(`${parts.charAt(0).toUpperCase()}${parts.slice(1)} in ${name}.`));
+        added.length > 0 ? t('import.imported', { count: added.length }) : '',
+        updated.length > 0 ? t('import.updated', { count: updated.length }) : '',
+      ].filter(Boolean).join(t('import.and'));
+      const sentence = parts.charAt(0).toUpperCase() + parts.slice(1);
+      void importTransactions([...added, ...updated]).then(() => onClose(t('import.doneIn', { parts: sentence, name })));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'The import failed.');
+      setError(e instanceof Error ? errorText(e) : t('import.failed'));
     }
   };
 
@@ -146,9 +149,9 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
         onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
         className={`${field} mt-1 block max-w-44`}
       >
-        {optional && <option value="">(none)</option>}
+        {optional && <option value="">{t('import.none')}</option>}
         {table!.header.map((h, i) => (
-          <option key={i} value={i}>{h || `Column ${i + 1}`}</option>
+          <option key={i} value={i}>{h || t('import.column', { n: i + 1 })}</option>
         ))}
       </select>
     </label>
@@ -156,12 +159,12 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
 
   const categorySelect = (row: ImportRow, choice: Choice) => (
     <select
-      aria-label={`Category for ${choice.payee || 'row ' + (row.line + 1)}`}
+      aria-label={t('import.categoryFor', { name: choice.payee || t('import.rowN', { n: row.line + 1 }) })}
       value={choice.categoryId ?? ''}
       onChange={(e) => setChoice(row, { categoryId: e.target.value || null, include: true })}
       className={`rounded border px-2 py-1 text-sm w-full ${choice.include && row.amount! < 0 && choice.categoryId === null ? 'border-amber-300 bg-amber-50' : 'border-slate-300 bg-white'}`}
     >
-      <option value="">{row.amount! > 0 ? 'Income (Ready to Assign)' : 'Choose a category…'}</option>
+      <option value="">{row.amount! > 0 ? t('tx.income') : t('tx.chooseCategory')}</option>
       {state.groups.filter((g) => !g.archived).map((g) => (
         <optgroup key={g.id} label={g.name}>
           {state.categories.filter((c) => c.groupId === g.id && !c.archived).map((c) => (
@@ -173,18 +176,18 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
   );
 
   const note = (row: ImportRow) => {
-    if (row.problem) return <span className="text-red-600">{row.problem}</span>;
+    if (row.problem) return <span className="text-red-600">{errorText(row.problem)}</span>;
     const match = matches.get(row.line);
-    if (match?.kind === 'imported') return <span className="text-slate-500">Already imported</span>;
+    if (match?.kind === 'imported') return <span className="text-slate-500">{t('import.already')}</span>;
     if (match?.kind === 'update') {
       return (
-        <span className="text-sky-700" title="Imported earlier while pending; importing updates that transaction instead of adding a new one">
-          {row.pending ? 'Updates the pending one' : 'Now booked: updates the pending one'}
+        <span className="text-sky-700" title={t('import.updateTitle')}>
+          {row.pending ? t('import.updatesPending') : t('import.nowBooked')}
         </span>
       );
     }
-    if (match?.kind === 'likely') return <span className="text-amber-700" title="A transaction with the same amount within three days is already in this account">Possible duplicate</span>;
-    if (row.pending) return <span className="text-slate-500" title="Imported as not cleared">Pending</span>;
+    if (match?.kind === 'likely') return <span className="text-amber-700" title={t('import.likelyTitle')}>{t('import.likely')}</span>;
+    if (row.pending) return <span className="text-slate-500" title={t('import.pendingTitle')}>{t('import.pending')}</span>;
     return null;
   };
 
@@ -194,13 +197,13 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
   return (
     <div className="mt-4 rounded-lg bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold">Import from your bank (CSV)</h2>
-        <button type="button" onClick={() => onClose()} className="text-sm text-slate-600 hover:underline">Close</button>
+        <h2 className="text-sm font-semibold">{t('import.title')}</h2>
+        <button type="button" onClick={() => onClose()} className="text-sm text-slate-600 hover:underline">{t('common.close')}</button>
       </div>
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <label className="text-xs font-medium text-slate-600">
-          Into account
+          {t('import.into')}
           <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className={`${field} mt-1 block`}>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>{a.name}</option>
@@ -208,7 +211,7 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
           </select>
         </label>
         <label className="text-xs font-medium text-slate-600">
-          File
+          {t('import.file')}
           <input
             type="file"
             accept=".csv,.txt,text/csv"
@@ -216,26 +219,26 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
             className="mt-1 block text-sm file:mr-3 file:rounded file:border-0 file:bg-sky-600 file:px-3 file:py-1 file:text-white"
           />
         </label>
-        {fileName && <span className="pb-1 text-sm text-slate-600">{fileName}: {rows.length} rows</span>}
+        {fileName && <span className="pb-1 text-sm text-slate-600">{fileName}: {t('import.rows', { count: rows.length })}</span>}
       </div>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 
       {table && mapping && (
         <>
           <details className="mt-3 rounded border border-slate-200 p-3" open={!amountsReady || mapping.payee === null}>
-            <summary className="cursor-pointer text-sm text-slate-700">Columns (detected automatically, remembered for files like this)</summary>
+            <summary className="cursor-pointer text-sm text-slate-700">{t('import.columns')}</summary>
             <div className="mt-3 flex flex-wrap items-end gap-3">
-              {columnSelect('Date', mapping.date, (v) => changeMapping({ date: v ?? 0 }), false)}
+              {columnSelect(t('import.colDate'), mapping.date, (v) => changeMapping({ date: v ?? 0 }), false)}
               <label className="text-xs font-medium text-slate-600">
-                Date format
+                {t('import.dateFormat')}
                 <select value={mapping.dateFormat} onChange={(e) => changeMapping({ dateFormat: e.target.value as DateFormat })} className={`${field} mt-1 block`}>
-                  {(Object.keys(DATE_FORMAT_LABELS) as DateFormat[]).map((f) => (
-                    <option key={f} value={f}>{DATE_FORMAT_LABELS[f]}</option>
+                  {(['DMY', 'MDY', 'YMD'] as DateFormat[]).map((f) => (
+                    <option key={f} value={f}>{t(`import.date${f}`)}</option>
                   ))}
                 </select>
               </label>
               <label className="text-xs font-medium text-slate-600">
-                Amount
+                {t('import.colAmount')}
                 <select
                   value={mapping.amount ?? 'split'}
                   onChange={(e) =>
@@ -246,21 +249,21 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
                   className={`${field} mt-1 block max-w-44`}
                 >
                   {table.header.map((h, i) => (
-                    <option key={i} value={i}>{h || `Column ${i + 1}`}</option>
+                    <option key={i} value={i}>{h || t('import.column', { n: i + 1 })}</option>
                   ))}
-                  <option value="split">Separate in and out columns</option>
+                  <option value="split">{t('import.splitColumns')}</option>
                 </select>
               </label>
               {mapping.amount === null && (
                 <>
-                  {columnSelect('Money in', mapping.inflow, (v) => changeMapping({ inflow: v }))}
-                  {columnSelect('Money out', mapping.outflow, (v) => changeMapping({ outflow: v }))}
+                  {columnSelect(t('import.colIn'), mapping.inflow, (v) => changeMapping({ inflow: v }))}
+                  {columnSelect(t('import.colOut'), mapping.outflow, (v) => changeMapping({ outflow: v }))}
                 </>
               )}
-              {columnSelect('Payee', mapping.payee, (v) => changeMapping({ payee: v }))}
-              {columnSelect('Payer (money in)', mapping.payer, (v) => changeMapping({ payer: v }))}
-              {columnSelect('Memo', mapping.memo, (v) => changeMapping({ memo: v }))}
-              {columnSelect('Status', mapping.status, (v) => changeMapping({ status: v }))}
+              {columnSelect(t('import.colPayee'), mapping.payee, (v) => changeMapping({ payee: v }))}
+              {columnSelect(t('import.colPayer'), mapping.payer, (v) => changeMapping({ payer: v }))}
+              {columnSelect(t('import.colMemo'), mapping.memo, (v) => changeMapping({ memo: v }))}
+              {columnSelect(t('import.colStatus'), mapping.status, (v) => changeMapping({ status: v }))}
             </div>
           </details>
 
@@ -271,7 +274,7 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
                   <th className="w-8 px-2 py-2">
                     <input
                       type="checkbox"
-                      aria-label="Select all importable rows"
+                      aria-label={t('import.selectAll')}
                       checked={chosen.length > 0 && chosen.length === importable.length}
                       onChange={(e) => {
                         const next = new Map(overrides);
@@ -280,11 +283,11 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
                       }}
                     />
                   </th>
-                  <th className="px-2 py-2">Date</th>
-                  <th className="px-2 py-2">Payee</th>
-                  <th className="px-2 py-2">Memo</th>
-                  <th className="w-48 px-2 py-2">Category</th>
-                  <th className="px-2 py-2 text-right">Amount</th>
+                  <th className="px-2 py-2">{t('import.colDate')}</th>
+                  <th className="px-2 py-2">{t('import.colPayee')}</th>
+                  <th className="px-2 py-2">{t('import.colMemo')}</th>
+                  <th className="w-48 px-2 py-2">{t('tx.category')}</th>
+                  <th className="px-2 py-2 text-right">{t('import.colAmount')}</th>
                   <th className="px-2 py-2" />
                 </tr>
               </thead>
@@ -297,19 +300,19 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
                       <td className="px-2 py-1.5">
                         <input
                           type="checkbox"
-                          aria-label={`Import row ${row.line + 1}`}
+                          aria-label={t('import.importRow', { n: row.line + 1 })}
                           disabled={row.problem !== null}
                           checked={!off}
                           onChange={(e) => setChoice(row, { include: e.target.checked })}
                         />
                       </td>
-                      <td className="px-2 py-1.5 whitespace-nowrap tabular-nums">{row.date ?? '—'}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap tabular-nums">{row.date ? formatDate(row.date) : '—'}</td>
                       <td className="px-2 py-1.5">
                         {updateOf(row) ? (
                           <span className="px-2">{updateOf(row)!.payee}</span>
                         ) : (
                         <input
-                          aria-label={`Payee for row ${row.line + 1}`}
+                          aria-label={t('import.payeeFor', { n: row.line + 1 })}
                           value={choice.payee}
                           onChange={(e) => setChoice(row, { payee: e.target.value })}
                           className={`${field} w-full min-w-32`}
@@ -333,9 +336,9 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
 
           {table.statedBalance && (
             <p className="mt-2 text-xs text-slate-500">
-              The file gives a bank balance of {fmt(table.statedBalance.amount)}
-              {table.statedBalance.date ? ` on ${table.statedBalance.date}` : ''}. After this import the account's working balance would be{' '}
-              {fmt(accountBalances(state, accountId).working + chosenTotal)}.
+              {t('import.bankBalance', { amount: fmt(table.statedBalance.amount) })}
+              {table.statedBalance.date ? t('import.bankBalanceOn', { date: formatDate(table.statedBalance.date) }) : ''}
+              {t('import.after', { amount: fmt(accountBalances(state, accountId).working + chosenTotal) })}
             </p>
           )}
 
@@ -346,15 +349,15 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
               onClick={runImport}
               className="rounded bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
             >
-              Import {chosen.length} transaction{chosen.length === 1 ? '' : 's'}
+              {t('import.button', { count: chosen.length })}
             </button>
             <span className="text-sm text-slate-600" role="status">
               {missing > 0 ? (
-                <span className="text-amber-700">{missing} outflow{missing === 1 ? ' needs' : 's need'} a category first.</span>
+                <span className="text-amber-700">{t('import.missing', { count: missing })}</span>
               ) : chosen.length > 0 ? (
-                `${chosenNew.length > 0 ? `New: ${fmt(chosenTotal)}. ` : ''}Booked rows come in as cleared, pending ones as not cleared.`
+                `${chosenNew.length > 0 ? t('import.newTotal', { amount: fmt(chosenTotal) }) : ''}${t('import.clearedNote')}`
               ) : (
-                'Tick the rows to import.'
+                t('import.tick')
               )}
             </span>
           </div>

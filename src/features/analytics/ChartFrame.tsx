@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { Currency } from '../../engine/money.ts';
+import { t } from '../../i18n/i18n.ts';
 import { formatCompact, labelEvery, monthTick, type Scale } from './scale.ts';
 
 /**
@@ -104,8 +105,8 @@ export function ChartFrame({ width, months, scale, currency, label, active, onAc
 /** One line under a chart naming the hovered month's values (or a hint). */
 export function ChartReadout({ text }: { text: string | null }) {
   return (
-    <p className="h-5 text-sm font-medium" aria-live="polite">
-      {text ?? <span className="font-normal text-slate-500">Hover over a month for its numbers.</span>}
+    <p className="min-h-5 text-sm font-medium" aria-live="polite">
+      {text ?? <span className="font-normal text-slate-500">{t('analytics.hover')}</span>}
     </p>
   );
 }
@@ -127,7 +128,7 @@ export function Legend({ items }: { items: { label: string; color: string }[] })
 export function DataTable({ head, rows }: { head: string[]; rows: (string | number)[][] }) {
   return (
     <details className="mt-3 text-sm">
-      <summary className="cursor-pointer text-xs text-sky-700">Show as table</summary>
+      <summary className="cursor-pointer text-xs text-sky-700">{t('analytics.showTable')}</summary>
       <div className="mt-2 max-h-64 overflow-auto">
         <table className="w-full tabular-nums">
           <thead>

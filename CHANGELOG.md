@@ -2,6 +2,15 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.6.3 – 2026-11-26
+
+### Added
+- German texts for the CSV import, Analytics, and the messages shown when something can't be done (for example closing an account that still has money).
+
+### Changed
+- Percentages follow the language (67,6 % in German).
+- The chart hint mentions tapping, for phones.
+
 ## 0.6.2 – 2026-11-26
 
 ### Added

@@ -34,3 +34,10 @@ test('amounts for input fields use the language\'s decimal mark and no grouping'
   assert.equal(toAmountInput(123456, 'de-DE'), '1234,56');
   assert.equal(toAmountInput(-500, 'de-DE'), '-5,00');
 });
+
+test('percentages follow the language', async () => {
+  const { formatPercent } = await import('./money.ts');
+  assert.equal(formatPercent(67.6, 'en-US'), '67.6%');
+  assert.equal(formatPercent(67.6, 'de-DE'), '67,6\u00a0%');
+  assert.equal(formatPercent(5, 'en-US'), '5%');
+});

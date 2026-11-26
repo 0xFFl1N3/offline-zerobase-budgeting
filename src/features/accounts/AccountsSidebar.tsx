@@ -6,6 +6,7 @@ import { useBudgetStore } from '../../store/budgetStore.ts';
 import { MoveButtons, useReorder } from '../../components/reorder.tsx';
 import { BackupPanel } from '../backup/BackupPanel.tsx';
 import { t } from '../../i18n/i18n.ts';
+import { errorText } from '../../i18n/errors.ts';
 
 function AddAccountForm({ onDone }: { onDone: () => void }) {
   const addAccount = useBudgetStore((s) => s.addAccount);
@@ -60,7 +61,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
       await fn();
       onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('account.errorGeneric'));
+      setError(errorText(e));
     }
   };
 

@@ -5,12 +5,8 @@ import type { BudgetState, Cents, Month } from './types.ts';
 /** How far back the over-time reports look, ending at the selected month. */
 export type RangeKey = '6' | '12' | '24' | 'all';
 
-export const RANGES: { key: RangeKey; label: string }[] = [
-  { key: '6', label: '6 months' },
-  { key: '12', label: '12 months' },
-  { key: '24', label: '24 months' },
-  { key: 'all', label: 'All time' },
-];
+/** In switch order; their names are in the translations (range.6 … range.all). */
+export const RANGES: { key: RangeKey }[] = [{ key: '6' }, { key: '12' }, { key: '24' }, { key: 'all' }];
 
 /** The earliest month with a transaction or an assignment. */
 export function firstMonthWithData(state: BudgetState): Month | undefined {

@@ -13,6 +13,11 @@ export function toAmountInput(cents: Cents, locale = getLocale()): string {
   return new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(cents / 100);
 }
 
+/** A share such as 67.6 written for the language: "67.6%" in English, "67,6 %" in German. */
+export function formatPercent(percent: number, locale = getLocale()): string {
+  return new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 }).format(percent / 100);
+}
+
 /**
  * Parses user input such as "12.50", "12,50", "1.234,56", "1,234.56", "-5", "(5)", "€ 3".
  * A separator followed by 1-2 digits at the end is the decimal point; otherwise it is a thousands separator.

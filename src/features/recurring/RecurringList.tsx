@@ -3,6 +3,7 @@ import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
 import { formatDate } from '../../engine/months.ts';
 import { FREQUENCIES, nextDate } from '../../engine/recurring.ts';
 import { t as tr } from '../../i18n/i18n.ts';
+import { errorText } from '../../i18n/errors.ts';
 import type { Frequency, RecurringTransaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { categoryLabel } from '../transactions/labels.ts';
@@ -26,7 +27,7 @@ function EditForm({ rec, onDone }: { rec: RecurringTransaction; onDone: () => vo
       await editRecurring(rec.id, { payee, memo, frequency, endDate: endDate || null, ...(!isSplit && { amount: Math.abs(cents as number) }) });
       onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : tr('account.errorGeneric'));
+      setError(errorText(e));
     }
   };
 

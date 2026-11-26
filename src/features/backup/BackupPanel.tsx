@@ -2,6 +2,7 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { createBackup, parseBackup, serializeBackup } from '../../db/backup.ts';
 import { formatDate, toISODate } from '../../engine/months.ts';
 import { t } from '../../i18n/i18n.ts';
+import { errorText } from '../../i18n/errors.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { backupStatus } from './backupStatus.ts';
 
@@ -34,7 +35,7 @@ export function BackupPanel({ variant = 'sidebar' }: { variant?: 'sidebar' | 'ca
     e.target.value = ''; // allow choosing the same file again
     if (!file) return;
     const result = parseBackup(await file.text());
-    if (!result.ok) return setMessage({ text: result.error, error: true });
+    if (!result.ok) return setMessage({ text: errorText(result.error, 'error.backupInvalid'), error: true });
     const { data, exportedAt } = result.backup;
     const when = exportedAt ? t('backup.from', { date: formatDate(exportedAt.slice(0, 10)) }) : '';
     const ok = window.confirm(t('backup.confirm', { when, accounts: data.accounts.length, transactions: data.transactions.length }));
