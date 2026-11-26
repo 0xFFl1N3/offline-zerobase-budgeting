@@ -39,6 +39,8 @@ export function buildTransaction(form: TxForm, id: string): BuildResult {
     };
   }
 
+  if (form.kind === 'outflow' && !form.categoryId) return { ok: false, error: 'Pick a category for this outflow.' };
+
   return {
     ok: true,
     transaction: {

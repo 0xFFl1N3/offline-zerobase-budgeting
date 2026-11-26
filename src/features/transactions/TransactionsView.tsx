@@ -23,7 +23,7 @@ function categoryLabel(state: BudgetState, t: Transaction): string {
     return `Transfer: ${from} → ${to}`;
   }
   if (t.categoryId) return state.categories.find((c) => c.id === t.categoryId)?.name ?? 'Unknown category';
-  return t.amount > 0 ? 'Income (Ready to Assign)' : 'Uncategorized';
+  return t.amount > 0 ? 'Income (Ready to Assign)' : 'Needs a category';
 }
 
 const field = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-sm';
@@ -122,7 +122,7 @@ export function TransactionsView() {
               <label className="text-xs font-medium text-slate-600">
                 Category
                 <select value={form.categoryId ?? ''} onChange={(e) => update({ categoryId: e.target.value || null })} className={`${field} mt-1 block`}>
-                  <option value="">{form.kind === 'inflow' ? 'Income (Ready to Assign)' : 'Uncategorized'}</option>
+                  <option value="">{form.kind === 'inflow' ? 'Income (Ready to Assign)' : 'Choose a category…'}</option>
                   {state.groups.filter((g) => !g.archived).map((g) => (
                     <optgroup key={g.id} label={g.name}>
                       {state.categories.filter((c) => c.groupId === g.id && !c.archived).map((c) => (

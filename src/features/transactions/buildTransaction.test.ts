@@ -46,6 +46,13 @@ test('invalid forms are rejected', () => {
   assert.equal(buildTransaction(form({ kind: 'transfer', transferAccountId: 'chk' }), 'x').ok, false);
 });
 
+test('an outflow must have a category, an inflow need not', () => {
+  const outflow = buildTransaction(form({ categoryId: null }), 'x');
+  assert.equal(outflow.ok, false);
+  if (!outflow.ok) assert.match(outflow.error, /category/);
+  assert.equal(buildTransaction(form({ kind: 'inflow', categoryId: null }), 'x').ok, true);
+});
+
 test('toForm reverses buildTransaction', () => {
   for (const f of [form(), form({ kind: 'inflow', categoryId: null }), form({ kind: 'transfer', transferAccountId: 'sav', categoryId: null, payee: 'Transfer' })]) {
     const r = buildTransaction(f, 'id');
