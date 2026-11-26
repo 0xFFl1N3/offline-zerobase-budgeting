@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.4.12 – 2026-11-26
+
+### Added
+- Offline version: `npm run build:single` builds the whole app into one HTML file that opens straight from disk.
+
 ## 0.4.11 – 2026-11-26
 
 ### Changed
