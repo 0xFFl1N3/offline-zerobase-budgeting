@@ -226,3 +226,26 @@ test('reordering persists across a reload', async () => {
   assert.deepEqual(s.groups.map((g) => g.name), ['Fun', 'Living']);
   assert.deepEqual(s.categories.map((c) => c.name), ['Power', 'Rent']);
 });
+
+test('currency change and clearing all data persist across a reload', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 5000, currency: 'EUR' });
+  await store.getState().addGroup('Living');
+  await store.getState().markBackedUp();
+
+  await store.getState().setCurrency('USD');
+  let reloaded = createBudgetStore(db, '2026-01');
+  await reloaded.getState().load();
+  assert.equal(reloaded.getState().currency, 'USD');
+  assert.equal(reloaded.getState().state.accounts.length, 1);
+
+  await store.getState().clearAllData();
+  assert.equal(store.getState().state.accounts.length, 0);
+  assert.equal(store.getState().lastBackupAt, null);
+  reloaded = createBudgetStore(db, '2026-01');
+  await reloaded.getState().load();
+  assert.equal(reloaded.getState().state.accounts.length, 0);
+  assert.equal(reloaded.getState().state.groups.length, 0);
+  assert.equal(reloaded.getState().currency, 'USD');
+  assert.equal(reloaded.getState().lastBackupAt, null);
+});

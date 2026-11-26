@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { AnalyticsView } from './features/analytics/AnalyticsView.tsx';
 import { AccountsSidebar } from './features/accounts/AccountsSidebar.tsx';
 import { BudgetView } from './features/budget/BudgetView.tsx';
+import { SettingsView } from './features/settings/SettingsView.tsx';
 import { Setup } from './features/setup/Setup.tsx';
 import { TransactionsView } from './features/transactions/TransactionsView.tsx';
 import { useBudgetStore } from './store/budgetStore.ts';
 
-type Tab = 'budget' | 'transactions' | 'analytics';
+type Tab = 'budget' | 'transactions' | 'analytics' | 'settings';
 
 export default function App() {
   const ready = useBudgetStore((s) => s.ready);
@@ -32,8 +33,9 @@ export default function App() {
           <button type="button" className={tabClass('budget')} onClick={() => setTab('budget')}>Budget</button>
           <button type="button" className={tabClass('transactions')} onClick={() => setTab('transactions')}>Transactions</button>
           <button type="button" className={tabClass('analytics')} onClick={() => setTab('analytics')}>Analytics</button>
+          <button type="button" className={`${tabClass('settings')} ml-auto`} onClick={() => setTab('settings')}>Settings</button>
         </nav>
-        <div className="mx-auto max-w-6xl">{tab === 'budget' ? <BudgetView /> : tab === 'transactions' ? <TransactionsView /> : <AnalyticsView />}</div>
+        <div className="mx-auto max-w-6xl">{tab === 'budget' ? <BudgetView /> : tab === 'transactions' ? <TransactionsView /> : tab === 'analytics' ? <AnalyticsView /> : <SettingsView />}</div>
       </div>
     </div>
   );

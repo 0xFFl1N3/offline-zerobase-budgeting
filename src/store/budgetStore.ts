@@ -66,6 +66,10 @@ export interface BudgetStore {
   /** Brings an archived category back (and its group, if that was archived too). */
   restoreCategory: (id: string) => Promise<void>;
   restoreGroup: (id: string) => Promise<void>;
+  /** Switches the display currency. Amounts are not converted. */
+  setCurrency: (currency: Currency) => Promise<void>;
+  /** Deletes every account, category and transaction; the app returns to the setup screen. */
+  clearAllData: () => Promise<void>;
   /** Replaces all data with a validated backup. */
   importBackup: (backup: BackupFile) => Promise<void>;
   /** Records that a backup was just exported. */
@@ -240,6 +244,17 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     archiveGroup: (id) => applyArchive(setGroupArchived(get().state, id, true)),
     restoreCategory: (id) => applyArchive(setCategoryArchived(get().state, id, false)),
     restoreGroup: (id) => applyArchive(setGroupArchived(get().state, id, false)),
+
+    setCurrency: async (currency) => {
+      await repo.saveSettings(db, { currency, lastBackupAt: get().lastBackupAt });
+      set({ currency });
+    },
+
+    clearAllData: async () => {
+      const settings = { currency: get().currency, lastBackupAt: null };
+      await repo.replaceAll(db, emptyState(), settings);
+      set({ state: emptyState(), lastBackupAt: null });
+    },
 
     importBackup: async (backup) => {
       const settings = { currency: backup.settings.currency, lastBackupAt: get().lastBackupAt };
