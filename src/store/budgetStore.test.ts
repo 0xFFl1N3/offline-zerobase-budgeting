@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createDb } from '../db/db.ts';
 import { accountBalance, categoryAvailable, readyToAssign } from '../engine/budget.ts';
-import type { Account, Category } from '../engine/types.ts';
+import type { Account, Category, Transaction } from '../engine/types.ts';
 import { createBudgetStore } from './budgetStore.ts';
 
 let n = 0;
@@ -269,4 +269,41 @@ test('auto-assign funds goals once and persists', async () => {
   const reloaded = createBudgetStore(db, '2026-01');
   await reloaded.getState().load();
   assert.equal(categoryAvailable(reloaded.getState().state, rent.id, '2026-01'), 90000);
+});
+
+test('recurring series persist: start, confirm, skip, edit, pause and delete', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  const account = store.getState().state.accounts[0]!;
+  const tx = (date: string): Transaction => ({ id: 'first', accountId: account.id, date, payee: 'Gym', categoryId: null, memo: '', amount: -2500, transferAccountId: null });
+
+  // A past date is booked at once; the series then waits for the next occurrence.
+  await store.getState().startRecurringSeries(tx('2020-01-15'), 'monthly', null);
+  let s = store.getState().state;
+  assert.equal(s.transactions.length, 1);
+  const id = s.recurring[0]!.id;
+  assert.equal(s.recurring[0]!.handled, 1);
+
+  await store.getState().confirmRecurring(id, 3000);
+  await store.getState().skipRecurring(id);
+  s = store.getState().state;
+  assert.deepEqual(s.transactions.map((t) => [t.date, t.amount]), [['2020-01-15', -2500], ['2020-02-15', -3000]]);
+  assert.equal(s.recurring[0]!.handled, 3);
+
+  await store.getState().editRecurring(id, { payee: 'Gym Plus', frequency: 'yearly' });
+  await store.getState().pauseRecurring(id, true);
+
+  const reloaded = createBudgetStore(db, '2026-01');
+  await reloaded.getState().load();
+  const r = reloaded.getState().state.recurring[0]!;
+  assert.deepEqual([r.template.payee, r.frequency, r.paused, r.startDate, r.handled], ['Gym Plus', 'yearly', true, '2020-04-15', 0]);
+  assert.equal(reloaded.getState().state.transactions.length, 2);
+
+  await reloaded.getState().makeRecurring('first', 'weekly', null);
+  assert.equal(reloaded.getState().state.recurring.length, 2);
+  await reloaded.getState().deleteRecurring(id);
+  const again = createBudgetStore(db, '2026-01');
+  await again.getState().load();
+  assert.equal(again.getState().state.recurring.length, 1);
+  assert.equal(again.getState().state.transactions.length, 2); // booked transactions stay
 });

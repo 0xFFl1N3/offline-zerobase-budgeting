@@ -73,6 +73,26 @@ export interface Transaction {
   splits?: TransactionSplit[];
 }
 
+export type Frequency = 'weekly' | 'biweekly' | 'monthly' | 'yearly';
+
+/** The parts of a transaction that repeat: everything except its id and date. */
+export type TransactionTemplate = Omit<Transaction, 'id' | 'date'>;
+
+/**
+ * A transaction that repeats. Occurrence number n falls on `startDate` plus n periods; the first `handled`
+ * occurrences have been booked or skipped, so the next one is number `handled`.
+ */
+export interface RecurringTransaction {
+  id: string;
+  template: TransactionTemplate;
+  frequency: Frequency;
+  startDate: string;
+  handled: number;
+  /** 'YYYY-MM-DD' of the last allowed occurrence, or null to repeat forever. */
+  endDate: string | null;
+  paused: boolean;
+}
+
 export interface BudgetState {
   accounts: Account[];
   groups: CategoryGroup[];
@@ -80,6 +100,7 @@ export interface BudgetState {
   goals: Goal[];
   monthlyBudgets: MonthlyBudget[];
   transactions: Transaction[];
+  recurring: RecurringTransaction[];
 }
 
 export interface GoalProgress {

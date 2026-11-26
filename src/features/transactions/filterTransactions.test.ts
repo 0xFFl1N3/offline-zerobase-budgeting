@@ -23,6 +23,7 @@ const state: BudgetState = {
   ],
   goals: [],
   monthlyBudgets: [],
+  recurring: [],
   transactions: [
     tx('t1', { date: '2026-01-05', payee: 'Landlord', categoryId: 'rent', amount: -90000 }),
     tx('t2', { date: '2026-02-03', payee: 'Utility Co', categoryId: 'power', memo: 'January bill' }),
@@ -69,6 +70,7 @@ test('search matches payee, memo and category name; filters combine', () => {
 test('a split transaction matches the filters of each of its categories', () => {
   const withSplit: BudgetState = {
     ...state,
+    recurring: [],
     transactions: [tx('sp', { date: '2026-03-03', payee: 'Mall', amount: -1000, splits: [{ categoryId: 'rent', amount: -600 }, { categoryId: 'games', amount: -400 }] }), ...state.transactions],
   };
   const run = (f: Partial<typeof NO_FILTERS>) => filterTransactions(withSplit, { ...NO_FILTERS, ...f }).map((t) => t.id);

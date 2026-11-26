@@ -5,6 +5,7 @@ import type {
   CategoryGroup,
   Goal,
   MonthlyBudget,
+  RecurringTransaction,
   Transaction,
 } from '../engine/types.ts';
 
@@ -20,6 +21,7 @@ export type BudgetDB = Dexie & {
   goals: EntityTable<Goal, 'id'>;
   monthlyBudgets: Table<MonthlyBudget, [string, string]>;
   transactions: EntityTable<Transaction, 'id'>;
+  recurring: EntityTable<RecurringTransaction, 'id'>;
   settings: EntityTable<SettingRow, 'key'>;
 };
 
@@ -34,5 +36,6 @@ export function createDb(name = 'budget'): BudgetDB {
     transactions: 'id, accountId, date, categoryId',
     settings: 'key',
   });
+  db.version(2).stores({ recurring: 'id' });
   return db;
 }

@@ -25,6 +25,7 @@ const state = (): BudgetState => ({
     { categoryId: 'power', month: '2026-01', assigned: 4000 },
     { categoryId: 'games', month: '2026-01', assigned: 2000 },
   ],
+  recurring: [],
   transactions: [
     { id: 't1', accountId: 'a', date: '2026-01-05', payee: 'L', categoryId: 'rent', memo: '', amount: -60000, transferAccountId: null },
   ],

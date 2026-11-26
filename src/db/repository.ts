@@ -8,6 +8,7 @@ import type {
   Cents,
   Goal,
   Month,
+  RecurringTransaction,
   Transaction,
 } from '../engine/types.ts';
 
@@ -25,13 +26,14 @@ export interface Settings {
 const DEFAULT_CURRENCY: Currency = 'EUR';
 
 export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; settings: Settings }> {
-  const [accounts, groups, categories, goals, monthlyBudgets, transactions, settingRows] = await Promise.all([
+  const [accounts, groups, categories, goals, monthlyBudgets, transactions, recurring, settingRows] = await Promise.all([
     db.accounts.toArray(),
     db.groups.toArray(),
     db.categories.toArray(),
     db.goals.toArray(),
     db.monthlyBudgets.toArray(),
     db.transactions.toArray(),
+    db.recurring.toArray(),
     db.settings.toArray(),
   ]);
   const byKey = new Map(settingRows.map((r) => [r.key, r.value]));
@@ -47,6 +49,7 @@ export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; setti
       goals: goals.map(normalizeGoal),
       monthlyBudgets,
       transactions,
+      recurring,
     },
     settings: { currency, lastBackupAt: byKey.get('lastBackupAt') ?? null },
   };
@@ -83,6 +86,16 @@ export const saveArchiveChanges = (db: BudgetDB, groups: CategoryGroup[], catego
     await db.categories.bulkPut(categories);
   });
 
+export const saveRecurring = (db: BudgetDB, r: RecurringTransaction) => db.recurring.put(r);
+export const deleteRecurring = (db: BudgetDB, id: string) => db.recurring.delete(id);
+
+/** Saves a template together with the transaction it just booked (if any), atomically. */
+export const saveRecurringBooking = (db: BudgetDB, r: RecurringTransaction, booked: Transaction | null) =>
+  db.transaction('rw', [db.recurring, db.transactions], async () => {
+    await db.recurring.put(r);
+    if (booked) await db.transactions.put(booked);
+  });
+
 export const saveGoal = (db: BudgetDB, g: Goal) => db.goals.put(g);
 export const deleteGoal = (db: BudgetDB, id: string) => db.goals.delete(id);
 export const saveTransaction = (db: BudgetDB, t: Transaction) => db.transactions.put(t);
@@ -104,11 +117,11 @@ export async function saveSettings(db: BudgetDB, s: Settings) {
 export async function replaceAll(db: BudgetDB, state: BudgetState, settings: Settings) {
   await db.transaction(
     'rw',
-    [db.accounts, db.groups, db.categories, db.goals, db.monthlyBudgets, db.transactions, db.settings],
+    [db.accounts, db.groups, db.categories, db.goals, db.monthlyBudgets, db.transactions, db.recurring, db.settings],
     async () => {
       await Promise.all([
         db.accounts.clear(), db.groups.clear(), db.categories.clear(), db.goals.clear(),
-        db.monthlyBudgets.clear(), db.transactions.clear(), db.settings.clear(),
+        db.monthlyBudgets.clear(), db.transactions.clear(), db.recurring.clear(), db.settings.clear(),
       ]);
       await db.accounts.bulkPut(state.accounts);
       await db.groups.bulkPut(state.groups);
@@ -116,6 +129,7 @@ export async function replaceAll(db: BudgetDB, state: BudgetState, settings: Set
       await db.goals.bulkPut(state.goals);
       await db.monthlyBudgets.bulkPut(state.monthlyBudgets);
       await db.transactions.bulkPut(state.transactions);
+      await db.recurring.bulkPut(state.recurring);
       await saveSettings(db, settings);
     },
   );

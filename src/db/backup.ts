@@ -5,8 +5,10 @@ import type {
   BudgetState,
   Category,
   CategoryGroup,
+  Frequency,
   Goal,
   MonthlyBudget,
+  RecurringTransaction,
   Transaction,
   TransactionSplit,
 } from '../engine/types.ts';
@@ -109,6 +111,42 @@ function parseSplits(o: Obj): { splits?: TransactionSplit[] } {
   return { splits };
 }
 
+const FREQUENCIES: Frequency[] = ['weekly', 'biweekly', 'monthly', 'yearly'];
+
+/** Backups made before recurring transactions existed have no "recurring" list: that means none. */
+function parseRecurring(raw: Obj): RecurringTransaction[] {
+  if (raw.recurring === undefined) return [];
+  return list(raw, 'recurring').map((o) => {
+    const frequency = str(o, 'frequency', 'Recurring') as Frequency;
+    if (!FREQUENCIES.includes(frequency)) throw new Error(`Recurring: unknown frequency "${frequency}".`);
+    const startDate = str(o, 'startDate', 'Recurring');
+    if (!DATE.test(startDate)) throw new Error('Recurring: "startDate" must look like 2026-06-15.');
+    const endDate = optStr(o, 'endDate', 'Recurring');
+    if (endDate !== null && !DATE.test(endDate)) throw new Error('Recurring: "endDate" must look like 2026-06-15.');
+    const handled = int(o, 'handled', 'Recurring');
+    if (handled < 0) throw new Error('Recurring: "handled" cannot be negative.');
+    const t = o.template;
+    if (!isObj(t)) throw new Error('Recurring: "template" is missing.');
+    return {
+      id: str(o, 'id', 'Recurring'),
+      frequency,
+      startDate,
+      endDate,
+      handled,
+      paused: bool(o, 'paused', 'Recurring'),
+      template: {
+        accountId: str(t, 'accountId', 'Recurring'),
+        payee: str(t, 'payee', 'Recurring'),
+        categoryId: optStr(t, 'categoryId', 'Recurring'),
+        memo: str(t, 'memo', 'Recurring'),
+        amount: int(t, 'amount', 'Recurring'),
+        transferAccountId: optStr(t, 'transferAccountId', 'Recurring'),
+        ...parseSplits(t),
+      },
+    };
+  });
+}
+
 function parseData(raw: unknown): BudgetState {
   if (!isObj(raw)) throw new Error('The file has no data section.');
   const accounts: Account[] = list(raw, 'accounts').map((o, index) => {
@@ -124,6 +162,7 @@ function parseData(raw: unknown): BudgetState {
     sortOrder: int(o, 'sortOrder', 'Category'), archived: bool(o, 'archived', 'Category'),
   }));
   const goals: Goal[] = list(raw, 'goals').map(parseGoal);
+  const recurring = parseRecurring(raw);
   const monthlyBudgets: MonthlyBudget[] = list(raw, 'monthlyBudgets').map((o) => {
     const month = str(o, 'month', 'Assignment');
     if (!MONTH.test(month)) throw new Error('Assignment: "month" must look like 2026-06.');
@@ -146,6 +185,7 @@ function parseData(raw: unknown): BudgetState {
   unique(categories.map((c) => c.id), 'category');
   unique(goals.map((g) => g.id), 'goal');
   unique(transactions.map((t) => t.id), 'transaction');
+  unique(recurring.map((r) => r.id), 'recurring transaction');
 
   const accountIds = new Set(accounts.map((a) => a.id));
   const groupIds = new Set(groups.map((g) => g.id));
@@ -159,7 +199,14 @@ function parseData(raw: unknown): BudgetState {
     if (t.categoryId !== null && !categoryIds.has(t.categoryId)) throw new Error('A transaction points to a missing category.');
     for (const part of t.splits ?? []) if (!categoryIds.has(part.categoryId)) throw new Error('A split points to a missing category.');
   }
-  return { accounts, groups, categories, goals, monthlyBudgets, transactions };
+  for (const r of recurring) {
+    const t = r.template;
+    if (!accountIds.has(t.accountId)) throw new Error('A recurring transaction points to a missing account.');
+    if (t.transferAccountId !== null && !accountIds.has(t.transferAccountId)) throw new Error('A recurring transfer points to a missing account.');
+    if (t.categoryId !== null && !categoryIds.has(t.categoryId)) throw new Error('A recurring transaction points to a missing category.');
+    for (const part of t.splits ?? []) if (!categoryIds.has(part.categoryId)) throw new Error('A recurring split points to a missing category.');
+  }
+  return { accounts, groups, categories, goals, monthlyBudgets, transactions, recurring };
 }
 
 /** Parses and strictly validates a backup file's text. Never throws. */

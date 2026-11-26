@@ -30,6 +30,7 @@ const base = (transactions: Transaction[], monthlyBudgets: BudgetState['monthlyB
     { id: 'games', groupId: 'g2', name: 'Games', sortOrder: 0, archived: false },
   ],
   goals: [],
+  recurring: [],
   monthlyBudgets,
   transactions,
 });

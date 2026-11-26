@@ -2,14 +2,14 @@ import type { BudgetState, Cents, Goal, GoalProgress, Month, Transaction, Transa
 import { addMonths, monthOf, monthsBetween } from './months.ts';
 
 /** The category shares of a transaction: its splits, or the whole amount in its one category. Empty for transfers and income. */
-export function categoryParts(t: Transaction): TransactionSplit[] {
+export function categoryParts(t: Pick<Transaction, 'transferAccountId' | 'splits' | 'categoryId' | 'amount'>): TransactionSplit[] {
   if (t.transferAccountId !== null) return [];
   if (t.splits && t.splits.length > 0) return t.splits;
   return t.categoryId !== null ? [{ categoryId: t.categoryId, amount: t.amount }] : [];
 }
 
 /** True if any part of the transaction belongs to one of the categories. */
-export const touchesCategory = (t: Transaction, categoryIds: Iterable<string>): boolean => {
+export const touchesCategory = (t: Pick<Transaction, 'transferAccountId' | 'splits' | 'categoryId' | 'amount'>, categoryIds: Iterable<string>): boolean => {
   const ids = new Set(categoryIds);
   return categoryParts(t).some((p) => ids.has(p.categoryId));
 };

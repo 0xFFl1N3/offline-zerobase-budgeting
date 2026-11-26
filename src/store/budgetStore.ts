@@ -6,7 +6,9 @@ import type { Currency } from '../engine/money.ts';
 import { moveAccount, moveAccountTo, moveCategory, moveCategoryTo, moveGroup, moveGroupTo, removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from '../engine/edit.ts';
 import { autoAssignPlan, planAssignments } from '../engine/autoassign.ts';
 import { addMonths } from '../engine/months.ts';
-import type { Account, AccountType, BudgetState, Cents, Goal, Month, Transaction } from '../engine/types.ts';
+import { bookNext, recurringFrom, setRecurringPaused, skipNext, startRecurring, updateRecurring, type RecurringChanges } from '../engine/recurring.ts';
+import { toISODate } from '../engine/months.ts';
+import type { Account, AccountType, BudgetState, Cents, Frequency, Goal, Month, Transaction } from '../engine/types.ts';
 
 const emptyState = (): BudgetState => ({
   accounts: [],
@@ -15,6 +17,7 @@ const emptyState = (): BudgetState => ({
   goals: [],
   monthlyBudgets: [],
   transactions: [],
+  recurring: [],
 });
 
 export function currentMonth(now = new Date()): Month {
@@ -51,6 +54,20 @@ export interface BudgetStore {
   assign: (categoryId: string, assigned: Cents) => Promise<void>;
   /** Adds to each category what its goal still needs this month. Returns how many categories were funded. */
   autoAssign: () => Promise<number>;
+  /**
+   * Starts a recurring series from a transaction just entered: it is booked now if its date has come,
+   * otherwise it becomes the first due occurrence.
+   */
+  startRecurringSeries: (t: Transaction, frequency: Frequency, endDate: string | null) => Promise<void>;
+  /** Makes an existing transaction the first occurrence of a new series. */
+  makeRecurring: (transactionId: string, frequency: Frequency, endDate: string | null) => Promise<void>;
+  /** Books the next occurrence of a series as a transaction; `amount` (positive) overrides the usual amount. */
+  confirmRecurring: (id: string, amount?: Cents) => Promise<void>;
+  skipRecurring: (id: string) => Promise<void>;
+  editRecurring: (id: string, changes: RecurringChanges) => Promise<void>;
+  pauseRecurring: (id: string, paused: boolean) => Promise<void>;
+  /** Deletes the series; transactions already booked from it stay. */
+  deleteRecurring: (id: string) => Promise<void>;
   /** Adds a transaction, or replaces the one with the same id. */
   saveTransaction: (t: Transaction) => Promise<void>;
   removeTransaction: (id: string) => Promise<void>;
@@ -194,6 +211,61 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       const assignments = planAssignments(state, autoAssignPlan(state, month), month);
       for (const a of assignments) await get().assign(a.categoryId, a.assigned);
       return assignments.length;
+    },
+
+    startRecurringSeries: async (t, frequency, endDate) => {
+      const { transaction, recurring } = startRecurring(t, frequency, endDate, toISODate(), crypto.randomUUID());
+      await repo.saveRecurringBooking(db, recurring, transaction);
+      set((s) => ({
+        state: { ...s.state, recurring: [...s.state.recurring, recurring], transactions: transaction ? [...s.state.transactions, transaction] : s.state.transactions },
+      }));
+    },
+
+    makeRecurring: async (transactionId, frequency, endDate) => {
+      const t = get().state.transactions.find((x) => x.id === transactionId);
+      if (!t) throw new Error('Unknown transaction.');
+      const recurring = recurringFrom(t, frequency, endDate, crypto.randomUUID());
+      await repo.saveRecurring(db, recurring);
+      set((s) => ({ state: { ...s.state, recurring: [...s.state.recurring, recurring] } }));
+    },
+
+    confirmRecurring: async (id, amount) => {
+      const rec = get().state.recurring.find((r) => r.id === id);
+      if (!rec) throw new Error('Unknown recurring transaction.');
+      const { transaction, recurring } = bookNext(rec, crypto.randomUUID(), amount);
+      await repo.saveRecurringBooking(db, recurring, transaction);
+      set((s) => ({
+        state: { ...s.state, recurring: s.state.recurring.map((r) => (r.id === id ? recurring : r)), transactions: [...s.state.transactions, transaction] },
+      }));
+    },
+
+    skipRecurring: async (id) => {
+      const rec = get().state.recurring.find((r) => r.id === id);
+      if (!rec) throw new Error('Unknown recurring transaction.');
+      const next = skipNext(rec);
+      await repo.saveRecurring(db, next);
+      set((s) => ({ state: { ...s.state, recurring: s.state.recurring.map((r) => (r.id === id ? next : r)) } }));
+    },
+
+    editRecurring: async (id, changes) => {
+      const rec = get().state.recurring.find((r) => r.id === id);
+      if (!rec) throw new Error('Unknown recurring transaction.');
+      const next = updateRecurring(rec, changes);
+      await repo.saveRecurring(db, next);
+      set((s) => ({ state: { ...s.state, recurring: s.state.recurring.map((r) => (r.id === id ? next : r)) } }));
+    },
+
+    pauseRecurring: async (id, paused) => {
+      const rec = get().state.recurring.find((r) => r.id === id);
+      if (!rec) throw new Error('Unknown recurring transaction.');
+      const next = setRecurringPaused(rec, paused, toISODate());
+      await repo.saveRecurring(db, next);
+      set((s) => ({ state: { ...s.state, recurring: s.state.recurring.map((r) => (r.id === id ? next : r)) } }));
+    },
+
+    deleteRecurring: async (id) => {
+      await repo.deleteRecurring(db, id);
+      set((s) => ({ state: { ...s.state, recurring: s.state.recurring.filter((r) => r.id !== id) } }));
     },
 
     saveTransaction: async (t) => {

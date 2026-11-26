@@ -22,6 +22,7 @@ const state = (): BudgetState => ({
     { id: 'g4', categoryId: 'old', type: 'monthly_amount', monthlyAmount: 1000 },
   ],
   monthlyBudgets: [{ categoryId: 'fun', month: M, assigned: 5000 }], // already fully funded
+  recurring: [],
   transactions: [],
 });
 

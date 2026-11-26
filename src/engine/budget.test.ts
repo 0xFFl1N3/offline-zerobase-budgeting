@@ -27,6 +27,7 @@ function baseState(): BudgetState {
     ],
     goals: [],
     monthlyBudgets: [],
+    recurring: [],
     transactions: [],
   };
 }
@@ -160,6 +161,7 @@ test('running balance follows date order and counts transfers on both sides', ()
       { id: 'b', name: 'B', type: 'savings', openingBalance: 0, sortOrder: 1, closed: false },
     ],
     groups: [], categories: [], goals: [], monthlyBudgets: [],
+    recurring: [],
     transactions: [
       { id: 'late', accountId: 'a', date: '2026-01-09', payee: '', categoryId: null, memo: '', amount: -500, transferAccountId: null },
       { id: 'early', accountId: 'a', date: '2026-01-02', payee: '', categoryId: null, memo: '', amount: 2000, transferAccountId: null },

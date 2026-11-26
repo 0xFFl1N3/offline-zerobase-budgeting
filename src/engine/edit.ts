@@ -8,7 +8,7 @@ import type { AccountType, BudgetState, Cents } from './types.ts';
  */
 export function removeCategories(state: BudgetState, categoryIds: string[]): BudgetState {
   const gone = new Set(categoryIds);
-  if (state.transactions.some((t) => touchesCategory(t, gone))) {
+  if (state.transactions.some((t) => touchesCategory(t, gone)) || state.recurring.some((r) => touchesCategory(r.template, gone))) {
     throw new Error('A category with transactions cannot be deleted. Archive it instead.');
   }
   return {
@@ -48,7 +48,8 @@ export function setGroupArchived(state: BudgetState, groupId: string, archived: 
 }
 
 const hasTransactions = (state: BudgetState, accountId: string) =>
-  state.transactions.some((t) => t.accountId === accountId || t.transferAccountId === accountId);
+  state.transactions.some((t) => t.accountId === accountId || t.transferAccountId === accountId) ||
+  state.recurring.some((r) => r.template.accountId === accountId || r.template.transferAccountId === accountId);
 
 /** Changes an account's name, type or opening balance. The opening balance feeds Ready to Assign directly. */
 export function updateAccount(

@@ -18,6 +18,7 @@ const sample = (): BudgetState => ({
     { id: 'g1', categoryId: 'c', type: 'target_balance', targetAmount: 50000, targetDate: '2026-12' },
   ],
   monthlyBudgets: [{ categoryId: 'c', month: '2026-01', assigned: 90000 }],
+  recurring: [],
   transactions: [
     { id: 't1', accountId: 'a', date: '2026-01-05', payee: 'Landlord', categoryId: 'c', memo: '', amount: -60000, transferAccountId: null },
     { id: 't2', accountId: 'a', date: '2026-01-06', payee: 'Transfer', categoryId: null, memo: 'x', amount: -1000, transferAccountId: 'b' },
@@ -102,4 +103,26 @@ test('split transactions round-trip and are validated', () => {
   assert.match(err(parseBackup(split((t) => (t.splits = [t.splits[0]])))), /at least two/);
   assert.match(err(parseBackup(split((t) => (t.splits[0].categoryId = 'nope')))), /missing category/);
   assert.match(err(parseBackup(split((t) => (t.categoryId = 'c')))), /cannot also have a category/);
+});
+
+test('recurring series round-trip, old backups without them load, and bad ones are rejected', () => {
+  const rec = () => ({
+    id: 'r1', frequency: 'monthly', startDate: '2026-01-31', handled: 1, endDate: null, paused: false,
+    template: { accountId: 'a', payee: 'Landlord', categoryId: 'c', memo: '', amount: -60000, transferAccountId: null },
+  });
+  const withRec = (mutate?: (r: any) => void) => text((o) => { const r = rec(); mutate?.(r); o.data.recurring = [r]; });
+  const ok = parseBackup(withRec());
+  assert.ok(ok.ok);
+  assert.deepEqual(ok.backup.data.recurring, [rec()]);
+
+  const old = parseBackup(text((o) => { delete o.data.recurring; }));
+  assert.ok(old.ok);
+  assert.deepEqual(old.backup.data.recurring, []);
+
+  const err = (r: ReturnType<typeof parseBackup>) => (r.ok ? '' : r.error);
+  assert.match(err(parseBackup(withRec((r) => (r.frequency = 'daily')))), /frequency/);
+  assert.match(err(parseBackup(withRec((r) => (r.startDate = 'soon')))), /startDate/);
+  assert.match(err(parseBackup(withRec((r) => (r.handled = -1)))), /negative/);
+  assert.match(err(parseBackup(withRec((r) => (r.template.accountId = 'nope')))), /missing account/);
+  assert.match(err(parseBackup(withRec((r) => (r.template.categoryId = 'nope')))), /missing category/);
 });
