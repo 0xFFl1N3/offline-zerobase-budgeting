@@ -3,6 +3,7 @@ import { spendingReport, type GroupBy, type ReportKind, type SpendingReport } fr
 import { formatMoney } from '../../engine/money.ts';
 import { formatMonth, formatMonthRange } from '../../engine/months.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
+import { useIsDark } from '../../theme.ts';
 import { buildColorMap } from './colors.ts';
 import { PieChart } from './PieChart.tsx';
 
@@ -32,7 +33,8 @@ export function AnalyticsView() {
 
   const reports = useMemo(() => KINDS.map((k) => spendingReport(state, k, month, groupBy)), [state, month, groupBy]);
   // Year to date first: it contains every slice the other two can show, so colours stay put across the charts.
-  const colors = useMemo(() => buildColorMap([reports[1]!, reports[0]!, reports[2]!]), [reports]);
+  const dark = useIsDark();
+  const colors = useMemo(() => buildColorMap([reports[1]!, reports[0]!, reports[2]!], dark), [reports, dark]);
   const uncategorized = reports[1]!.uncategorizedCount;
 
   const toggle = (value: GroupBy, label: string) => (

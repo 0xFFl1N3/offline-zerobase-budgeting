@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Currency } from '../../engine/money.ts';
 import { BackupPanel } from '../backup/BackupPanel.tsx';
+import { loadPreference, savePreference, applyTheme, type ThemePreference } from '../../theme.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 
 const CONFIRM_WORD = 'DELETE';
@@ -9,11 +10,32 @@ export function SettingsView() {
   const currency = useBudgetStore((s) => s.currency);
   const setCurrency = useBudgetStore((s) => s.setCurrency);
   const clearAllData = useBudgetStore((s) => s.clearAllData);
+  const [theme, setTheme] = useState<ThemePreference>(loadPreference);
   const [clearing, setClearing] = useState(false);
   const [typed, setTyped] = useState('');
 
   return (
     <section className="max-w-xl space-y-6 p-6">
+      <div className="rounded-lg bg-white p-5 shadow-sm">
+        <h2 className="text-sm font-semibold">Appearance</h2>
+        <select
+          aria-label="Theme"
+          value={theme}
+          onChange={(e) => {
+            const choice = e.target.value as ThemePreference;
+            setTheme(choice);
+            savePreference(choice);
+            applyTheme(choice);
+          }}
+          className="mt-3 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm"
+        >
+          <option value="system">Same as my system</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+        <p className="mt-2 text-xs text-slate-500">Remembered on this device only; it is not part of a backup.</p>
+      </div>
+
       <div className="rounded-lg bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold">Currency</h2>
         <select

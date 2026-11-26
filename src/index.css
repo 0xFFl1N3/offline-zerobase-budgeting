@@ -1,1 +1,54 @@
 @import "tailwindcss";
+
+/* Surface colour of the pie charts' slice borders. */
+:root {
+  --chart-surface: #ffffff;
+}
+
+/*
+ * Dark theme, switched by the `dark` class on <html> (see src/theme.ts).
+ * The greys are mirrored (light greys become dark ones and the other way round) through Tailwind's own colour
+ * variables, so screens need no per-element dark styles. White and the accent colours are shared with
+ * text on buttons, so those are overridden per class below.
+ */
+.dark {
+  color-scheme: dark;
+  --chart-surface: #0f172a;
+  --color-slate-50: #020617;
+  --color-slate-100: #1e293b;
+  --color-slate-200: #263447;
+  --color-slate-300: #475569;
+  --color-slate-400: #64748b;
+  --color-slate-500: #94a3b8;
+  --color-slate-600: #b6c2d2;
+  --color-slate-700: #cbd5e1;
+  --color-slate-800: #e2e8f0;
+  --color-slate-900: #f1f5f9;
+}
+.dark body { background-color: #020617; }
+.dark .bg-white,
+.dark .focus\:bg-white:focus { background-color: #0f172a; }
+
+.dark .text-sky-700 { color: #38bdf8; }
+.dark .hover\:bg-sky-50:hover { background-color: #082f49; }
+
+.dark .text-red-600 { color: #f87171; }
+.dark .text-red-700 { color: #fca5a5; }
+.dark .text-red-800 { color: #fecaca; }
+.dark .bg-red-100 { background-color: #7f1d1d; }
+.dark .hover\:bg-red-50:hover { background-color: #450a0a; }
+.dark .border-red-200,
+.dark .border-red-300 { border-color: #7f1d1d; }
+
+.dark .text-emerald-700 { color: #34d399; }
+.dark .text-emerald-800 { color: #6ee7b7; }
+.dark .bg-emerald-100 { background-color: #064e3b; }
+
+.dark .text-amber-700 { color: #fbbf24; }
+.dark .text-amber-800 { color: #fcd34d; }
+.dark .text-amber-900 { color: #fde68a; }
+.dark .bg-amber-50 { background-color: #451a03; }
+.dark .bg-amber-100 { background-color: #78350f; }
+.dark .bg-amber-200 { background-color: #92400e; }
+.dark .border-amber-300 { border-color: #b45309; }
+.dark .divide-amber-200 > :not(:last-child) { border-color: #78350f; }

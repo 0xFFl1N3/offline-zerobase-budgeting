@@ -53,7 +53,7 @@ export function PieChart({ slices, total, currency, colors, label }: Props) {
               key={slice.id}
               d={slicePath(from, to)}
               fill={colorOf(slice)}
-              stroke="#ffffff"
+              style={{ stroke: 'var(--chart-surface)' }}
               strokeWidth={2}
               strokeLinejoin="round"
               opacity={active === null || active === slice.id ? 1 : 0.45}
