@@ -57,3 +57,11 @@ test('setAssigned overwrites, and zero removes the row', async () => {
   ({ state } = await loadAll(db));
   assert.equal(state.monthlyBudgets.length, 1);
 });
+
+test('old target_by_date goals load as target_balance', async () => {
+  const db = freshDb();
+  await db.goals.put({ id: 'old', categoryId: 'c', type: 'target_by_date' as never, targetAmount: 5000, targetDate: '2026-06' });
+  const goal = (await loadAll(db)).state.goals[0];
+  assert.equal(goal?.type, 'target_balance');
+  assert.equal(goal?.targetDate, '2026-06');
+});

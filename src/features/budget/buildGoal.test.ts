@@ -17,9 +17,8 @@ test('monthly amount ignores any date', () => {
   assert.deepEqual(r.goal, { id: 'g', categoryId: 'c', type: 'monthly_amount', monthlyAmount: 90000 });
 });
 
-test('save by date needs a date', () => {
-  assert.equal(buildGoal({ type: 'target_by_date', amount: 5000, targetDate: '' }, 'c', 'g').ok, false);
-  assert.equal(buildGoal({ type: 'target_by_date', amount: 5000, targetDate: '2026-06' }, 'c', 'g').ok, true);
+test('an invalid month is rejected', () => {
+  assert.equal(buildGoal({ type: 'target_balance', amount: 5000, targetDate: 'soon' }, 'c', 'g').ok, false);
 });
 
 test('zero or negative amounts are rejected', () => {
@@ -29,7 +28,7 @@ test('zero or negative amounts are rejected', () => {
 test('goalToForm reverses buildGoal', () => {
   for (const form of [
     { type: 'target_balance' as const, amount: 100000, targetDate: '' },
-    { type: 'target_by_date' as const, amount: 5000, targetDate: '2026-06' },
+    { type: 'target_balance' as const, amount: 5000, targetDate: '2026-06' },
     { type: 'monthly_amount' as const, amount: 90000, targetDate: '' },
   ]) {
     const r = buildGoal(form, 'c', 'g');

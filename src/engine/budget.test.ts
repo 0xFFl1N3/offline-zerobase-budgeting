@@ -106,12 +106,12 @@ test('target_balance goal uses the whole available balance', () => {
   assert.equal(feb.percent, 40);
 });
 
-test('target_by_date goal derives the monthly amount', () => {
+test('target_balance goal with a date derives the monthly amount', () => {
   const s = baseState();
   s.goals.push({
     id: 'goal',
     categoryId: 'rent',
-    type: 'target_by_date',
+    type: 'target_balance',
     targetAmount: 120000,
     targetDate: '2026-06',
   });

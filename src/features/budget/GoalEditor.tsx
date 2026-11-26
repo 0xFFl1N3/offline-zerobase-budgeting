@@ -7,7 +7,6 @@ import { buildGoal, goalToForm } from './buildGoal.ts';
 const TYPE_LABELS: Record<GoalType, string> = {
   target_balance: 'Save up to an amount',
   monthly_amount: 'Assign a set amount every month',
-  target_by_date: 'Save an amount by a month',
 };
 
 interface Props {
@@ -62,7 +61,7 @@ export function GoalEditor({ category, goal, onClose }: Props) {
       </label>
       {type !== 'monthly_amount' && (
         <label className={label}>
-          {type === 'target_by_date' ? 'By month' : 'By month (optional)'}
+          By month (optional)
           <input type="month" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className={`${field} mt-1 block`} />
         </label>
       )}

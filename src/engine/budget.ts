@@ -88,9 +88,6 @@ export function goalProgress(state: BudgetState, goal: Goal, month: Month): Goal
   switch (goal.type) {
     case 'target_balance':
       return balanceGoalProgress(state, goal, goal.targetAmount ?? 0, goal.targetDate, month);
-    case 'target_by_date':
-      if (goal.targetDate === undefined) throw new Error('target_by_date goal needs a targetDate');
-      return balanceGoalProgress(state, goal, goal.targetAmount ?? 0, goal.targetDate, month);
     case 'monthly_amount': {
       const target = goal.monthlyAmount ?? 0;
       const assigned = categoryAssigned(state, goal.categoryId, month);

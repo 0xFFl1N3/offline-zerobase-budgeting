@@ -31,9 +31,6 @@ export function buildGoal(form: GoalForm, categoryId: string, id: string): Build
           ...(date !== '' ? { targetDate: date } : {}),
         },
       };
-    case 'target_by_date':
-      if (!MONTH.test(date)) return { ok: false, error: 'Pick the month you want to reach the target by.' };
-      return { ok: true, goal: { id, categoryId, type: 'target_by_date', targetAmount: form.amount, targetDate: date } };
   }
 }
 

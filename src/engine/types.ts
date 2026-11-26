@@ -27,15 +27,15 @@ export interface Category {
   archived: boolean;
 }
 
-export type GoalType = 'target_balance' | 'monthly_amount' | 'target_by_date';
+export type GoalType = 'target_balance' | 'monthly_amount';
 
 export interface Goal {
   id: string;
   categoryId: string;
   type: GoalType;
-  /** target_balance and target_by_date */
+  /** target_balance */
   targetAmount?: Cents;
-  /** 'YYYY-MM'. Required for target_by_date, optional for target_balance. */
+  /** 'YYYY-MM'. Optional for target_balance: if set, progress is paced over the months left. */
   targetDate?: Month;
   /** monthly_amount */
   monthlyAmount?: Cents;

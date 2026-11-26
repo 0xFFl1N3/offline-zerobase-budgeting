@@ -11,6 +11,11 @@ import type {
   Transaction,
 } from '../engine/types.ts';
 
+/** Goals saved before the 'save by a month' type was merged into 'save up to' are read as the latter. */
+function normalizeGoal(g: Goal): Goal {
+  return (g.type as string) === 'target_by_date' ? { ...g, type: 'target_balance' } : g;
+}
+
 export interface Settings {
   currency: Currency;
 }
@@ -34,7 +39,7 @@ export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; setti
       accounts,
       groups: groups.sort((a, b) => a.sortOrder - b.sortOrder),
       categories: categories.sort((a, b) => a.sortOrder - b.sortOrder),
-      goals,
+      goals: goals.map(normalizeGoal),
       monthlyBudgets,
       transactions,
     },
