@@ -33,7 +33,7 @@ export function formatMonthRange(from: Month, to: Month): string {
   if (from === to) return formatMonth(to);
   const [fy, fm] = from.split('-').map(Number) as [number, number];
   const [ty] = to.split('-').map(Number) as [number, number];
-  const short = new Date(fy, fm - 1, 1).toLocaleDateString(undefined, { month: 'short' });
+  const short = new Date(fy, fm - 1, 1).toLocaleDateString(undefined, fy === ty ? { month: 'short' } : { month: 'short', year: 'numeric' });
   const end = new Date(ty, Number(to.slice(5)) - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
   return `${short} – ${end}`;
 }

@@ -3,9 +3,12 @@ import { spendingReport, type GroupBy, type ReportKind, type SpendingReport } fr
 import { formatMoney } from '../../engine/money.ts';
 import { formatMonth, formatMonthRange } from '../../engine/months.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
+import { incomeVsSpending, reportMonths, type RangeKey } from '../../engine/reports.ts';
 import { useIsDark } from '../../theme.ts';
 import { buildColorMap } from './colors.ts';
+import { IncomeSpendingChart } from './IncomeSpendingChart.tsx';
 import { PieChart } from './PieChart.tsx';
+import { RangeSwitch } from './RangeSwitch.tsx';
 
 const KINDS: ReportKind[] = ['month', 'year-to-date', 'monthly-average'];
 
@@ -36,6 +39,10 @@ export function AnalyticsView() {
   const dark = useIsDark();
   const colors = useMemo(() => buildColorMap([reports[1]!, reports[0]!, reports[2]!], dark), [reports, dark]);
   const uncategorized = reports[1]!.uncategorizedCount;
+
+  const [range, setRange] = useState<RangeKey>('12');
+  const months = useMemo(() => reportMonths(state, range, month), [state, range, month]);
+  const incomeRows = useMemo(() => incomeVsSpending(state, months), [state, months]);
 
   const toggle = (value: GroupBy, label: string) => (
     <button
@@ -97,6 +104,18 @@ export function AnalyticsView() {
             </article>
           );
         })}
+      </div>
+
+      <div className="mt-10 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold">Over time</h2>
+          <p className="text-xs text-slate-500">{formatMonthRange(months[0]!, months.at(-1)!)}</p>
+        </div>
+        <RangeSwitch value={range} onChange={setRange} />
+      </div>
+
+      <div className="mt-4 grid gap-6 lg:grid-cols-2">
+        <IncomeSpendingChart rows={incomeRows} currency={currency} />
       </div>
     </section>
   );
