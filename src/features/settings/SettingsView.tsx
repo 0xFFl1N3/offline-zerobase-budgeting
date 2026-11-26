@@ -5,6 +5,7 @@ import { loadPreference, savePreference, applyTheme, type ThemePreference } from
 import { useT } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { LanguageSelect } from './LanguageSelect.tsx';
+import { StorageCard } from './StorageCard.tsx';
 
 export function SettingsView() {
   const currency = useBudgetStore((s) => s.currency);
@@ -59,6 +60,8 @@ export function SettingsView() {
       </div>
 
       <BackupPanel variant="card" />
+
+      <StorageCard />
 
       <div className="rounded-lg border border-red-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-red-700">{t('settings.clearTitle')}</h2>

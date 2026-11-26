@@ -449,6 +449,15 @@ export const en = {
 
   // Overspending
   'budget.overspentLast': 'Includes {amount} overspent in {month}.',
+
+  // Storage
+  'storage.title': 'Storage on this device',
+  'storage.granted': 'This browser keeps your data permanently.',
+  'storage.denied': 'This browser may delete your data when disk space runs low, or after a while without a visit.',
+  'storage.unsupported': "This browser doesn't say whether it keeps your data permanently.",
+  'storage.advice': 'Installing the app (Add to Home Screen, or Install app in Chrome) usually makes the browser keep it. Export a backup regularly either way.',
+  'storage.usage': 'Uses about {size}.',
+  'storage.askAgain': 'Ask the browser again',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

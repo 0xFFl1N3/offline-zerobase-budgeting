@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.7.0 – 2026-11-26
+
+### Added
+- The app asks the browser to keep its data permanently, so it is not cleared when disk space runs low. Settings shows whether the browser agreed, how much space the data uses, and how to improve it if not.
+
 ## 0.6.6 – 2026-11-26
 
 ### Changed

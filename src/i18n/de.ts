@@ -446,4 +446,13 @@ export const de: Messages = {
 
   // Overspending
   'budget.overspentLast': 'Darin sind {amount} enthalten, die im {month} überzogen wurden.',
+
+  // Storage
+  'storage.title': 'Speicher auf diesem Gerät',
+  'storage.granted': 'Dieser Browser bewahrt deine Daten dauerhaft auf.',
+  'storage.denied': 'Dieser Browser kann deine Daten löschen, wenn der Speicher knapp wird oder du die Seite länger nicht öffnest.',
+  'storage.unsupported': 'Dieser Browser sagt nicht, ob er deine Daten dauerhaft aufbewahrt.',
+  'storage.advice': 'Wenn du die App installierst (Zum Home-Bildschirm, oder „App installieren“ in Chrome), behält der Browser die Daten meist dauerhaft. Exportiere trotzdem regelmäßig eine Sicherung.',
+  'storage.usage': 'Belegt etwa {size}.',
+  'storage.askAgain': 'Browser erneut fragen',
 };

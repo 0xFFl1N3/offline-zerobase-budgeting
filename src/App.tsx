@@ -12,6 +12,7 @@ import { dueItems } from './engine/recurring.ts';
 import { toISODate } from './engine/months.ts';
 import { useBudgetStore } from './store/budgetStore.ts';
 import { useLanguage, useT, type MessageKey } from './i18n/i18n.ts';
+import { requestPersistence } from './persistence.ts';
 import { APP_VERSION } from './version.ts';
 
 type Tab = 'budget' | 'transactions' | 'analytics' | 'settings';
@@ -39,6 +40,12 @@ export default function App() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Once there is a budget, ask the browser to keep it (no-op when already granted or not supported).
+  const hasBudget = ready && state.accounts.length > 0;
+  useEffect(() => {
+    if (hasBudget) void requestPersistence();
+  }, [hasBudget]);
 
   // While the drawer is open: Escape closes it and the page behind it does not scroll.
   useEffect(() => {
