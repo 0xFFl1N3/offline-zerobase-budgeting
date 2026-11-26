@@ -458,6 +458,20 @@ export const en = {
   'storage.advice': 'Installing the app (Add to Home Screen, or Install app in Chrome) usually makes the browser keep it. Export a backup regularly either way.',
   'storage.usage': 'Uses about {size}.',
   'storage.askAgain': 'Ask the browser again',
+
+  // Automatic backup
+  'autoBackup.title': 'Automatic backup',
+  'autoBackup.intro': 'Saves a backup file into a folder you choose once a day while the app is open, and keeps the last 10.',
+  'autoBackup.unsupported': 'Only available in Chrome and Edge on a computer. Use Export instead.',
+  'autoBackup.choose': 'Choose folder…',
+  'autoBackup.folder': 'Folder: {name}',
+  'autoBackup.last': 'last backup {date}',
+  'autoBackup.needsAccess': 'The browser needs your permission again to write into this folder.',
+  'autoBackup.allow': 'Allow access',
+  'autoBackup.now': 'Back up now',
+  'autoBackup.change': 'Change folder…',
+  'autoBackup.off': 'Turn off',
+  'autoBackup.failed': "Couldn't write the backup file into this folder.",
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

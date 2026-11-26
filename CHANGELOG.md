@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.7.1 – 2026-11-26
+
+### Added
+- Automatic backup (Chrome and Edge on a computer): choose a folder once in Settings, and the app saves a backup file there once a day while it is open. The last 10 files are kept.
+
 ## 0.7.0 – 2026-11-26
 
 ### Added

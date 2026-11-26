@@ -13,6 +13,7 @@ import { toISODate } from './engine/months.ts';
 import { useBudgetStore } from './store/budgetStore.ts';
 import { useLanguage, useT, type MessageKey } from './i18n/i18n.ts';
 import { requestPersistence } from './persistence.ts';
+import { useAutoBackup } from './features/backup/AutoBackupCard.tsx';
 import { APP_VERSION } from './version.ts';
 
 type Tab = 'budget' | 'transactions' | 'analytics' | 'settings';
@@ -46,6 +47,7 @@ export default function App() {
   useEffect(() => {
     if (hasBudget) void requestPersistence();
   }, [hasBudget]);
+  useAutoBackup(hasBudget);
 
   // While the drawer is open: Escape closes it and the page behind it does not scroll.
   useEffect(() => {

@@ -455,4 +455,18 @@ export const de: Messages = {
   'storage.advice': 'Wenn du die App installierst (Zum Home-Bildschirm, oder „App installieren“ in Chrome), behält der Browser die Daten meist dauerhaft. Exportiere trotzdem regelmäßig eine Sicherung.',
   'storage.usage': 'Belegt etwa {size}.',
   'storage.askAgain': 'Browser erneut fragen',
+
+  // Automatic backup
+  'autoBackup.title': 'Automatische Sicherung',
+  'autoBackup.intro': 'Speichert einmal am Tag, während die App offen ist, eine Sicherungsdatei in einen Ordner deiner Wahl und behält die letzten 10.',
+  'autoBackup.unsupported': 'Nur in Chrome und Edge auf einem Computer verfügbar. Nutze stattdessen „Exportieren“.',
+  'autoBackup.choose': 'Ordner wählen…',
+  'autoBackup.folder': 'Ordner: {name}',
+  'autoBackup.last': 'letzte Sicherung {date}',
+  'autoBackup.needsAccess': 'Der Browser braucht wieder deine Erlaubnis, in diesen Ordner zu schreiben.',
+  'autoBackup.allow': 'Zugriff erlauben',
+  'autoBackup.now': 'Jetzt sichern',
+  'autoBackup.change': 'Ordner ändern…',
+  'autoBackup.off': 'Ausschalten',
+  'autoBackup.failed': 'Die Sicherungsdatei konnte nicht in diesen Ordner geschrieben werden.',
 };

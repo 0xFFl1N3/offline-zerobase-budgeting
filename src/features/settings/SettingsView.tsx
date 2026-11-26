@@ -6,6 +6,7 @@ import { useT } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { LanguageSelect } from './LanguageSelect.tsx';
 import { StorageCard } from './StorageCard.tsx';
+import { AutoBackupCard } from '../backup/AutoBackupCard.tsx';
 
 export function SettingsView() {
   const currency = useBudgetStore((s) => s.currency);
@@ -60,6 +61,8 @@ export function SettingsView() {
       </div>
 
       <BackupPanel variant="card" />
+
+      <AutoBackupCard />
 
       <StorageCard />
 
