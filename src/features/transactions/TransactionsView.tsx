@@ -4,6 +4,7 @@ import { formatMoney, parseMoney } from '../../engine/money.ts';
 import { toISODate } from '../../engine/months.ts';
 import type { Account, BudgetState, Transaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
+import { filterTransactions, hasActiveFilters, NO_FILTERS, type TxFilters } from './filterTransactions.ts';
 import { buildTransaction, toForm, type TxForm, type TxKind } from './buildTransaction.ts';
 
 const blankForm = (accounts: Account[], kind: TxKind = 'outflow'): TxForm => ({
@@ -51,8 +52,9 @@ export function TransactionsView() {
   const [amountText, setAmountText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [filterAccount, setFilterAccount] = useState('all');
-  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<TxFilters>(NO_FILTERS);
+  const filterAccount = filters.accountId;
+  const setFilter = (patch: Partial<TxFilters>) => setFilters((f) => ({ ...f, ...patch }));
 
   const update = (patch: Partial<TxForm>) => setForm((f) => ({ ...f, ...patch }));
 
@@ -80,13 +82,11 @@ export function TransactionsView() {
     setError(null);
   };
 
-  const rows = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return state.transactions
-      .filter((t) => filterAccount === 'all' || t.accountId === filterAccount || t.transferAccountId === filterAccount)
-      .filter((t) => !q || t.payee.toLowerCase().includes(q) || t.memo.toLowerCase().includes(q))
-      .sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? 1 : -1));
-  }, [state.transactions, filterAccount, search]);
+  const rows = useMemo(() => filterTransactions(state, filters), [state, filters]);
+  // Totals of what is listed; transfers are left out because they only move money between accounts.
+  const shown = rows.filter((t) => t.transferAccountId === null);
+  const totalOut = shown.filter((t) => t.amount < 0).reduce((sum, t) => sum - t.amount, 0);
+  const totalIn = shown.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
 
   const accountName = (id: string) => state.accounts.find((a) => a.id === id)?.name ?? '?';
 
@@ -167,17 +167,63 @@ export function TransactionsView() {
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       </form>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <select aria-label="Filter by account" value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} className={field}>
-          <option value="all">All accounts</option>
-          {state.accounts.map((a) => (
-            <option key={a.id} value={a.id}>{a.name}</option>
-          ))}
-        </select>
-        <input aria-label="Search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search payee or memo" className={`${field} w-64`} />
+      <div className="mt-6 flex flex-wrap items-end gap-3">
+        <label className="text-xs font-medium text-slate-600">
+          Account
+          <select aria-label="Filter by account" value={filters.accountId} onChange={(e) => setFilter({ accountId: e.target.value })} className={`${field} mt-1 block`}>
+            <option value="all">All accounts</option>
+            {state.accounts.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}{a.closed ? ' (closed)' : ''}</option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs font-medium text-slate-600">
+          Category
+          <select aria-label="Filter by category" value={filters.category} onChange={(e) => setFilter({ category: e.target.value })} className={`${field} mt-1 block`}>
+            <option value="all">All categories</option>
+            <option value="income">Income</option>
+            <option value="transfers">Transfers</option>
+            <option value="uncategorised">Needs a category</option>
+            {state.groups.map((g) => (
+              <optgroup key={g.id} label={g.archived ? `${g.name} (archived)` : g.name}>
+                <option value={`group:${g.id}`}>All of {g.name}</option>
+                {state.categories.filter((c) => c.groupId === g.id).map((c) => (
+                  <option key={c.id} value={`cat:${c.id}`}>{c.name}{c.archived ? ' (archived)' : ''}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs font-medium text-slate-600">
+          From
+          <input type="date" aria-label="From date" value={filters.from} max={filters.to || undefined} onChange={(e) => setFilter({ from: e.target.value })} className={`${field} mt-1 block`} />
+        </label>
+        <label className="text-xs font-medium text-slate-600">
+          To
+          <input type="date" aria-label="To date" value={filters.to} min={filters.from || undefined} onChange={(e) => setFilter({ to: e.target.value })} className={`${field} mt-1 block`} />
+        </label>
+        <label className="text-xs font-medium text-slate-600">
+          Search
+          <input aria-label="Search" value={filters.search} onChange={(e) => setFilter({ search: e.target.value })} placeholder="Payee, memo or category" className={`${field} mt-1 block w-56`} />
+        </label>
+        {hasActiveFilters(filters) && (
+          <button type="button" onClick={() => setFilters(NO_FILTERS)} className="pb-1.5 text-sm text-sky-700 hover:underline">
+            Clear filters
+          </button>
+        )}
       </div>
+      <p className="mt-3 text-sm text-slate-600" aria-live="polite">
+        {hasActiveFilters(filters) ? `${rows.length} of ${state.transactions.length} transactions` : `${rows.length} transactions`}
+        {shown.length > 0 && (
+          <>
+            {' · '}Outflow <span className="tabular-nums">{formatMoney(totalOut, currency)}</span>
+            {' · '}Inflow <span className="tabular-nums">{formatMoney(totalIn, currency)}</span>
+            <span className="text-slate-400"> (transfers excluded)</span>
+          </>
+        )}
+      </p>
 
-      <div className="mt-3 overflow-x-auto rounded-lg bg-white shadow-sm">
+      <div className="mt-2 overflow-x-auto rounded-lg bg-white shadow-sm">
         <table className="w-full text-sm">
           <thead className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <tr>
@@ -194,7 +240,9 @@ export function TransactionsView() {
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-slate-500">No transactions yet.</td>
+                <td colSpan={8} className="px-4 py-6 text-slate-500">
+                  {hasActiveFilters(filters) ? 'No transactions match these filters.' : 'No transactions yet.'}
+                </td>
               </tr>
             )}
             {rows.map((t) => {
