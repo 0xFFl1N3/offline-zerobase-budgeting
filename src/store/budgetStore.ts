@@ -3,7 +3,7 @@ import { createDb, type BudgetDB } from '../db/db.ts';
 import type { BackupFile } from '../db/backup.ts';
 import * as repo from '../db/repository.ts';
 import type { Currency } from '../engine/money.ts';
-import { removeCategories, removeGroup } from '../engine/edit.ts';
+import { removeCategories, removeGroup, setCategoryArchived, setGroupArchived } from '../engine/edit.ts';
 import { addMonths } from '../engine/months.ts';
 import type { Account, AccountType, BudgetState, Cents, Goal, Month, Transaction } from '../engine/types.ts';
 
@@ -42,10 +42,16 @@ export interface BudgetStore {
   removeGoal: (categoryId: string) => Promise<void>;
   renameGroup: (id: string, name: string) => Promise<void>;
   renameCategory: (id: string, name: string) => Promise<void>;
-  /** Removes the category and its goal and assignments; its transactions move to `moveTo` (required if it has spending). */
-  deleteCategory: (id: string, moveTo: string | null) => Promise<void>;
-  /** Removes the group and everything in it (see deleteCategory). */
-  deleteGroup: (id: string, moveTo: string | null) => Promise<void>;
+  /** Deletes a category and its goal and assignments. Refused if it has transactions (archive it instead). */
+  deleteCategory: (id: string) => Promise<void>;
+  /** Deletes a group and its categories. Refused if any of them has transactions. */
+  deleteGroup: (id: string) => Promise<void>;
+  /** Hides a category; its remaining balance returns to Ready to Assign and its history stays. */
+  archiveCategory: (id: string) => Promise<void>;
+  archiveGroup: (id: string) => Promise<void>;
+  /** Brings an archived category back (and its group, if that was archived too). */
+  restoreCategory: (id: string) => Promise<void>;
+  restoreGroup: (id: string) => Promise<void>;
   /** Replaces all data with a validated backup. */
   importBackup: (backup: BackupFile) => Promise<void>;
   /** Records that a backup was just exported. */
@@ -62,7 +68,17 @@ const newAccount = (name: string, type: AccountType, openingBalance: Cents): Acc
 });
 
 export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth()) {
-  return create<BudgetStore>()((set, get) => ({
+  return create<BudgetStore>()((set, get) => {
+    /** Persists the groups and categories whose archived flag changed, then updates the state. */
+    const applyArchive = async (next: BudgetState) => {
+      const prev = get().state;
+      const changedGroups = next.groups.filter((g) => g.archived !== prev.groups.find((p) => p.id === g.id)?.archived);
+      const changedCategories = next.categories.filter((c) => c.archived !== prev.categories.find((p) => p.id === c.id)?.archived);
+      await repo.saveArchiveChanges(db, changedGroups, changedCategories);
+      set({ state: next });
+    };
+
+    return {
     ready: false,
     state: emptyState(),
     currency: 'EUR',
@@ -158,17 +174,22 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set((s) => ({ state: { ...s.state, categories: s.state.categories.map((c) => (c.id === id ? updated : c)) } }));
     },
 
-    deleteCategory: async (id, moveTo) => {
-      const next = removeCategories(get().state, [id], moveTo); // throws before touching the database if invalid
-      await repo.deleteCategory(db, id, moveTo);
+    deleteCategory: async (id) => {
+      const next = removeCategories(get().state, [id]); // throws before touching the database if invalid
+      await repo.deleteCategory(db, id);
       set({ state: next });
     },
 
-    deleteGroup: async (id, moveTo) => {
-      const next = removeGroup(get().state, id, moveTo);
-      await repo.deleteGroup(db, id, moveTo);
+    deleteGroup: async (id) => {
+      const next = removeGroup(get().state, id);
+      await repo.deleteGroup(db, id);
       set({ state: next });
     },
+
+    archiveCategory: (id) => applyArchive(setCategoryArchived(get().state, id, true)),
+    archiveGroup: (id) => applyArchive(setGroupArchived(get().state, id, true)),
+    restoreCategory: (id) => applyArchive(setCategoryArchived(get().state, id, false)),
+    restoreGroup: (id) => applyArchive(setGroupArchived(get().state, id, false)),
 
     importBackup: async (backup) => {
       const settings = { currency: backup.settings.currency, lastBackupAt: get().lastBackupAt };
@@ -183,7 +204,8 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     },
 
     shiftMonth: (n) => set((s) => ({ month: addMonths(s.month, n) })),
-  }));
+    };
+  });
 }
 
 /** The app's store, backed by the browser's IndexedDB. */

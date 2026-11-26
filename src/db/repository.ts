@@ -52,27 +52,31 @@ export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; setti
 export const saveAccount = (db: BudgetDB, a: Account) => db.accounts.put(a);
 export const saveGroup = (db: BudgetDB, g: CategoryGroup) => db.groups.put(g);
 export const saveCategory = (db: BudgetDB, c: Category) => db.categories.put(c);
-async function deleteCategoriesIn(db: BudgetDB, ids: string[], moveTo: string | null) {
+async function deleteCategoriesIn(db: BudgetDB, ids: string[]) {
   for (const id of ids) {
     await db.categories.delete(id);
     await db.goals.where('categoryId').equals(id).delete();
     await db.monthlyBudgets.filter((b) => b.categoryId === id).delete();
-    await db.transactions.where('categoryId').equals(id).modify({ categoryId: moveTo });
   }
 }
 
-/** Deletes a category with its goal and assignments; its transactions move to `moveTo`. */
-export const deleteCategory = (db: BudgetDB, id: string, moveTo: string | null) =>
-  db.transaction('rw', [db.categories, db.goals, db.monthlyBudgets, db.transactions], () =>
-    deleteCategoriesIn(db, [id], moveTo),
-  );
+/** Deletes a category with its goal and assignments. The caller makes sure it has no transactions. */
+export const deleteCategory = (db: BudgetDB, id: string) =>
+  db.transaction('rw', [db.categories, db.goals, db.monthlyBudgets], () => deleteCategoriesIn(db, [id]));
 
 /** Deletes a group and all of its categories (see deleteCategory). */
-export const deleteGroup = (db: BudgetDB, groupId: string, moveTo: string | null) =>
-  db.transaction('rw', [db.groups, db.categories, db.goals, db.monthlyBudgets, db.transactions], async () => {
+export const deleteGroup = (db: BudgetDB, groupId: string) =>
+  db.transaction('rw', [db.groups, db.categories, db.goals, db.monthlyBudgets], async () => {
     const ids = (await db.categories.where('groupId').equals(groupId).primaryKeys()) as string[];
-    await deleteCategoriesIn(db, ids, moveTo);
+    await deleteCategoriesIn(db, ids);
     await db.groups.delete(groupId);
+  });
+
+/** Saves groups and categories whose archived flag changed. */
+export const saveArchiveChanges = (db: BudgetDB, groups: CategoryGroup[], categories: Category[]) =>
+  db.transaction('rw', [db.groups, db.categories], async () => {
+    await db.groups.bulkPut(groups);
+    await db.categories.bulkPut(categories);
   });
 
 export const saveGoal = (db: BudgetDB, g: Goal) => db.goals.put(g);

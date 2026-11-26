@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import { archivedCategoryIds } from '../../engine/budget.ts';
 import { formatMoney, parseMoney } from '../../engine/money.ts';
 import { toISODate } from '../../engine/months.ts';
 import type { Account, BudgetState, Transaction } from '../../engine/types.ts';
@@ -22,7 +23,12 @@ function categoryLabel(state: BudgetState, t: Transaction): string {
     const to = state.accounts.find((a) => a.id === t.transferAccountId)?.name ?? '?';
     return `Transfer: ${from} → ${to}`;
   }
-  if (t.categoryId) return state.categories.find((c) => c.id === t.categoryId)?.name ?? 'Unknown category';
+  if (t.categoryId) {
+    const category = state.categories.find((c) => c.id === t.categoryId);
+    if (!category) return 'Unknown category';
+    const archived = category.archived || state.groups.find((g) => g.id === category.groupId)?.archived;
+    return archived ? `${category.name} (archived)` : category.name;
+  }
   return t.amount > 0 ? 'Income (Ready to Assign)' : 'Needs a category';
 }
 
@@ -35,7 +41,13 @@ export function TransactionsView() {
   const removeTransaction = useBudgetStore((s) => s.removeTransaction);
 
   const accounts = state.accounts.filter((a) => !a.closed);
+
   const [form, setForm] = useState<TxForm>(() => blankForm(accounts));
+  // When editing a transaction whose category was archived since, keep that category selectable.
+  const archivedSelection =
+    form.categoryId && archivedCategoryIds(state).has(form.categoryId)
+      ? state.categories.find((c) => c.id === form.categoryId)
+      : undefined;
   const [amountText, setAmountText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +135,7 @@ export function TransactionsView() {
                 Category
                 <select value={form.categoryId ?? ''} onChange={(e) => update({ categoryId: e.target.value || null })} className={`${field} mt-1 block`}>
                   <option value="">{form.kind === 'inflow' ? 'Income (Ready to Assign)' : 'Choose a category…'}</option>
+                  {archivedSelection && <option value={archivedSelection.id}>{archivedSelection.name} (archived)</option>}
                   {state.groups.filter((g) => !g.archived).map((g) => (
                     <optgroup key={g.id} label={g.name}>
                       {state.categories.filter((c) => c.groupId === g.id && !c.archived).map((c) => (

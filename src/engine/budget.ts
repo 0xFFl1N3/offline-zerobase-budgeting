@@ -45,15 +45,25 @@ export function categoryAvailable(state: BudgetState, categoryId: string, month:
 export const isOverspent = (state: BudgetState, categoryId: string, month: Month): boolean =>
   categoryAvailable(state, categoryId, month) < 0;
 
-/** Ready to Assign = all account balances minus all category balances, as of the end of `month`. */
+/** Categories that are archived, directly or through their group. */
+export function archivedCategoryIds(state: BudgetState): Set<string> {
+  const archivedGroups = new Set(state.groups.filter((g) => g.archived).map((g) => g.id));
+  return new Set(state.categories.filter((c) => c.archived || archivedGroups.has(c.groupId)).map((c) => c.id));
+}
+
+/**
+ * Ready to Assign = all account balances minus the balances of all active categories, as of the end of `month`.
+ * Archived categories do not count, so their remaining balance (or shortfall) flows back to Ready to Assign.
+ */
 export function readyToAssign(state: BudgetState, month: Month): Cents {
+  const archived = archivedCategoryIds(state);
   let total = 0;
   for (const a of state.accounts) total += accountBalance(state, a.id, month);
   for (const b of state.monthlyBudgets) {
-    if (b.month <= month) total -= b.assigned;
+    if (b.month <= month && !archived.has(b.categoryId)) total -= b.assigned;
   }
   for (const t of state.transactions) {
-    if (isCategorised(t) && monthOf(t.date) <= month) total -= t.amount;
+    if (isCategorised(t) && monthOf(t.date) <= month && !archived.has(t.categoryId as string)) total -= t.amount;
   }
   return total;
 }

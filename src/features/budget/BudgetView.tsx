@@ -8,7 +8,6 @@ import { MoneyField } from '../../components/MoneyField.tsx';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { GoalEditor } from './GoalEditor.tsx';
 import { NameCell } from './NameCell.tsx';
-import { DeleteDialog } from './DeleteDialog.tsx';
 import { GoalProgress } from './GoalProgress.tsx';
 
 const COLUMNS = 'grid grid-cols-[1fr_8rem_8rem_8rem] items-center gap-2';
@@ -45,11 +44,44 @@ export function BudgetView() {
   const renameCategory = useBudgetStore((s) => s.renameCategory);
   const deleteCategory = useBudgetStore((s) => s.deleteCategory);
   const deleteGroup = useBudgetStore((s) => s.deleteGroup);
+  const archiveCategory = useBudgetStore((s) => s.archiveCategory);
+  const archiveGroup = useBudgetStore((s) => s.archiveGroup);
+  const restoreCategory = useBudgetStore((s) => s.restoreCategory);
+  const restoreGroup = useBudgetStore((s) => s.restoreGroup);
+  const [showArchived, setShowArchived] = useState(false);
   const [editingGoal, setEditingGoal] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
 
-  const [deleting, setDeleting] = useState<{ label: string; ids: string[]; run: (moveTo: string | null) => void } | null>(null);
-  const askDelete = (label: string, ids: string[], run: (moveTo: string | null) => void) => setDeleting({ label, ids, run });
+  const hasTransactions = (ids: string[]) => state.transactions.some((t) => t.categoryId !== null && ids.includes(t.categoryId));
+  const fmt = (c: Cents) => formatMoney(c, currency);
+
+  /**
+   * Deletes a category or group, or archives it when it has transactions: past spending keeps its category,
+   * and archiving frees the remaining balance for Ready to Assign.
+   */
+  const removeOrArchive = (label: string, ids: string[], doDelete: () => void, doArchive: () => void) => {
+    const hasGoal = state.goals.some((g) => ids.includes(g.categoryId));
+    if (!hasTransactions(ids)) {
+      const assigned = state.monthlyBudgets.filter((b) => ids.includes(b.categoryId)).reduce((t, b) => t + b.assigned, 0);
+      const lines = [`Delete ${label}?`];
+      if (assigned !== 0) lines.push(`${fmt(assigned)} assigned to it returns to Ready to Assign.`);
+      if (hasGoal) lines.push('Its goal is removed.');
+      if (window.confirm(lines.join('\n\n'))) doDelete();
+      return;
+    }
+    const balance = ids.reduce((t, id) => t + categoryAvailable(state, id, '9999-12'), 0);
+    const lines = [
+      `Archive ${label}?`,
+      'It has transactions, so it cannot be deleted. Archiving hides it from the budget and from new transactions; past transactions and charts keep it.',
+    ];
+    if (balance !== 0) lines.push(`Its remaining balance of ${fmt(balance)} ${balance > 0 ? 'returns to' : 'is taken from'} Ready to Assign.`);
+    lines.push('You can restore it from the Archived list at the bottom.');
+    if (window.confirm(lines.join('\n\n'))) doArchive();
+  };
+
+  const archivedGroups = state.groups.filter((g) => g.archived);
+  const archivedCategories = state.categories.filter((c) => c.archived && !archivedGroups.some((g) => g.id === c.groupId));
+  const archivedCount = archivedGroups.length + archivedCategories.length;
   const rta = readyToAssign(state, month);
   const groups = state.groups.filter((g) => !g.archived);
 
@@ -97,8 +129,14 @@ export function BudgetView() {
                     setRenaming(null);
                   }}
                   onCancelRename={() => setRenaming(null)}
-                  onDelete={() =>
-                    askDelete(`the group "${group.name}" and all ${cats.length} of its categories`, cats.map((c) => c.id), (moveTo) => void deleteGroup(group.id, moveTo))
+                  actionLabel={hasTransactions(cats.map((c) => c.id)) ? 'Archive' : 'Delete'}
+                  onAction={() =>
+                    removeOrArchive(
+                      `the group "${group.name}" and its ${cats.length} categor${cats.length === 1 ? 'y' : 'ies'}`,
+                      cats.map((c) => c.id),
+                      () => void deleteGroup(group.id),
+                      () => void archiveGroup(group.id),
+                    )
                   }
                 />
                 <span className="px-2 text-right tabular-nums">{formatMoney(sum((id) => categoryAssigned(state, id, month)), currency)}</span>
@@ -121,7 +159,10 @@ export function BudgetView() {
                           setRenaming(null);
                         }}
                         onCancelRename={() => setRenaming(null)}
-                        onDelete={() => askDelete(`the category "${cat.name}"`, [cat.id], (moveTo) => void deleteCategory(cat.id, moveTo))}
+                        actionLabel={hasTransactions([cat.id]) ? 'Archive' : 'Delete'}
+                        onAction={() =>
+                          removeOrArchive(`the category "${cat.name}"`, [cat.id], () => void deleteCategory(cat.id), () => void archiveCategory(cat.id))
+                        }
                       />
                       {goal ? (
                         <button type="button" aria-label={`Edit goal for ${cat.name}`} onClick={() => setEditingGoal(cat.id)} className="block w-full text-left">
@@ -159,20 +200,36 @@ export function BudgetView() {
         <div className="border-t border-slate-200 px-4 py-3">
           <InlineAdd label="Add group" placeholder="Group name" onAdd={(name) => void addGroup(name)} />
         </div>
+
+        {archivedCount > 0 && (
+          <div className="border-t border-slate-200 px-4 py-3 text-sm">
+            <button type="button" onClick={() => setShowArchived((v) => !v)} aria-expanded={showArchived} className="text-slate-600 hover:underline">
+              {showArchived ? '▾' : '▸'} Archived ({archivedCount})
+            </button>
+            {showArchived && (
+              <ul className="mt-2 space-y-1">
+                {archivedGroups.map((g) => (
+                  <li key={g.id} className="flex items-center justify-between gap-4">
+                    <span>
+                      {g.name} <span className="text-slate-500">(group, {state.categories.filter((c) => c.groupId === g.id).length} categories)</span>
+                    </span>
+                    <button type="button" onClick={() => void restoreGroup(g.id)} className="text-sky-700 hover:underline">Restore</button>
+                  </li>
+                ))}
+                {archivedCategories.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between gap-4">
+                    <span>
+                      <span className="text-slate-500">{state.groups.find((g) => g.id === c.groupId)?.name} › </span>
+                      {c.name}
+                    </span>
+                    <button type="button" onClick={() => void restoreCategory(c.id)} className="text-sky-700 hover:underline">Restore</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
-      {deleting && (
-        <DeleteDialog
-          label={deleting.label}
-          categoryIds={deleting.ids}
-          state={state}
-          currency={currency}
-          onCancel={() => setDeleting(null)}
-          onConfirm={(moveTo) => {
-            deleting.run(moveTo);
-            setDeleting(null);
-          }}
-        />
-      )}
     </section>
   );
 }

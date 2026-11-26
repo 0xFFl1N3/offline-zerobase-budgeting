@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { accountBalance, categoryAvailable, readyToAssign } from './budget.ts';
-import { removeCategories, removeGroup } from './edit.ts';
+import { spendingReport } from './analytics.ts';
+import { accountBalance, readyToAssign } from './budget.ts';
+import { removeCategories, removeGroup, setCategoryArchived, setGroupArchived } from './edit.ts';
 import type { BudgetState } from './types.ts';
 
 const state = (): BudgetState => ({
@@ -21,54 +22,67 @@ const state = (): BudgetState => ({
   ],
   monthlyBudgets: [
     { categoryId: 'rent', month: '2026-01', assigned: 90000 },
+    { categoryId: 'power', month: '2026-01', assigned: 4000 },
     { categoryId: 'games', month: '2026-01', assigned: 2000 },
   ],
   transactions: [
     { id: 't1', accountId: 'a', date: '2026-01-05', payee: 'L', categoryId: 'rent', memo: '', amount: -60000, transferAccountId: null },
   ],
 });
+const M = '2026-01';
 
-test('deleting a category moves its transactions and returns its assigned money to Ready to Assign', () => {
+test('a category without transactions can be deleted; its assigned money returns to Ready to Assign', () => {
   const before = state();
-  assert.equal(readyToAssign(before, '2026-01'), 8000); // 40000 in accounts - 30000 rent - 2000 games
-  const after = removeCategories(before, ['rent'], 'games');
-  assert.equal(after.categories.length, 2);
-  assert.equal(after.goals.length, 1);
-  assert.equal(after.monthlyBudgets.length, 1);
-  assert.equal(after.transactions[0]?.categoryId, 'games');
-  assert.equal(accountBalance(after, 'a'), 40000); // unchanged
-  assert.equal(categoryAvailable(after, 'games', '2026-01'), -58000); // 2000 assigned - 60000 moved spending
-  assert.equal(readyToAssign(after, '2026-01'), 98000); // +90000, the deleted category's assigned money
-});
-
-test('a category without transactions can be deleted without a target', () => {
-  const after = removeCategories(state(), ['power']);
+  assert.equal(readyToAssign(before, M), 4000); // 40000 - 30000 rent - 4000 power - 2000 games
+  const after = removeCategories(before, ['power']);
   assert.equal(after.categories.some((c) => c.id === 'power'), false);
-  assert.equal(readyToAssign(after, '2026-01'), 8000);
+  assert.equal(after.monthlyBudgets.some((b) => b.categoryId === 'power'), false);
+  assert.equal(readyToAssign(after, M), 8000);
 });
 
-test('spending must be moved: deleting without a target is refused', () => {
-  assert.throws(() => removeCategories(state(), ['rent']), /moved to another category/);
+test('a category with transactions cannot be deleted', () => {
+  assert.throws(() => removeCategories(state(), ['rent']), /Archive it instead/);
 });
 
-test('inflows alone may be left without a category (they become income)', () => {
+test('deleting a group removes its categories, goals and assignments', () => {
   const s = state();
-  s.transactions = [{ id: 'r', accountId: 'a', date: '2026-01-05', payee: 'Refund', categoryId: 'rent', memo: '', amount: 500, transferAccountId: null }];
-  const after = removeCategories(s, ['rent']);
-  assert.equal(after.transactions[0]?.categoryId, null);
-});
-
-test('the target must exist and must not be deleted itself', () => {
-  assert.throws(() => removeCategories(state(), ['rent'], 'rent'), /being deleted/);
-  assert.throws(() => removeCategories(state(), ['rent'], 'nope'), /does not exist/);
-});
-
-test('deleting a group removes its categories and moves their transactions', () => {
-  const after = removeGroup(state(), 'g1', 'games');
+  s.transactions = [];
+  const after = removeGroup(s, 'g1');
   assert.deepEqual(after.groups.map((g) => g.id), ['g2']);
   assert.deepEqual(after.categories.map((c) => c.id), ['games']);
   assert.deepEqual(after.goals.map((g) => g.id), ['goal2']);
   assert.equal(after.monthlyBudgets.length, 1);
-  assert.equal(after.transactions[0]?.categoryId, 'games');
-  assert.throws(() => removeGroup(state(), 'g1', 'power'), /being deleted/);
+  assert.throws(() => removeGroup(state(), 'g1'), /Archive it instead/); // Rent has a transaction
+});
+
+test('archiving returns the category\'s remaining balance to Ready to Assign and keeps history', () => {
+  const before = state();
+  const after = setCategoryArchived(before, 'rent', true);
+  assert.equal(after.categories.find((c) => c.id === 'rent')?.archived, true);
+  assert.equal(accountBalance(after, 'a'), 40000); // unchanged
+  assert.equal(readyToAssign(after, M), 4000 + 30000); // Rent's remaining 30000 is free again
+  assert.equal(after.transactions.length, 1); // the payment keeps its category
+  assert.equal(after.transactions[0]?.categoryId, 'rent');
+  // Past spending still shows in analytics.
+  assert.equal(spendingReport(after, 'month', M, 'category').slices[0]?.label, 'Rent');
+});
+
+test('restoring brings the balance back and restores the group', () => {
+  const archivedGroup = setGroupArchived(state(), 'g1', true);
+  assert.equal(archivedGroup.categories.filter((c) => c.archived).length, 2);
+  assert.equal(readyToAssign(archivedGroup, M), 4000 + 30000 + 4000);
+  const restoredCategory = setCategoryArchived(archivedGroup, 'rent', false);
+  assert.equal(restoredCategory.groups.find((g) => g.id === 'g1')?.archived, false);
+  assert.equal(restoredCategory.categories.find((c) => c.id === 'rent')?.archived, false);
+  assert.equal(readyToAssign(restoredCategory, M), 4000 + 4000); // Rent is counted again, Electricity still archived
+  const all = setGroupArchived(archivedGroup, 'g1', false);
+  assert.equal(readyToAssign(all, M), 4000);
+});
+
+test('archiving an overspent category takes the shortfall from Ready to Assign', () => {
+  const s = state();
+  s.transactions.push({ id: 't2', accountId: 'a', date: M + '-06', payee: 'X', categoryId: 'games', memo: '', amount: -5000, transferAccountId: null });
+  // games: 2000 assigned - 5000 spent = -3000
+  const before = readyToAssign(s, M);
+  assert.equal(readyToAssign(setCategoryArchived(s, 'games', true), M), before - 3000);
 });

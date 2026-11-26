@@ -123,7 +123,7 @@ test('a category has one goal; saving replaces it and it survives reload', async
   assert.equal(store.getState().state.goals.length, 0);
 });
 
-test('rename and delete persist across a reload; spending moves to the chosen category', async () => {
+test('rename, delete and archive persist across a reload', async () => {
   const { db, store } = fresh();
   await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
   await store.getState().addGroup('Living');
@@ -138,6 +138,7 @@ test('rename and delete persist across a reload; spending moves to the chosen ca
   const power = cat('Power');
   const games = cat('Games');
   await store.getState().assign(rent.id, 90000);
+  await store.getState().assign(power.id, 4000);
   await store.getState().saveGoal({ id: 'g', categoryId: rent.id, type: 'monthly_amount', monthlyAmount: 90000 });
   await store.getState().saveTransaction({
     id: 't', accountId: store.getState().state.accounts[0]!.id, date: '2026-01-05', payee: 'L', categoryId: rent.id, memo: '', amount: -60000, transferAccountId: null,
@@ -148,23 +149,35 @@ test('rename and delete persist across a reload; spending moves to the chosen ca
   await store.getState().renameCategory(rent.id, '   '); // ignored
   assert.equal(store.getState().state.groups[0]?.name, 'Home');
 
-  await assert.rejects(store.getState().deleteCategory(rent.id, null), /moved to another category/);
-  assert.ok(cat('Rent & fees')); // nothing was deleted
+  // Rent has a transaction: it cannot be deleted, but it can be archived.
+  await assert.rejects(store.getState().deleteCategory(rent.id), /Archive it instead/);
+  await assert.rejects(store.getState().deleteGroup(living.id), /Archive it instead/);
+  assert.equal(store.getState().state.categories.length, 3); // nothing was deleted
+  assert.equal(readyToAssign(store.getState().state, '2026-01'), 6000); // 40000 - 30000 rent - 4000 power
 
-  await store.getState().deleteCategory(rent.id, power.id);
-  let s = store.getState();
-  assert.equal(s.state.categories.some((c) => c.id === rent.id), false);
-  assert.equal(s.state.goals.length, 0);
-  assert.equal(s.state.transactions[0]?.categoryId, power.id);
-  assert.equal(readyToAssign(s.state, s.month), 100000); // 40000 in accounts, Power now at -60000
+  await store.getState().archiveCategory(rent.id);
+  assert.equal(readyToAssign(store.getState().state, '2026-01'), 36000); // Rent's remaining 30000 is free again
+  // Power has no transactions: it can be deleted.
+  await store.getState().deleteCategory(power.id);
+  assert.equal(readyToAssign(store.getState().state, '2026-01'), 40000);
+  await store.getState().archiveGroup(fun.id);
 
-  await store.getState().deleteGroup(living.id, games.id);
   const again = createBudgetStore(db, '2026-01');
   await again.getState().load();
-  s = again.getState();
-  assert.deepEqual(s.state.groups.map((g) => g.name), ['Fun']);
-  assert.deepEqual(s.state.categories.map((c) => c.name), ['Games']);
-  assert.equal(s.state.monthlyBudgets.length, 0);
-  assert.equal(s.state.transactions[0]?.categoryId, games.id);
-  assert.equal(readyToAssign(s.state, s.month), 100000);
+  let s = again.getState();
+  assert.equal(s.state.categories.find((c) => c.id === rent.id)?.archived, true);
+  assert.equal(s.state.categories.find((c) => c.id === games.id)?.archived, true);
+  assert.equal(s.state.groups.find((g) => g.id === fun.id)?.archived, true);
+  assert.equal(s.state.categories.some((c) => c.id === power.id), false);
+  assert.equal(s.state.transactions[0]?.categoryId, rent.id); // history keeps its category
+  assert.equal(readyToAssign(s.state, '2026-01'), 40000);
+
+  await again.getState().restoreCategory(rent.id);
+  await again.getState().restoreGroup(fun.id);
+  const third = createBudgetStore(db, '2026-01');
+  await third.getState().load();
+  s = third.getState();
+  assert.equal(s.state.categories.every((c) => !c.archived), true);
+  assert.equal(s.state.groups.every((g) => !g.archived), true);
+  assert.equal(readyToAssign(s.state, '2026-01'), 10000); // Rent's 30000 is counted again
 });

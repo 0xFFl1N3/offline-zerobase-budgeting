@@ -4,11 +4,13 @@ interface Props {
   onStartRename: () => void;
   onRename: (name: string) => void;
   onCancelRename: () => void;
-  onDelete: () => void;
+  /** Label of the action shown on hover: "Delete", or "Archive" when the item has history. */
+  actionLabel: string;
+  onAction: () => void;
 }
 
-/** A group or category name: click it to rename in place. A Delete action appears on hover or keyboard focus. */
-export function NameCell({ name, renaming, onStartRename, onRename, onCancelRename, onDelete }: Props) {
+/** A group or category name: click it to rename in place. An Archive or Delete action appears on hover or keyboard focus. */
+export function NameCell({ name, renaming, onStartRename, onRename, onCancelRename, actionLabel, onAction }: Props) {
   if (renaming) {
     return (
       <input
@@ -38,11 +40,11 @@ export function NameCell({ name, renaming, onStartRename, onRename, onCancelRena
       </button>
       <button
         type="button"
-        onClick={onDelete}
-        aria-label={`Delete ${name}`}
+        onClick={onAction}
+        aria-label={`${actionLabel} ${name}`}
         className="invisible text-xs font-normal text-red-600 hover:underline group-hover:visible group-focus-within:visible"
       >
-        Delete
+        {actionLabel}
       </button>
     </span>
   );
