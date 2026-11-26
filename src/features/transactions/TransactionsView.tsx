@@ -1,9 +1,10 @@
 import { Fragment, useMemo, useState, type FormEvent } from 'react';
 import { archivedCategoryIds, runningBalances } from '../../engine/budget.ts';
 import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
-import { toISODate } from '../../engine/months.ts';
+import { formatDate, toISODate } from '../../engine/months.ts';
 import { clearedStatus, isReconciled, keepCleared } from '../../engine/reconcile.ts';
-import { FREQUENCIES, FREQUENCY_LABELS } from '../../engine/recurring.ts';
+import { FREQUENCIES } from '../../engine/recurring.ts';
+import { t as tr } from '../../i18n/i18n.ts';
 import type { Account, Frequency, Transaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { DueBanner } from '../recurring/DueBanner.tsx';
@@ -74,11 +75,11 @@ export function TransactionsView() {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const parsed = parseMoney(amountText);
-    if (parsed === null) return setError('Enter a valid amount, e.g. 12.50.');
+    if (parsed === null) return setError(tr('tx.errorAmount'));
     let splits: TxForm['splits'] = null;
     if (form.kind === 'outflow' && splitRows) {
       const amounts = splitRows.map((r) => parseMoney(r.text));
-      if (amounts.some((a) => a === null)) return setError('Enter a valid amount for every part of the split.');
+      if (amounts.some((a) => a === null)) return setError(tr('tx.errorSplitAmount'));
       splits = splitRows.map((r, i) => ({ categoryId: r.categoryId || null, amount: Math.abs(amounts[i] as number) }));
     }
     const result = buildTransaction({ ...form, amount: Math.abs(parsed), splits }, editingId ?? crypto.randomUUID());
@@ -89,7 +90,7 @@ export function TransactionsView() {
   };
 
   const startEdit = (t: Transaction) => {
-    if (isReconciled(t) && !window.confirm('This transaction is reconciled. Edit it anyway? Changing the amount or date will make the account differ from the reconciled statement.')) return;
+    if (isReconciled(t) && !window.confirm(tr('tx.confirmEditReconciled'))) return;
     setForm(toForm(t));
     setAmountText(toAmountInput(Math.abs(t.amount)));
     setSplitRows(t.splits ? t.splits.map((p) => ({ categoryId: p.categoryId, text: toAmountInput(Math.abs(p.amount)) })) : null);
@@ -114,11 +115,11 @@ export function TransactionsView() {
     const status = clearedStatus(t, side);
     const toggle = () => {
       if (status === 'reconciled') {
-        if (window.confirm('This transaction is reconciled. Unlock it and mark it as cleared?')) void setCleared(t.id, side, 'cleared');
+        if (window.confirm(tr('tx.confirmUnlock'))) void setCleared(t.id, side, 'cleared');
       } else void setCleared(t.id, side, status === 'cleared' ? 'uncleared' : 'cleared');
     };
     const remove = () => {
-      const question = isReconciled(t) ? 'This transaction is reconciled. Delete it anyway? The account will no longer match the reconciled statement.' : 'Delete this transaction?';
+      const question = isReconciled(t) ? tr('tx.confirmDeleteReconciled') : tr('tx.confirmDelete');
       if (window.confirm(question)) void removeTransaction(t.id);
     };
     return { t, amount, status, toggle, remove };
@@ -161,11 +162,11 @@ export function TransactionsView() {
       {/* Phones: filter and import buttons; adding is the round + button. */}
       <div className="mb-3 flex gap-2 md:hidden">
         <button type="button" onClick={() => setFiltersOpen((v) => !v)} aria-expanded={filtersOpen} className="rounded border border-slate-300 bg-white px-3 py-2 text-sm">
-          Filters{activeFilters ? ' (on)' : ''}
+          {tr('tx.filters')}{activeFilters ? tr('tx.filtersOn') : ''}
         </button>
         {!importing && (
           <button type="button" onClick={() => { setImporting(true); setImportMessage(null); }} className="rounded border border-slate-300 bg-white px-3 py-2 text-sm">
-            Import CSV
+            {tr('tx.importShort')}
           </button>
         )}
       </div>
@@ -175,7 +176,7 @@ export function TransactionsView() {
           reset();
           setFormOpen(true);
         }}
-        aria-label="Add transaction"
+        aria-label={tr('tx.add')}
         className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-sky-600 text-3xl leading-none text-white shadow-lg hover:bg-sky-700 md:hidden"
       >
         +
@@ -187,32 +188,32 @@ export function TransactionsView() {
         className={`bg-white p-4 md:static md:block md:rounded-lg md:shadow-sm ${formOpen ? 'fixed inset-0 z-40 overflow-y-auto' : 'hidden'}`}
       >
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-base font-semibold md:text-sm">{editingId ? 'Edit transaction' : 'Add transaction'}</h2>
+          <h2 className="text-base font-semibold md:text-sm">{editingId ? tr('tx.edit') : tr('tx.add')}</h2>
           {!importing && (
             <button type="button" onClick={() => { setImporting(true); setImportMessage(null); }} className="hidden text-sm text-sky-700 hover:underline md:inline">
-              Import from bank (CSV)…
+              {tr('tx.importLong')}
             </button>
           )}
-          <button type="button" onClick={() => reset()} className="text-sm text-slate-600 md:hidden">Close</button>
+          <button type="button" onClick={() => reset()} className="text-sm text-slate-600 md:hidden">{tr('common.close')}</button>
         </div>
         <div className={`mt-3 flex flex-wrap items-end gap-3 ${phoneFields}`}>
           <label className="text-xs font-medium text-slate-600">
-            Type
+            {tr('tx.type')}
             <select value={form.kind} onChange={(e) => {
               update({ kind: e.target.value as TxKind, categoryId: null, transferAccountId: null });
               setSplitRows(null);
             }} className={`${field} mt-1 block`}>
-              <option value="outflow">Outflow</option>
-              <option value="inflow">Inflow</option>
-              <option value="transfer">Transfer</option>
+              <option value="outflow">{tr('tx.outflow')}</option>
+              <option value="inflow">{tr('tx.inflow')}</option>
+              <option value="transfer">{tr('tx.transfer')}</option>
             </select>
           </label>
           <label className="text-xs font-medium text-slate-600">
-            Date
+            {tr('tx.date')}
             <input type="date" value={form.date} onChange={(e) => update({ date: e.target.value })} className={`${field} mt-1 block`} />
           </label>
           <label className="text-xs font-medium text-slate-600">
-            {form.kind === 'transfer' ? 'From account' : 'Account'}
+            {form.kind === 'transfer' ? tr('tx.fromAccount') : tr('tx.account')}
             <select value={form.accountId} onChange={(e) => update({ accountId: e.target.value })} className={`${field} mt-1 block`}>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
@@ -221,9 +222,9 @@ export function TransactionsView() {
           </label>
           {form.kind === 'transfer' ? (
             <label className="text-xs font-medium text-slate-600">
-              To account
+              {tr('tx.toAccount')}
               <select value={form.transferAccountId ?? ''} onChange={(e) => update({ transferAccountId: e.target.value || null })} className={`${field} mt-1 block`}>
-                <option value="">Choose…</option>
+                <option value="">{tr('tx.choose')}</option>
                 {accounts.filter((a) => a.id !== form.accountId).map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
@@ -232,12 +233,12 @@ export function TransactionsView() {
           ) : (
             <>
               <label className="min-w-0 flex-1 basis-24 text-xs font-medium text-slate-600">
-                Payee
-                <input value={form.payee} onChange={(e) => update({ payee: e.target.value })} placeholder="Who" className={`${field} mt-1 block w-full`} />
+                {tr('tx.payee')}
+                <input value={form.payee} onChange={(e) => update({ payee: e.target.value })} placeholder={tr('tx.payeePlaceholder')} className={`${field} mt-1 block w-full`} />
               </label>
               <div className="text-xs font-medium text-slate-600">
                 <div className="flex items-baseline justify-between gap-3">
-                  <label htmlFor="tx-category">Category</label>
+                  <label htmlFor="tx-category">{tr('tx.category')}</label>
                   {form.kind === 'outflow' && (
                     <button
                       type="button"
@@ -253,15 +254,15 @@ export function TransactionsView() {
                       }
                       className="font-normal text-sky-700 hover:underline"
                     >
-                      {splitRows ? 'Single' : 'Split…'}
+                      {splitRows ? tr('tx.single') : tr('tx.split')}
                     </button>
                   )}
                 </div>
                 {splitRows ? (
-                  <span className={`${field} mt-1 block border-dashed text-slate-500`}>Split across categories</span>
+                  <span className={`${field} mt-1 block border-dashed text-slate-500`}>{tr('tx.splitAcross')}</span>
                 ) : (
                   <select id="tx-category" value={form.categoryId ?? ''} onChange={(e) => update({ categoryId: e.target.value || null })} className={`${field} mt-1 block`}>
-                    <option value="">{form.kind === 'inflow' ? 'Income (Ready to Assign)' : 'Choose a category…'}</option>
+                    <option value="">{form.kind === 'inflow' ? tr('tx.income') : tr('tx.chooseCategory')}</option>
                     {categoryOptions(form.categoryId)}
                   </select>
                 )}
@@ -269,30 +270,30 @@ export function TransactionsView() {
             </>
           )}
           <label className="min-w-0 flex-1 basis-24 text-xs font-medium text-slate-600">
-            Memo
-            <input value={form.memo} onChange={(e) => update({ memo: e.target.value })} placeholder="Optional" className={`${field} mt-1 block w-full`} />
+            {tr('tx.memo')}
+            <input value={form.memo} onChange={(e) => update({ memo: e.target.value })} placeholder={tr('tx.optional')} className={`${field} mt-1 block w-full`} />
           </label>
           {!editingId && (
             <label className="text-xs font-medium text-slate-600">
-              Repeat
-              <select aria-label="Repeat" value={repeat} onChange={(e) => setRepeat(e.target.value as Frequency | '')} className={`${field} mt-1 block w-24`}>
-                <option value="">Once</option>
+              {tr('tx.repeat')}
+              <select aria-label={tr('tx.repeat')} value={repeat} onChange={(e) => setRepeat(e.target.value as Frequency | '')} className={`${field} mt-1 block w-24`}>
+                <option value="">{tr('tx.once')}</option>
                 {FREQUENCIES.map((f) => (
-                  <option key={f} value={f}>{FREQUENCY_LABELS[f]}</option>
+                  <option key={f} value={f}>{tr(`frequency.${f}`)}</option>
                 ))}
               </select>
             </label>
           )}
           <label className="text-xs font-medium text-slate-600">
-            Amount
-            <input value={amountText} onChange={(e) => setAmountText(e.target.value)} inputMode="decimal" placeholder="0.00" className={`${field} mt-1 block w-24 text-right tabular-nums`} />
+            {tr('tx.amount')}
+            <input value={amountText} onChange={(e) => setAmountText(e.target.value)} inputMode="decimal" placeholder={tr('common.amountPlaceholder')} className={`${field} mt-1 block w-24 text-right tabular-nums`} />
           </label>
           <button type="submit" className="rounded bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">
-            {editingId ? 'Save' : 'Add'}
+            {editingId ? tr('common.save') : tr('common.add')}
           </button>
           {editingId && (
             <button type="button" onClick={() => reset()} className="text-sm text-slate-600 hover:underline">
-              Cancel
+              {tr('common.cancel')}
             </button>
           )}
         </div>
@@ -301,16 +302,16 @@ export function TransactionsView() {
             {splitRows.map((row, i) => (
               <div key={i} className="flex flex-wrap items-center gap-3">
                 <select
-                  aria-label={`Category for part ${i + 1}`}
+                  aria-label={tr('tx.partCategory', { n: i + 1 })}
                   value={row.categoryId}
                   onChange={(e) => setSplitRows(splitRows.map((r, j) => (j === i ? { ...r, categoryId: e.target.value } : r)))}
                   className={field}
                 >
-                  <option value="">Choose a category…</option>
+                  <option value="">{tr('tx.chooseCategory')}</option>
                   {categoryOptions(row.categoryId)}
                 </select>
                 <input
-                  aria-label={`Amount for part ${i + 1}`}
+                  aria-label={tr('tx.partAmount', { n: i + 1 })}
                   value={row.text}
                   onChange={(e) => setSplitRows(splitRows.map((r, j) => (j === i ? { ...r, text: e.target.value } : r)))}
                   inputMode="decimal"
@@ -318,19 +319,19 @@ export function TransactionsView() {
                   className={`${field} w-28 text-right tabular-nums`}
                 />
                 {splitRows.length > 2 && (
-                  <button type="button" aria-label={`Remove part ${i + 1}`} onClick={() => setSplitRows(splitRows.filter((_, j) => j !== i))} className="text-sm text-red-600 hover:underline">
-                    Remove
+                  <button type="button" aria-label={tr('tx.partRemove', { n: i + 1 })} onClick={() => setSplitRows(splitRows.filter((_, j) => j !== i))} className="text-sm text-red-600 hover:underline">
+                    {tr('tx.remove')}
                   </button>
                 )}
               </div>
             ))}
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <button type="button" onClick={() => setSplitRows([...splitRows, { categoryId: '', text: splitRemaining && splitRemaining > 0 ? toAmountInput(splitRemaining) : '' }])} className="text-sky-700 hover:underline">
-                + Add part
+                {tr('tx.addPart')}
               </button>
               {splitRemaining !== null && (
                 <span className={splitRemaining === 0 ? 'text-emerald-700' : 'text-amber-700'} role="status">
-                  {splitRemaining === 0 ? 'The parts add up to the total.' : splitRemaining > 0 ? `${formatMoney(splitRemaining, currency)} left to split` : `${formatMoney(-splitRemaining, currency)} too much`}
+                  {splitRemaining === 0 ? tr('tx.splitExact') : splitRemaining > 0 ? tr('tx.splitLeft', { amount: formatMoney(splitRemaining, currency) }) : tr('tx.splitOver', { amount: formatMoney(-splitRemaining, currency) })}
                 </span>
               )}
             </div>
@@ -354,78 +355,78 @@ export function TransactionsView() {
 
       <div className={`mt-3 flex-wrap items-end gap-3 md:mt-6 md:flex ${filtersOpen ? 'flex' : 'hidden'} ${phoneFields}`}>
         <label className="text-xs font-medium text-slate-600">
-          Account
-          <select aria-label="Filter by account" value={filters.accountId} onChange={(e) => setFilter({ accountId: e.target.value })} className={`${field} mt-1 block`}>
-            <option value="all">All accounts</option>
+          {tr('tx.account')}
+          <select aria-label={tr('tx.filterAccount')} value={filters.accountId} onChange={(e) => setFilter({ accountId: e.target.value })} className={`${field} mt-1 block`}>
+            <option value="all">{tr('tx.allAccounts')}</option>
             {state.accounts.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}{a.closed ? ' (closed)' : ''}</option>
+              <option key={a.id} value={a.id}>{a.name}{a.closed ? ` (${tr('account.reopen') && tr('recur.ended')})` : ''}</option>
             ))}
           </select>
         </label>
         <label className="text-xs font-medium text-slate-600">
-          Category
-          <select aria-label="Filter by category" value={filters.category} onChange={(e) => setFilter({ category: e.target.value })} className={`${field} mt-1 block`}>
-            <option value="all">All categories</option>
-            <option value="income">Income</option>
-            <option value="transfers">Transfers</option>
-            <option value="uncategorised">Needs a category</option>
+          {tr('tx.category')}
+          <select aria-label={tr('tx.filterCategory')} value={filters.category} onChange={(e) => setFilter({ category: e.target.value })} className={`${field} mt-1 block`}>
+            <option value="all">{tr('tx.allCategories')}</option>
+            <option value="income">{tr('tx.incomeFilter')}</option>
+            <option value="transfers">{tr('tx.transfers')}</option>
+            <option value="uncategorised">{tr('tx.needsCategory')}</option>
             {state.groups.map((g) => (
-              <optgroup key={g.id} label={g.archived ? `${g.name} (archived)` : g.name}>
-                <option value={`group:${g.id}`}>All of {g.name}</option>
+              <optgroup key={g.id} label={g.archived ? tr('label.archived', { name: g.name }) : g.name}>
+                <option value={`group:${g.id}`}>{tr('tx.allOf', { name: g.name })}</option>
                 {state.categories.filter((c) => c.groupId === g.id).map((c) => (
-                  <option key={c.id} value={`cat:${c.id}`}>{c.name}{c.archived ? ' (archived)' : ''}</option>
+                  <option key={c.id} value={`cat:${c.id}`}>{c.name}{c.archived ? tr('tx.archivedSuffix') : ''}</option>
                 ))}
               </optgroup>
             ))}
           </select>
         </label>
         <label className="text-xs font-medium text-slate-600">
-          From
-          <input type="date" aria-label="From date" value={filters.from} max={filters.to || undefined} onChange={(e) => setFilter({ from: e.target.value })} className={`${field} mt-1 block`} />
+          {tr('tx.from')}
+          <input type="date" aria-label={tr('tx.fromDate')} value={filters.from} max={filters.to || undefined} onChange={(e) => setFilter({ from: e.target.value })} className={`${field} mt-1 block`} />
         </label>
         <label className="text-xs font-medium text-slate-600">
-          To
-          <input type="date" aria-label="To date" value={filters.to} min={filters.from || undefined} onChange={(e) => setFilter({ to: e.target.value })} className={`${field} mt-1 block`} />
+          {tr('tx.to')}
+          <input type="date" aria-label={tr('tx.toDate')} value={filters.to} min={filters.from || undefined} onChange={(e) => setFilter({ to: e.target.value })} className={`${field} mt-1 block`} />
         </label>
         <label className="text-xs font-medium text-slate-600">
-          Search
-          <input aria-label="Search" value={filters.search} onChange={(e) => setFilter({ search: e.target.value })} placeholder="Payee, memo or category" className={`${field} mt-1 block w-56`} />
+          {tr('tx.search')}
+          <input aria-label={tr('tx.search')} value={filters.search} onChange={(e) => setFilter({ search: e.target.value })} placeholder={tr('tx.searchPlaceholder')} className={`${field} mt-1 block w-56`} />
         </label>
         {hasActiveFilters(filters) && (
           <button type="button" onClick={() => setFilters(NO_FILTERS)} className="pb-1.5 text-sm text-sky-700 hover:underline">
-            Clear filters
+            {tr('tx.clearFilters')}
           </button>
         )}
       </div>
       <p className="mt-3 text-sm text-slate-600" aria-live="polite">
-        {hasActiveFilters(filters) ? `${rows.length} of ${state.transactions.length} transactions` : `${rows.length} transactions`}
+        {hasActiveFilters(filters) ? tr('tx.countFiltered', { count: rows.length, total: state.transactions.length }) : tr('tx.count', { count: rows.length })}
         {shown.length > 0 && (
           <>
-            {' · '}Outflow <span className="tabular-nums">{formatMoney(totalOut, currency)}</span>
-            {' · '}Inflow <span className="tabular-nums">{formatMoney(totalIn, currency)}</span>
-            <span className="text-slate-400"> (transfers excluded)</span>
+            {' · '}{tr('tx.totalOut')} <span className="tabular-nums">{formatMoney(totalOut, currency)}</span>
+            {' · '}{tr('tx.totalIn')} <span className="tabular-nums">{formatMoney(totalIn, currency)}</span>
+            <span className="text-slate-400">{tr('tx.transfersExcluded')}</span>
           </>
         )}
       </p>
       {filterAccount !== 'all' ? (
         <ReconcilePanel key={filterAccount} accountId={filterAccount} />
       ) : (
-        <p className="mt-1 text-xs text-slate-500">Pick one account above to see its cleared balance and reconcile it.</p>
+        <p className="mt-1 text-xs text-slate-500">{tr('tx.pickAccount')}</p>
       )}
 
       <div className="mt-2 hidden overflow-x-auto rounded-lg bg-white shadow-sm md:block">
         <table className="w-full text-sm">
           <thead className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="w-8 py-2 pl-4"><span className="sr-only">Cleared</span></th>
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Account</th>
-              <th className="px-4 py-2">Payee</th>
-              <th className="px-4 py-2">Category</th>
-              <th className="px-4 py-2">Memo</th>
-              <th className="px-4 py-2 text-right">Outflow</th>
-              <th className="px-4 py-2 text-right">Inflow</th>
-              {balances && <th className="px-4 py-2 text-right">Balance</th>}
+              <th className="w-8 py-2 pl-4"><span className="sr-only">{tr('tx.colCleared')}</span></th>
+              <th className="px-4 py-2">{tr('tx.date')}</th>
+              <th className="px-4 py-2">{tr('tx.account')}</th>
+              <th className="px-4 py-2">{tr('tx.payee')}</th>
+              <th className="px-4 py-2">{tr('tx.category')}</th>
+              <th className="px-4 py-2">{tr('tx.memo')}</th>
+              <th className="px-4 py-2 text-right">{tr('tx.colOutflow')}</th>
+              <th className="px-4 py-2 text-right">{tr('tx.colInflow')}</th>
+              {balances && <th className="px-4 py-2 text-right">{tr('tx.colBalance')}</th>}
               <th className="px-4 py-2" />
             </tr>
           </thead>
@@ -433,7 +434,7 @@ export function TransactionsView() {
             {rows.length === 0 && (
               <tr>
                 <td colSpan={balances ? 10 : 9} className="px-4 py-6 text-slate-500">
-                  {hasActiveFilters(filters) ? 'No transactions match these filters.' : 'No transactions yet.'}
+                  {hasActiveFilters(filters) ? tr('tx.noMatch') : tr('tx.none')}
                 </td>
               </tr>
             )}
@@ -442,7 +443,7 @@ export function TransactionsView() {
                 <Fragment key={t.id}>
                 <tr className="border-b border-slate-100 last:border-b-0">
                   <td className="py-2 pl-4"><ClearedToggle status={status} onToggle={toggle} /></td>
-                  <td className="px-4 py-2 whitespace-nowrap">{t.date}</td>
+                  <td className="px-4 py-2 whitespace-nowrap">{formatDate(t.date)}</td>
                   <td className="px-4 py-2">{accountName(t.accountId)}</td>
                   <td className="px-4 py-2">{t.payee}</td>
                   <td className="px-4 py-2">{categoryLabel(state, t)}</td>
@@ -451,10 +452,10 @@ export function TransactionsView() {
                   <td className="px-4 py-2 text-right tabular-nums text-emerald-700">{amount > 0 ? formatMoney(amount, currency) : ''}</td>
                   {balances && <td className="px-4 py-2 text-right tabular-nums text-slate-600">{formatMoney(balances.get(t.id) ?? 0, currency)}</td>}
                   <td className="px-4 py-2 whitespace-nowrap text-right">
-                    <button type="button" onClick={() => startEdit(t)} className="text-sky-700 hover:underline">Edit</button>
-                    <button type="button" onClick={() => setRepeatingId(repeatingId === t.id ? null : t.id)} className="ml-3 text-sky-700 hover:underline">Repeat…</button>
+                    <button type="button" onClick={() => startEdit(t)} className="text-sky-700 hover:underline">{tr('common.edit')}</button>
+                    <button type="button" onClick={() => setRepeatingId(repeatingId === t.id ? null : t.id)} className="ml-3 text-sky-700 hover:underline">{tr('tx.repeatAction')}</button>
                     <button type="button" onClick={remove} className="ml-3 text-red-600 hover:underline">
-                      Delete
+                      {tr('common.delete')}
                     </button>
                   </td>
                 </tr>
@@ -475,7 +476,7 @@ export function TransactionsView() {
       {/* Phones: one card per transaction; tap it for Edit, Repeat and Delete. */}
       <ul className="mt-2 divide-y divide-slate-100 rounded-lg bg-white shadow-sm md:hidden">
         {rows.length === 0 && (
-          <li className="px-3 py-6 text-sm text-slate-500">{activeFilters ? 'No transactions match these filters.' : 'No transactions yet.'}</li>
+          <li className="px-3 py-6 text-sm text-slate-500">{activeFilters ? tr('tx.noMatch') : tr('tx.none')}</li>
         )}
         {items.map(({ t, amount, status, toggle, remove }) => (
           <li key={t.id}>
@@ -488,7 +489,7 @@ export function TransactionsView() {
                 </span>
                 <span className="mt-0.5 flex gap-2 text-xs text-slate-500">
                   <span className="min-w-0 flex-1 truncate">
-                    {t.date} · {categoryLabel(state, t)}
+                    {formatDate(t.date)} · {categoryLabel(state, t)}
                     {filterAccount === 'all' && ` · ${accountName(t.accountId)}`}
                   </span>
                   {balances && <span className="shrink-0 tabular-nums">{formatMoney(balances.get(t.id) ?? 0, currency)}</span>}
@@ -498,9 +499,9 @@ export function TransactionsView() {
             </div>
             {openTx === t.id && (
               <div className="flex gap-1 px-10 pb-2.5">
-                <button type="button" onClick={() => startEdit(t)} className="rounded px-2 py-1.5 text-sm text-sky-700 hover:bg-sky-50">Edit</button>
-                <button type="button" onClick={() => setRepeatingId(repeatingId === t.id ? null : t.id)} className="rounded px-2 py-1.5 text-sm text-sky-700 hover:bg-sky-50">Repeat…</button>
-                <button type="button" onClick={remove} className="rounded px-2 py-1.5 text-sm text-red-600 hover:bg-red-50">Delete</button>
+                <button type="button" onClick={() => startEdit(t)} className="rounded px-2 py-1.5 text-sm text-sky-700 hover:bg-sky-50">{tr('common.edit')}</button>
+                <button type="button" onClick={() => setRepeatingId(repeatingId === t.id ? null : t.id)} className="rounded px-2 py-1.5 text-sm text-sky-700 hover:bg-sky-50">{tr('tx.repeatAction')}</button>
+                <button type="button" onClick={remove} className="rounded px-2 py-1.5 text-sm text-red-600 hover:bg-red-50">{tr('common.delete')}</button>
               </div>
             )}
             {repeatingId === t.id && <MakeRecurringForm transaction={t} onDone={() => setRepeatingId(null)} />}

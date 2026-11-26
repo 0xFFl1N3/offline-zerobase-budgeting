@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { FREQUENCIES, FREQUENCY_LABELS } from '../../engine/recurring.ts';
+import { formatDate } from '../../engine/months.ts';
+import { FREQUENCIES } from '../../engine/recurring.ts';
+import { t } from '../../i18n/i18n.ts';
 import type { Frequency, Transaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 
@@ -16,29 +18,29 @@ export function MakeRecurringForm({ transaction, onDone }: { transaction: Transa
       await makeRecurring(transaction.id, frequency, endDate || null);
       onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      setError(e instanceof Error ? e.message : t('account.errorGeneric'));
     }
   };
 
   return (
     <div className="flex flex-wrap items-end gap-3 bg-slate-50 px-4 py-3">
       <span className="pb-1.5 text-sm">
-        Repeat <strong>{transaction.payee || 'this transaction'}</strong> from {transaction.date}:
+        {t('recur.repeatFrom', { name: transaction.payee || t('recur.thisTransaction'), date: formatDate(transaction.date) })}
       </span>
       <label className="text-xs font-medium text-slate-600">
-        Every
-        <select aria-label="Repeat frequency" value={frequency} onChange={(e) => setFrequency(e.target.value as Frequency)} className={`${field} mt-1 block`}>
+        {t('recur.every')}
+        <select aria-label={t('recur.frequency')} value={frequency} onChange={(e) => setFrequency(e.target.value as Frequency)} className={`${field} mt-1 block`}>
           {FREQUENCIES.map((f) => (
-            <option key={f} value={f}>{FREQUENCY_LABELS[f]}</option>
+            <option key={f} value={f}>{t(`frequency.${f}`)}</option>
           ))}
         </select>
       </label>
       <label className="text-xs font-medium text-slate-600">
-        Until (optional)
-        <input type="date" aria-label="End date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`${field} mt-1 block`} />
+        {t('recur.until')}
+        <input type="date" aria-label={t('recur.endDate')} value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`${field} mt-1 block`} />
       </label>
-      <button type="button" onClick={() => void submit()} className="rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700">Make recurring</button>
-      <button type="button" onClick={onDone} className="pb-1.5 text-sm text-slate-600 hover:underline">Cancel</button>
+      <button type="button" onClick={() => void submit()} className="rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700">{t('recur.make')}</button>
+      <button type="button" onClick={onDone} className="pb-1.5 text-sm text-slate-600 hover:underline">{t('common.cancel')}</button>
       {error && <p className="w-full text-sm text-red-600">{error}</p>}
     </div>
   );

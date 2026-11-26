@@ -1,9 +1,10 @@
 import type { ClearedStatus } from '../../engine/types.ts';
+import { t, type MessageKey } from '../../i18n/i18n.ts';
 
-const LABELS: Record<ClearedStatus, string> = {
-  uncleared: 'Not cleared: click when it shows up at your bank',
-  cleared: 'Cleared: click to mark as not cleared',
-  reconciled: 'Reconciled: locked by a finished reconciliation',
+const LABELS: Record<ClearedStatus, MessageKey> = {
+  uncleared: 'cleared.uncleared',
+  cleared: 'cleared.cleared',
+  reconciled: 'cleared.reconciled',
 };
 
 const STYLES: Record<ClearedStatus, string> = {
@@ -19,8 +20,8 @@ export function ClearedToggle({ status, onToggle, large = false }: { status: Cle
     <button
       type="button"
       onClick={onToggle}
-      title={LABELS[status]}
-      aria-label={LABELS[status]}
+      title={t(LABELS[status])}
+      aria-label={t(LABELS[status])}
       aria-pressed={status !== 'uncleared'}
       className={`flex shrink-0 items-center justify-center rounded-full text-[11px] leading-none ${large ? 'h-7 w-7' : 'h-5 w-5'} ${STYLES[status]}`}
     >

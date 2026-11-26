@@ -1,4 +1,5 @@
 import type { Cents, Transaction } from '../../engine/types.ts';
+import { t } from '../../i18n/i18n.ts';
 
 export type TxKind = 'outflow' | 'inflow' | 'transfer';
 
@@ -19,20 +20,20 @@ export interface TxForm {
 export type BuildResult = { ok: true; transaction: Transaction } | { ok: false; error: string };
 
 export function buildTransaction(form: TxForm, id: string): BuildResult {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) return { ok: false, error: 'Pick a date.' };
-  if (!form.accountId) return { ok: false, error: 'Pick an account.' };
-  if (!(form.amount > 0)) return { ok: false, error: 'Enter an amount greater than zero.' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) return { ok: false, error: t('tx.errorDate') };
+  if (!form.accountId) return { ok: false, error: t('tx.errorAccount') };
+  if (!(form.amount > 0)) return { ok: false, error: t('tx.errorPositive') };
 
   if (form.kind === 'transfer') {
-    if (!form.transferAccountId) return { ok: false, error: 'Pick the account to transfer to.' };
-    if (form.transferAccountId === form.accountId) return { ok: false, error: 'Choose two different accounts.' };
+    if (!form.transferAccountId) return { ok: false, error: t('tx.errorTransferTo') };
+    if (form.transferAccountId === form.accountId) return { ok: false, error: t('tx.errorSameAccount') };
     return {
       ok: true,
       transaction: {
         id,
         accountId: form.accountId,
         date: form.date,
-        payee: form.payee.trim() || 'Transfer',
+        payee: form.payee.trim() || t('tx.transferPayee'),
         categoryId: null,
         memo: form.memo.trim(),
         amount: -form.amount,
@@ -42,11 +43,11 @@ export function buildTransaction(form: TxForm, id: string): BuildResult {
   }
 
   if (form.kind === 'outflow' && form.splits) {
-    if (form.splits.length < 2) return { ok: false, error: 'A split needs at least two parts.' };
-    if (form.splits.some((s) => !s.categoryId)) return { ok: false, error: 'Pick a category for every part of the split.' };
-    if (form.splits.some((s) => !(s.amount > 0))) return { ok: false, error: 'Give every part an amount greater than zero.' };
+    if (form.splits.length < 2) return { ok: false, error: t('tx.errorSplitTwo') };
+    if (form.splits.some((s) => !s.categoryId)) return { ok: false, error: t('tx.errorSplitCategory') };
+    if (form.splits.some((s) => !(s.amount > 0))) return { ok: false, error: t('tx.errorSplitPositive') };
     if (form.splits.reduce((sum, s) => sum + s.amount, 0) !== form.amount) {
-      return { ok: false, error: 'The parts of the split must add up to the total amount.' };
+      return { ok: false, error: t('tx.errorSplitSum') };
     }
     return {
       ok: true,
@@ -64,7 +65,7 @@ export function buildTransaction(form: TxForm, id: string): BuildResult {
     };
   }
 
-  if (form.kind === 'outflow' && !form.categoryId) return { ok: false, error: 'Pick a category for this outflow.' };
+  if (form.kind === 'outflow' && !form.categoryId) return { ok: false, error: t('tx.errorCategory') };
 
   return {
     ok: true,

@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.6.2 – 2026-11-26
+
+### Added
+- German texts for the Transactions tab, recurring transactions and reconciling. Dates in lists are written the German way.
+
 ## 0.6.1 – 2026-11-26
 
 ### Added

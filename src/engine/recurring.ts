@@ -3,13 +3,6 @@ import type { Frequency, RecurringTransaction, Transaction } from './types.ts';
 
 export const FREQUENCIES: Frequency[] = ['weekly', 'biweekly', 'monthly', 'yearly'];
 
-export const FREQUENCY_LABELS: Record<Frequency, string> = {
-  weekly: 'Weekly',
-  biweekly: 'Every 2 weeks',
-  monthly: 'Monthly',
-  yearly: 'Yearly',
-};
-
 /** The date of occurrence number `index` (0 = the start date). Always counted from the start, so a 31st never drifts to the 28th. */
 export function occurrenceDate(startDate: string, frequency: Frequency, index: number): string {
   switch (frequency) {
