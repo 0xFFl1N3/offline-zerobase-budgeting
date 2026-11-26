@@ -13,7 +13,7 @@ import { NameCell } from './NameCell.tsx';
 import { GoalProgress } from './GoalProgress.tsx';
 
 /** The desktop table layout; phones get MobileGroupRow and MobileCategoryRow instead. */
-const COLUMNS = 'hidden md:grid grid-cols-[1fr_8rem_8rem_8rem] items-center gap-2';
+const COLUMNS = 'hidden md:grid md:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_6.5rem] lg:grid-cols-[minmax(0,1fr)_8rem_8rem_8rem] items-center gap-2';
 
 function ReadyToAssignPill({ amount, currency, className = '' }: { amount: Cents; currency: 'EUR' | 'USD'; className?: string }) {
   const tone =

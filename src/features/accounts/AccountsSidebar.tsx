@@ -127,7 +127,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
 }
 
 /** The accounts list with balances, editing and backups. `className` sets its width and border for where it is shown. */
-export function AccountsSidebar({ className = 'w-64 border-r border-slate-200' }: { className?: string }) {
+export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg:w-64' }: { className?: string }) {
   const state = useBudgetStore((s) => s.state);
   const currency = useBudgetStore((s) => s.currency);
   const setAccountClosed = useBudgetStore((s) => s.setAccountClosed);

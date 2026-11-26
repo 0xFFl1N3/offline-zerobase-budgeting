@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.5.6 – 2026-11-26
+
+### Fixed
+- The Budget table no longer runs off the screen on tablets in portrait.
+
 ## 0.5.5 – 2026-11-26
 
 ### Added
