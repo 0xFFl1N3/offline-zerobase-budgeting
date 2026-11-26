@@ -4,7 +4,8 @@ import { toISODate } from '../../engine/months.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { backupStatus } from './backupStatus.ts';
 
-export function BackupPanel() {
+/** `sidebar` is the compact version; `card` is the larger one on the Settings tab. */
+export function BackupPanel({ variant = 'sidebar' }: { variant?: 'sidebar' | 'card' }) {
   const state = useBudgetStore((s) => s.state);
   const currency = useBudgetStore((s) => s.currency);
   const lastBackupAt = useBudgetStore((s) => s.lastBackupAt);
@@ -45,16 +46,34 @@ export function BackupPanel() {
     setMessage({ text: 'Backup restored.', error: false });
   };
 
+  const card = variant === 'card';
   return (
-    <div className="mt-8 border-t border-slate-200 pt-4">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Backup</h2>
-      <p className={`mt-2 text-xs ${status.warn ? 'font-medium text-amber-700' : 'text-slate-500'}`}>{status.text}</p>
-      <div className="mt-2 flex gap-3 text-sm">
-        <button type="button" onClick={exportFile} className="text-sky-700 hover:underline">Export</button>
-        <button type="button" onClick={() => fileInput.current?.click()} className="text-sky-700 hover:underline">Import</button>
+    <div className={card ? 'rounded-lg bg-white p-5 shadow-sm' : 'mt-8 border-t border-slate-200 pt-4'}>
+      <h2 className={card ? 'text-sm font-semibold' : 'text-xs font-semibold uppercase tracking-wide text-slate-500'}>Backup</h2>
+      <p className={`mt-2 ${card ? 'text-sm' : 'text-xs'} ${status.warn ? 'font-medium text-amber-700' : 'text-slate-500'}`}>{status.text}</p>
+      {card && (
+        <p className="mt-2 text-sm text-slate-600">
+          Export saves all your data to a file you can keep or move to another device. Import replaces everything with the contents of such a file.
+        </p>
+      )}
+      <div className={card ? 'mt-3 flex gap-3' : 'mt-2 flex gap-3 text-sm'}>
+        <button
+          type="button"
+          onClick={exportFile}
+          className={card ? 'rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700' : 'text-sky-700 hover:underline'}
+        >
+          Export
+        </button>
+        <button
+          type="button"
+          onClick={() => fileInput.current?.click()}
+          className={card ? 'rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50' : 'text-sky-700 hover:underline'}
+        >
+          Import
+        </button>
       </div>
       <input ref={fileInput} type="file" accept="application/json,.json" onChange={(e) => void onFile(e)} className="hidden" aria-label="Backup file" />
-      {message && <p className={`mt-2 text-xs ${message.error ? 'text-red-600' : 'text-emerald-700'}`}>{message.text}</p>}
+      {message && <p className={`mt-2 ${card ? 'text-sm' : 'text-xs'} ${message.error ? 'text-red-600' : 'text-emerald-700'}`}>{message.text}</p>}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Currency } from '../../engine/money.ts';
+import { BackupPanel } from '../backup/BackupPanel.tsx';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 
 const CONFIRM_WORD = 'DELETE';
@@ -29,11 +30,13 @@ export function SettingsView() {
         </p>
       </div>
 
+      <BackupPanel variant="card" />
+
       <div className="rounded-lg border border-red-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-red-700">Clear all data</h2>
         <p className="mt-2 text-sm text-slate-600">
           Deletes every account, category, goal and transaction from this browser and returns to the setup screen.
-          This cannot be undone, so export a backup first (Export, in the sidebar).
+          This cannot be undone, so export a backup first.
         </p>
         {clearing ? (
           <form
