@@ -181,3 +181,23 @@ test('rename, delete and archive persist across a reload', async () => {
   assert.equal(s.state.groups.every((g) => !g.archived), true);
   assert.equal(readyToAssign(s.state, '2026-01'), 10000); // Rent's 30000 is counted again
 });
+
+test('editing, closing and deleting accounts persist across a reload', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  await store.getState().addAccount('Cash', 'cash', 2000);
+  await store.getState().addAccount('Old', 'savings', 0);
+  const [, cash, old] = store.getState().state.accounts as [Account, Account, Account];
+  await store.getState().editAccount(cash.id, { name: 'Wallet', openingBalance: 3000 });
+  await store.getState().setAccountClosed(old.id, true);
+  await assert.rejects(store.getState().setAccountClosed(cash.id, true), /remaining balance/);
+
+  const reloaded = createBudgetStore(db, '2026-01');
+  await reloaded.getState().load();
+  const byId = new Map(reloaded.getState().state.accounts.map((a) => [a.id, a]));
+  assert.equal(byId.get(cash.id)!.name, 'Wallet');
+  assert.equal(byId.get(cash.id)!.openingBalance, 3000);
+  assert.equal(byId.get(old.id)!.closed, true);
+  await reloaded.getState().deleteAccount(old.id);
+  assert.equal(reloaded.getState().state.accounts.length, 2);
+});

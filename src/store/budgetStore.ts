@@ -3,7 +3,7 @@ import { createDb, type BudgetDB } from '../db/db.ts';
 import type { BackupFile } from '../db/backup.ts';
 import * as repo from '../db/repository.ts';
 import type { Currency } from '../engine/money.ts';
-import { removeCategories, removeGroup, setCategoryArchived, setGroupArchived } from '../engine/edit.ts';
+import { removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from '../engine/edit.ts';
 import { addMonths } from '../engine/months.ts';
 import type { Account, AccountType, BudgetState, Cents, Goal, Month, Transaction } from '../engine/types.ts';
 
@@ -30,6 +30,12 @@ export interface BudgetStore {
   load: () => Promise<void>;
   completeSetup: (input: { accountName: string; initialBalance: Cents; currency: Currency }) => Promise<void>;
   addAccount: (name: string, type: AccountType, openingBalance: Cents) => Promise<void>;
+  /** Changes an account's name, type or opening balance. */
+  editAccount: (id: string, changes: { name?: string; type?: AccountType; openingBalance?: Cents }) => Promise<void>;
+  /** Closes an account (its balance must be zero) or reopens it. */
+  setAccountClosed: (id: string, closed: boolean) => Promise<void>;
+  /** Deletes an account without transactions. */
+  deleteAccount: (id: string) => Promise<void>;
   addGroup: (name: string) => Promise<void>;
   addCategory: (groupId: string, name: string) => Promise<void>;
   /** Sets this month's Assigned amount for a category. */
@@ -102,6 +108,24 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       const account = newAccount(name, type, openingBalance);
       await repo.saveAccount(db, account);
       set((s) => ({ state: { ...s.state, accounts: [...s.state.accounts, account] } }));
+    },
+
+    editAccount: async (id, changes) => {
+      const next = updateAccount(get().state, id, changes);
+      await repo.saveAccount(db, next.accounts.find((a) => a.id === id)!);
+      set({ state: next });
+    },
+
+    setAccountClosed: async (id, closed) => {
+      const next = setAccountClosed(get().state, id, closed);
+      await repo.saveAccount(db, next.accounts.find((a) => a.id === id)!);
+      set({ state: next });
+    },
+
+    deleteAccount: async (id) => {
+      const next = removeAccount(get().state, id);
+      await repo.deleteAccount(db, id);
+      set({ state: next });
     },
 
     addGroup: async (name) => {

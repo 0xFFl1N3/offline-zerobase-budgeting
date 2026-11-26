@@ -50,6 +50,7 @@ export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; setti
 }
 
 export const saveAccount = (db: BudgetDB, a: Account) => db.accounts.put(a);
+export const deleteAccount = (db: BudgetDB, id: string) => db.accounts.delete(id);
 export const saveGroup = (db: BudgetDB, g: CategoryGroup) => db.groups.put(g);
 export const saveCategory = (db: BudgetDB, c: Category) => db.categories.put(c);
 async function deleteCategoriesIn(db: BudgetDB, ids: string[]) {

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spendingReport } from './analytics.ts';
 import { accountBalance, readyToAssign } from './budget.ts';
-import { removeCategories, removeGroup, setCategoryArchived, setGroupArchived } from './edit.ts';
+import { removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from './edit.ts';
 import type { BudgetState } from './types.ts';
 
 const state = (): BudgetState => ({
@@ -85,4 +85,38 @@ test('archiving an overspent category takes the shortfall from Ready to Assign',
   // games: 2000 assigned - 5000 spent = -3000
   const before = readyToAssign(s, M);
   assert.equal(readyToAssign(setCategoryArchived(s, 'games', true), M), before - 3000);
+});
+
+const twoAccounts = (): BudgetState => {
+  const s = state();
+  s.accounts.push({ id: 'b', name: 'Savings', type: 'savings', openingBalance: 5000, closed: false });
+  return s;
+};
+
+test('renaming an account and fixing its opening balance changes Ready to Assign', () => {
+  const before = twoAccounts();
+  const after = updateAccount(before, 'b', { name: '  Piggy bank ', openingBalance: 8000, type: 'cash' });
+  const b = after.accounts.find((a) => a.id === 'b')!;
+  assert.deepEqual([b.name, b.type, b.openingBalance], ['Piggy bank', 'cash', 8000]);
+  assert.equal(readyToAssign(after, M) - readyToAssign(before, M), 3000);
+  assert.throws(() => updateAccount(before, 'b', { name: ' ' }), /needs a name/);
+  assert.throws(() => updateAccount(before, 'zzz', { name: 'x' }), /Unknown account/);
+});
+
+test('an account can only be closed with a zero balance, and reopened', () => {
+  const s = twoAccounts();
+  assert.throws(() => setAccountClosed(s, 'b', true), /remaining balance/);
+  const emptied = updateAccount(s, 'b', { openingBalance: 0 });
+  const closed = setAccountClosed(emptied, 'b', true);
+  assert.equal(closed.accounts.find((a) => a.id === 'b')!.closed, true);
+  assert.equal(setAccountClosed(closed, 'b', false).accounts.find((a) => a.id === 'b')!.closed, false);
+  assert.equal(readyToAssign(closed, M), readyToAssign(emptied, M));
+});
+
+test('an account is deleted only when nothing refers to it', () => {
+  const s = twoAccounts();
+  assert.equal(removeAccount(s, 'b').accounts.length, 1);
+  assert.throws(() => removeAccount(s, 'a'), /Close it instead/);
+  s.transactions.push({ id: 't2', accountId: 'a', date: '2026-01-06', payee: '', categoryId: null, memo: '', amount: -1000, transferAccountId: 'b' });
+  assert.throws(() => removeAccount(s, 'b'), /Close it instead/);
 });
