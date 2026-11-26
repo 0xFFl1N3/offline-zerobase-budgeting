@@ -7,6 +7,7 @@ import { InlineAdd } from '../../components/InlineAdd.tsx';
 import { MoneyField } from '../../components/MoneyField.tsx';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { GoalEditor } from './GoalEditor.tsx';
+import { NameCell } from './NameCell.tsx';
 import { GoalProgress } from './GoalProgress.tsx';
 
 const COLUMNS = 'grid grid-cols-[1fr_8rem_8rem_8rem] items-center gap-2';
@@ -39,7 +40,25 @@ export function BudgetView() {
   const addGroup = useBudgetStore((s) => s.addGroup);
   const addCategory = useBudgetStore((s) => s.addCategory);
 
+  const renameGroup = useBudgetStore((s) => s.renameGroup);
+  const renameCategory = useBudgetStore((s) => s.renameCategory);
+  const deleteCategory = useBudgetStore((s) => s.deleteCategory);
+  const deleteGroup = useBudgetStore((s) => s.deleteGroup);
   const [editingGoal, setEditingGoal] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState<string | null>(null);
+
+  /** Asks before deleting; explains what happens to the money and transactions involved. */
+  const confirmDelete = (label: string, categoryIds: string[], onConfirm: () => void) => {
+    const balance = categoryIds.reduce((t, id) => t + categoryAvailable(state, id, '9999-12'), 0);
+    const txCount = state.transactions.filter((t) => t.categoryId !== null && categoryIds.includes(t.categoryId)).length;
+    const lines = [`Delete ${label}?`];
+    if (txCount > 0) lines.push(`${txCount} transaction(s) stay but become uncategorized.`);
+    if (balance !== 0) {
+      lines.push(`Its balance of ${formatMoney(balance, currency)} ${balance > 0 ? 'returns to' : 'is taken from'} Ready to Assign.`);
+    }
+    if (state.goals.some((g) => categoryIds.includes(g.categoryId))) lines.push('Its goal is removed.');
+    if (window.confirm(lines.join('\n\n'))) onConfirm();
+  };
   const rta = readyToAssign(state, month);
   const groups = state.groups.filter((g) => !g.archived);
 
@@ -78,7 +97,19 @@ export function BudgetView() {
           return (
             <div key={group.id} className="border-b border-slate-100 last:border-b-0">
               <div className={`${COLUMNS} bg-slate-50 px-4 py-2 text-sm font-semibold`}>
-                <span>{group.name}</span>
+                <NameCell
+                  name={group.name}
+                  renaming={renaming === group.id}
+                  onStartRename={() => setRenaming(group.id)}
+                  onRename={(name) => {
+                    void renameGroup(group.id, name);
+                    setRenaming(null);
+                  }}
+                  onCancelRename={() => setRenaming(null)}
+                  onDelete={() =>
+                    confirmDelete(`the group "${group.name}" and all ${cats.length} of its categories`, cats.map((c) => c.id), () => void deleteGroup(group.id))
+                  }
+                />
                 <span className="px-2 text-right tabular-nums">{formatMoney(sum((id) => categoryAssigned(state, id, month)), currency)}</span>
                 <span className="px-2 text-right tabular-nums">{formatMoney(sum((id) => categoryActivity(state, id, month)), currency)}</span>
                 <span className="px-2 text-right tabular-nums">{formatMoney(sum((id) => categoryAvailable(state, id, month)), currency)}</span>
@@ -90,7 +121,17 @@ export function BudgetView() {
                   <div key={cat.id}>
                   <div className={`${COLUMNS} px-4 py-1 text-sm`}>
                     <div className="pl-4">
-                      <div>{cat.name}</div>
+                      <NameCell
+                        name={cat.name}
+                        renaming={renaming === cat.id}
+                        onStartRename={() => setRenaming(cat.id)}
+                        onRename={(name) => {
+                          void renameCategory(cat.id, name);
+                          setRenaming(null);
+                        }}
+                        onCancelRename={() => setRenaming(null)}
+                        onDelete={() => confirmDelete(`the category "${cat.name}"`, [cat.id], () => void deleteCategory(cat.id))}
+                      />
                       {goal ? (
                         <button type="button" aria-label={`Edit goal for ${cat.name}`} onClick={() => setEditingGoal(cat.id)} className="block w-full text-left">
                           <GoalProgress state={state} goal={goal} month={month} currency={currency} />
