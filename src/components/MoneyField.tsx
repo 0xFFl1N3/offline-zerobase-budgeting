@@ -9,10 +9,12 @@ interface Props {
   onCommit: (cents: Cents) => void;
   ariaLabel: string;
   className?: string;
+  /** Always show the field's border and background (phones have no hover to reveal it). */
+  boxed?: boolean;
 }
 
 /** Text field for an amount. Commits on Enter or blur, reverts on Escape or invalid input. */
-export function MoneyField({ value, onCommit, ariaLabel, className = '' }: Props) {
+export function MoneyField({ value, onCommit, ariaLabel, className = '', boxed = false }: Props) {
   const [text, setText] = useState<string | null>(null); // null = not editing
   const cancelled = useRef(false);
 
@@ -29,7 +31,7 @@ export function MoneyField({ value, onCommit, ariaLabel, className = '' }: Props
     <input
       inputMode="decimal"
       aria-label={ariaLabel}
-      className={`rounded border border-transparent bg-transparent px-2 py-1 text-right tabular-nums hover:border-slate-300 focus:border-sky-500 focus:bg-white focus:outline-none ${className}`}
+      className={`rounded border px-2 py-1 text-right tabular-nums hover:border-slate-300 focus:border-sky-500 focus:bg-white focus:outline-none ${boxed ? 'border-slate-300 bg-white' : 'border-transparent bg-transparent'} ${className}`}
       value={text ?? toText(value)}
       onFocus={(e) => {
         setText(toText(value));

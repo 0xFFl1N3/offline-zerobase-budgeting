@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { touchesCategory, categoryActivity, categoryAssigned, categoryAvailable, readyToAssign } from '../../engine/budget.ts';
 import { autoAssignPlan } from '../../engine/autoassign.ts';
 import { formatMoney } from '../../engine/money.ts';
@@ -12,9 +12,10 @@ import { GoalEditor } from './GoalEditor.tsx';
 import { NameCell } from './NameCell.tsx';
 import { GoalProgress } from './GoalProgress.tsx';
 
-const COLUMNS = 'grid grid-cols-[1fr_8rem_8rem_8rem] items-center gap-2';
+/** The desktop table layout; phones get MobileGroupRow and MobileCategoryRow instead. */
+const COLUMNS = 'hidden md:grid grid-cols-[1fr_8rem_8rem_8rem] items-center gap-2';
 
-function ReadyToAssignPill({ amount, currency }: { amount: Cents; currency: 'EUR' | 'USD' }) {
+function ReadyToAssignPill({ amount, currency, className = '' }: { amount: Cents; currency: 'EUR' | 'USD'; className?: string }) {
   const tone =
     amount === 0
       ? 'bg-emerald-100 text-emerald-800'
@@ -23,9 +24,9 @@ function ReadyToAssignPill({ amount, currency }: { amount: Cents; currency: 'EUR
         : 'bg-red-100 text-red-800';
   const hint = amount === 0 ? 'Every euro has a job' : amount > 0 ? 'left to assign' : 'over-assigned';
   return (
-    <div className={`rounded-full px-4 py-2 text-sm font-medium ${tone}`}>
+    <div className={`rounded-full px-4 py-2 text-sm font-medium ${tone} ${className}`}>
       Ready to Assign: <span className="tabular-nums">{formatMoney(amount, currency)}</span>
-      <span className="ml-2 font-normal">{hint}</span>
+      <span className="ml-2 hidden font-normal sm:inline">{hint}</span>
     </div>
   );
 }
@@ -60,6 +61,9 @@ export function BudgetView() {
   const [editingGoal, setEditingGoal] = useState<string | null>(null);
   const [autoMessage, setAutoMessage] = useState<{ month: string; text: string } | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
+  /** On phones: the group or category whose details and actions are open. */
+  const [open, setOpen] = useState<string | null>(null);
+  const toggle = (id: string) => setOpen((o) => (o === id ? null : id));
 
   const hasTransactions = (ids: string[]) =>
     state.transactions.some((t) => touchesCategory(t, ids)) || state.recurring.some((r) => touchesCategory(r.template, ids));
@@ -103,34 +107,40 @@ export function BudgetView() {
   const groups = state.groups.filter((g) => !g.archived);
 
   return (
-    <section className="p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <section className="p-3 md:p-6">
+      {/* On phones this bar stays pinned under the top bar while the categories scroll. */}
+      <div className="sticky top-14 z-10 -mx-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-slate-200 bg-slate-50 px-3 py-2 md:static md:mx-0 md:border-0 md:p-0">
         <div className="flex items-center gap-2">
-          <button type="button" aria-label="Previous month" onClick={() => shiftMonth(-1)} className="rounded px-2 py-1 hover:bg-slate-200">
+          <button type="button" aria-label="Previous month" onClick={() => shiftMonth(-1)} className="rounded px-3 py-1.5 hover:bg-slate-200 md:px-2 md:py-1">
             ‹
           </button>
-          <h2 className="min-w-44 text-center text-lg font-semibold">{formatMonth(month)}</h2>
-          <button type="button" aria-label="Next month" onClick={() => shiftMonth(1)} className="rounded px-2 py-1 hover:bg-slate-200">
+          <h2 className="min-w-36 text-center text-lg font-semibold md:min-w-44">{formatMonth(month)}</h2>
+          <button type="button" aria-label="Next month" onClick={() => shiftMonth(1)} className="rounded px-3 py-1.5 hover:bg-slate-200 md:px-2 md:py-1">
             ›
           </button>
         </div>
-        <div className="flex items-center gap-3">
+        {/* "contents": on phones the button sits next to the month and the pill gets its own full-width line. */}
+        <div className="contents md:flex md:items-center md:gap-3">
           <button
             type="button"
             onClick={() => void runAutoAssign()}
             disabled={plan.steps.length === 0}
             title={plan.steps.length === 0 ? 'Every goal is already funded this month' : `Adds ${fmt(plan.total)} to ${plan.steps.length} categories so their goals are met`}
-            className="rounded border border-sky-600 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 disabled:cursor-default disabled:border-slate-300 disabled:text-slate-400 disabled:hover:bg-transparent"
+            className="ml-auto rounded border border-sky-600 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 disabled:cursor-default disabled:border-slate-300 disabled:text-slate-400 disabled:hover:bg-transparent"
           >
-            Auto-assign{plan.total > 0 && <span className="ml-1 tabular-nums">{fmt(plan.total)}</span>}
+            Auto-assign{plan.total > 0 && <span className="ml-1 hidden tabular-nums sm:inline">{fmt(plan.total)}</span>}
           </button>
-          <ReadyToAssignPill amount={rta} currency={currency} />
+          <ReadyToAssignPill amount={rta} currency={currency} className="w-full text-center md:w-auto" />
         </div>
       </div>
 
       {autoMessage?.month === month && <p className="mt-3 text-sm text-emerald-700" role="status">{autoMessage.text}</p>}
 
-      <div className="mt-6 rounded-lg bg-white shadow-sm">
+      <div className="mt-3 rounded-lg bg-white shadow-sm md:mt-6">
+        <div className="flex justify-between border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 md:hidden">
+          <span>Category</span>
+          <span>Available</span>
+        </div>
         <div className={`${COLUMNS} border-b border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500`}>
           <span>Category</span>
           <span className="text-right">Assigned</span>
@@ -149,6 +159,29 @@ export function BudgetView() {
           const sum = (f: (id: string) => Cents) => cats.reduce((t, c) => t + f(c.id), 0);
           return (
             <div key={group.id} className="border-b border-slate-100 last:border-b-0">
+              <MobileGroupRow
+                name={group.name}
+                available={sum((id) => categoryAvailable(state, id, month))}
+                fmt={fmt}
+                open={open === group.id}
+                onToggle={() => toggle(group.id)}
+                renaming={renaming === group.id}
+                onStartRename={() => setRenaming(group.id)}
+                onRename={(name) => {
+                  void renameGroup(group.id, name);
+                  setRenaming(null);
+                }}
+                onCancelRename={() => setRenaming(null)}
+                actionLabel={hasTransactions(cats.map((c) => c.id)) ? 'Archive' : 'Delete'}
+                onAction={() =>
+                  removeOrArchive(
+                    `the group "${group.name}" and its ${cats.length} categor${cats.length === 1 ? 'y' : 'ies'}`,
+                    cats.map((c) => c.id),
+                    () => void deleteGroup(group.id),
+                    () => void archiveGroup(group.id),
+                  )
+                }
+              />
               <div {...groupDnd.rowProps(group.id, 'groups')} className={`${COLUMNS} bg-slate-50 px-4 py-2 text-sm font-semibold`}>
                 <NameCell
                   name={group.name}
@@ -179,6 +212,28 @@ export function BudgetView() {
                 const goal = state.goals.find((g) => g.categoryId === cat.id);
                 return (
                   <div key={cat.id}>
+                  <MobileCategoryRow
+                    name={cat.name}
+                    available={available}
+                    activity={categoryActivity(state, cat.id, month)}
+                    assigned={categoryAssigned(state, cat.id, month)}
+                    onAssign={(cents) => void assign(cat.id, cents)}
+                    fmt={fmt}
+                    goal={goal ? <GoalProgress state={state} goal={goal} month={month} currency={currency} /> : null}
+                    hasGoal={goal !== undefined}
+                    onEditGoal={() => setEditingGoal(cat.id)}
+                    open={open === cat.id}
+                    onToggle={() => toggle(cat.id)}
+                    renaming={renaming === cat.id}
+                    onStartRename={() => setRenaming(cat.id)}
+                    onRename={(name) => {
+                      void renameCategory(cat.id, name);
+                      setRenaming(null);
+                    }}
+                    onCancelRename={() => setRenaming(null)}
+                    actionLabel={hasTransactions([cat.id]) ? 'Archive' : 'Delete'}
+                    onAction={() => removeOrArchive(`the category "${cat.name}"`, [cat.id], () => void deleteCategory(cat.id), () => void archiveCategory(cat.id))}
+                  />
                   <div {...categoryDnd.rowProps(cat.id, group.id)} className={`${COLUMNS} px-4 py-1 text-sm`}>
                     <div className="pl-4">
                       <NameCell
@@ -222,14 +277,14 @@ export function BudgetView() {
                   </div>
                 );
               })}
-              <div className="px-8 py-2">
+              <div className="px-3 py-2 md:px-8">
                 <InlineAdd label="Add category" placeholder="Category name" onAdd={(name) => void addCategory(group.id, name)} />
               </div>
             </div>
           );
         })}
 
-        <div className="border-t border-slate-200 px-4 py-3">
+        <div className="border-t border-slate-200 px-3 py-3 md:px-4">
           <InlineAdd label="Add group" placeholder="Group name" onAdd={(name) => void addGroup(name)} />
         </div>
 
@@ -263,5 +318,114 @@ export function BudgetView() {
         )}
       </div>
     </section>
+  );
+}
+
+const rowButton = 'flex w-full items-center gap-3 text-left';
+const actionLink = 'rounded px-2 py-1.5 text-sm text-sky-700 hover:bg-sky-50';
+
+interface RowActions {
+  open: boolean;
+  onToggle: () => void;
+  renaming: boolean;
+  onStartRename: () => void;
+  onRename: (name: string) => void;
+  onCancelRename: () => void;
+  actionLabel: string;
+  onAction: () => void;
+}
+
+/** A rename box in place of the name, as on desktop (Enter saves, Escape or leaving cancels). */
+function RenameInput({ name, onRename, onCancelRename }: { name: string; onRename: (name: string) => void; onCancelRename: () => void }) {
+  return (
+    <input
+      autoFocus
+      defaultValue={name}
+      aria-label={`Rename ${name}`}
+      enterKeyHint="done"
+      onFocus={(e) => e.currentTarget.select()}
+      onBlur={onCancelRename}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && e.currentTarget.value.trim()) onRename(e.currentTarget.value);
+        if (e.key === 'Escape') onCancelRename();
+      }}
+      className="w-full rounded border border-sky-500 px-2 py-1.5 text-base font-normal focus:outline-none"
+    />
+  );
+}
+
+/** Phone layout of a group heading: tap it for Rename and Archive/Delete. */
+function MobileGroupRow({ name, available, fmt, ...a }: RowActions & { name: string; available: Cents; fmt: (c: Cents) => string }) {
+  return (
+    <div className="bg-slate-50 md:hidden">
+      <div className="px-3 py-2.5 text-sm font-semibold">
+        {a.renaming ? (
+          <RenameInput name={name} onRename={a.onRename} onCancelRename={a.onCancelRename} />
+        ) : (
+          <button type="button" onClick={a.onToggle} aria-expanded={a.open} className={rowButton}>
+            <span className="min-w-0 flex-1 truncate">{name}</span>
+            <span className="tabular-nums">{fmt(available)}</span>
+          </button>
+        )}
+      </div>
+      {a.open && !a.renaming && (
+        <div className="flex gap-2 px-1 pb-2">
+          <button type="button" onClick={a.onStartRename} className={actionLink}>Rename</button>
+          <button type="button" onClick={a.onAction} className="rounded px-2 py-1.5 text-sm text-red-600 hover:bg-red-50">{a.actionLabel} group</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface CategoryRowProps extends RowActions {
+  name: string;
+  available: Cents;
+  activity: Cents;
+  assigned: Cents;
+  onAssign: (cents: Cents) => void;
+  fmt: (c: Cents) => string;
+  goal: ReactNode;
+  hasGoal: boolean;
+  onEditGoal: () => void;
+}
+
+/** Phone layout of a category: name, goal and Available; tap it to assign money and for the other actions. */
+function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt, goal, hasGoal, onEditGoal, ...a }: CategoryRowProps) {
+  const pill = available < 0 ? 'bg-red-100 text-red-800' : available === 0 ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-800';
+  return (
+    <div className={`border-t border-slate-100 md:hidden ${a.open ? 'bg-slate-50' : ''}`}>
+      <div className="px-3 py-2.5 text-sm">
+        {a.renaming ? (
+          <RenameInput name={name} onRename={a.onRename} onCancelRename={a.onCancelRename} />
+        ) : (
+          <button type="button" onClick={a.onToggle} aria-expanded={a.open} className={rowButton}>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate">{name}</span>
+              {goal}
+            </span>
+            <span className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-medium tabular-nums ${pill}`}>{fmt(available)}</span>
+          </button>
+        )}
+      </div>
+      {a.open && !a.renaming && (
+        <div className="px-3 pb-3">
+          <div className="flex items-center gap-3 text-sm">
+            <label className="flex items-center gap-2">
+              <span className="text-slate-600">Assigned</span>
+              <MoneyField ariaLabel={`Assigned to ${name}`} value={assigned} onCommit={onAssign} boxed className="w-32 text-base" />
+            </label>
+            <span className="ml-auto text-right text-slate-600">
+              Activity <span className="block tabular-nums text-slate-900">{fmt(activity)}</span>
+            </span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1">
+            <button type="button" onClick={onEditGoal} className={actionLink}>{hasGoal ? 'Edit goal' : 'Set goal'}</button>
+            <button type="button" onClick={a.onStartRename} className={actionLink}>Rename</button>
+            <button type="button" onClick={a.onAction} className="rounded px-2 py-1.5 text-sm text-red-600 hover:bg-red-50">{a.actionLabel}</button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

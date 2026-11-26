@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.5.1 – 2026-11-26
+
+### Added
+- Budget tab on phones: each category shows its name, goal and available money; tap it to assign money, set a goal, rename or archive. The month, Auto-assign and Ready to Assign stay at the top while scrolling.
+
 ## 0.5.0 – 2026-11-26
 
 ### Added
