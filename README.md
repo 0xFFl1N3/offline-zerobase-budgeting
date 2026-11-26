@@ -13,4 +13,3 @@ A local-first, zero-based (envelope) budgeting web app (React + TypeScript + Vit
 ## Structure
 
 - `src/engine/` — pure budget math (Ready to Assign, Available, goals) and tests
-- Planned: `src/db/` (Dexie storage), `src/store/`, `src/features/`
