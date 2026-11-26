@@ -3,7 +3,7 @@ import { createDb, type BudgetDB } from '../db/db.ts';
 import * as repo from '../db/repository.ts';
 import type { Currency } from '../engine/money.ts';
 import { addMonths } from '../engine/months.ts';
-import type { Account, AccountType, BudgetState, Cents, Month, Transaction } from '../engine/types.ts';
+import type { Account, AccountType, BudgetState, Cents, Goal, Month, Transaction } from '../engine/types.ts';
 
 const emptyState = (): BudgetState => ({
   accounts: [],
@@ -33,6 +33,9 @@ export interface BudgetStore {
   /** Adds a transaction, or replaces the one with the same id. */
   saveTransaction: (t: Transaction) => Promise<void>;
   removeTransaction: (id: string) => Promise<void>;
+  /** Sets the category's goal, replacing any existing one (one goal per category). */
+  saveGoal: (goal: Goal) => Promise<void>;
+  removeGoal: (categoryId: string) => Promise<void>;
   shiftMonth: (n: number) => void;
 }
 
@@ -108,6 +111,20 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     removeTransaction: async (id) => {
       await repo.deleteTransaction(db, id);
       set((s) => ({ state: { ...s.state, transactions: s.state.transactions.filter((x) => x.id !== id) } }));
+    },
+
+    saveGoal: async (goal) => {
+      const replaced = get().state.goals.filter((g) => g.categoryId === goal.categoryId && g.id !== goal.id);
+      for (const g of replaced) await repo.deleteGoal(db, g.id);
+      await repo.saveGoal(db, goal);
+      set((s) => ({
+        state: { ...s.state, goals: [...s.state.goals.filter((g) => g.categoryId !== goal.categoryId), goal] },
+      }));
+    },
+
+    removeGoal: async (categoryId) => {
+      for (const g of get().state.goals.filter((g) => g.categoryId === categoryId)) await repo.deleteGoal(db, g.id);
+      set((s) => ({ state: { ...s.state, goals: s.state.goals.filter((g) => g.categoryId !== categoryId) } }));
     },
 
     shiftMonth: (n) => set((s) => ({ month: addMonths(s.month, n) })),

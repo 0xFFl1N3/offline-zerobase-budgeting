@@ -103,3 +103,22 @@ test('transactions move account and category balances, and can be edited and rem
   assert.equal(readyToAssign(s.state, s.month), 10000);
   assert.equal(accountBalance(s.state, chk.id), 100000);
 });
+
+test('a category has one goal; saving replaces it and it survives reload', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 0, currency: 'EUR' });
+  await store.getState().addGroup('Living');
+  await store.getState().addCategory(store.getState().state.groups[0]!.id, 'Rent');
+  const rent = store.getState().state.categories[0]!;
+  await store.getState().saveGoal({ id: 'g1', categoryId: rent.id, type: 'monthly_amount', monthlyAmount: 90000 });
+  await store.getState().saveGoal({ id: 'g2', categoryId: rent.id, type: 'target_balance', targetAmount: 50000 });
+  assert.deepEqual(store.getState().state.goals.map((g) => g.id), ['g2']);
+  const again = createBudgetStore(db, '2026-01');
+  await again.getState().load();
+  assert.deepEqual(again.getState().state.goals.map((g) => g.id), ['g2']);
+  await store.getState().removeGoal(rent.id);
+  assert.equal(store.getState().state.goals.length, 0);
+  await again.getState().load();
+  await store.getState().load();
+  assert.equal(store.getState().state.goals.length, 0);
+});
