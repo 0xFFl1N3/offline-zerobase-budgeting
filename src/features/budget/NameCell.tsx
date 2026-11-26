@@ -7,7 +7,7 @@ interface Props {
   onDelete: () => void;
 }
 
-/** A group or category name with Rename and Delete actions that appear on hover or keyboard focus. */
+/** A group or category name: click it to rename in place. A Delete action appears on hover or keyboard focus. */
 export function NameCell({ name, renaming, onStartRename, onRename, onCancelRename, onDelete }: Props) {
   if (renaming) {
     return (
@@ -27,11 +27,23 @@ export function NameCell({ name, renaming, onStartRename, onRename, onCancelRena
   }
   return (
     <span className="group inline-flex items-center gap-3">
-      <span>{name}</span>
-      <span className="invisible inline-flex gap-2 text-xs font-normal group-hover:visible group-focus-within:visible">
-        <button type="button" onClick={onStartRename} aria-label={`Rename ${name}`} className="text-sky-700 hover:underline">Rename</button>
-        <button type="button" onClick={onDelete} aria-label={`Delete ${name}`} className="text-red-600 hover:underline">Delete</button>
-      </span>
+      <button
+        type="button"
+        onClick={onStartRename}
+        aria-label={`Rename ${name}`}
+        title="Click to rename"
+        className="cursor-text rounded text-left hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+      >
+        {name}
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        aria-label={`Delete ${name}`}
+        className="invisible text-xs font-normal text-red-600 hover:underline group-hover:visible group-focus-within:visible"
+      >
+        Delete
+      </button>
     </span>
   );
 }
