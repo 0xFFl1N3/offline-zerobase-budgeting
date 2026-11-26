@@ -122,3 +122,43 @@ test('a category has one goal; saving replaces it and it survives reload', async
   await store.getState().load();
   assert.equal(store.getState().state.goals.length, 0);
 });
+
+test('rename and delete persist across a reload', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  await store.getState().addGroup('Living');
+  await store.getState().addGroup('Fun');
+  const living = store.getState().state.groups[0]!;
+  const fun = store.getState().state.groups[1]!;
+  await store.getState().addCategory(living.id, 'Rent');
+  await store.getState().addCategory(living.id, 'Power');
+  await store.getState().addCategory(fun.id, 'Games');
+  const rent = store.getState().state.categories.find((c) => c.name === 'Rent')!;
+  await store.getState().assign(rent.id, 90000);
+  await store.getState().saveGoal({ id: 'g', categoryId: rent.id, type: 'monthly_amount', monthlyAmount: 90000 });
+  await store.getState().saveTransaction({
+    id: 't', accountId: store.getState().state.accounts[0]!.id, date: '2026-01-05', payee: 'L', categoryId: rent.id, memo: '', amount: -60000, transferAccountId: null,
+  });
+
+  await store.getState().renameGroup(living.id, '  Home ');
+  await store.getState().renameCategory(rent.id, 'Rent & fees');
+  await store.getState().renameCategory(rent.id, '   '); // ignored
+  assert.equal(store.getState().state.groups[0]?.name, 'Home');
+
+  await store.getState().deleteCategory(rent.id);
+  let s = store.getState();
+  assert.equal(s.state.categories.some((c) => c.id === rent.id), false);
+  assert.equal(s.state.goals.length, 0);
+  assert.equal(s.state.transactions[0]?.categoryId, null);
+  assert.equal(readyToAssign(s.state, s.month), 40000); // everything is unassigned again
+
+  await store.getState().deleteGroup(living.id);
+  const again = createBudgetStore(db, '2026-01');
+  await again.getState().load();
+  s = again.getState();
+  assert.deepEqual(s.state.groups.map((g) => g.name), ['Fun']);
+  assert.deepEqual(s.state.categories.map((c) => c.name), ['Games']);
+  assert.equal(s.state.monthlyBudgets.length, 0);
+  assert.equal(s.state.transactions[0]?.categoryId, null);
+  assert.equal(readyToAssign(s.state, s.month), 40000);
+});

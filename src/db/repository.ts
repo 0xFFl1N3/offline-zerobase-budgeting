@@ -52,6 +52,29 @@ export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; setti
 export const saveAccount = (db: BudgetDB, a: Account) => db.accounts.put(a);
 export const saveGroup = (db: BudgetDB, g: CategoryGroup) => db.groups.put(g);
 export const saveCategory = (db: BudgetDB, c: Category) => db.categories.put(c);
+async function deleteCategoriesIn(db: BudgetDB, ids: string[]) {
+  for (const id of ids) {
+    await db.categories.delete(id);
+    await db.goals.where('categoryId').equals(id).delete();
+    await db.monthlyBudgets.filter((b) => b.categoryId === id).delete();
+    await db.transactions.where('categoryId').equals(id).modify({ categoryId: null });
+  }
+}
+
+/** Deletes a category with its goal and assignments; its transactions become uncategorized. */
+export const deleteCategory = (db: BudgetDB, id: string) =>
+  db.transaction('rw', [db.categories, db.goals, db.monthlyBudgets, db.transactions], () =>
+    deleteCategoriesIn(db, [id]),
+  );
+
+/** Deletes a group and all of its categories (see deleteCategory). */
+export const deleteGroup = (db: BudgetDB, groupId: string) =>
+  db.transaction('rw', [db.groups, db.categories, db.goals, db.monthlyBudgets, db.transactions], async () => {
+    const ids = (await db.categories.where('groupId').equals(groupId).primaryKeys()) as string[];
+    await deleteCategoriesIn(db, ids);
+    await db.groups.delete(groupId);
+  });
+
 export const saveGoal = (db: BudgetDB, g: Goal) => db.goals.put(g);
 export const deleteGoal = (db: BudgetDB, id: string) => db.goals.delete(id);
 export const saveTransaction = (db: BudgetDB, t: Transaction) => db.transactions.put(t);

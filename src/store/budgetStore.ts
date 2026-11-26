@@ -3,6 +3,7 @@ import { createDb, type BudgetDB } from '../db/db.ts';
 import type { BackupFile } from '../db/backup.ts';
 import * as repo from '../db/repository.ts';
 import type { Currency } from '../engine/money.ts';
+import { removeCategories, removeGroup } from '../engine/edit.ts';
 import { addMonths } from '../engine/months.ts';
 import type { Account, AccountType, BudgetState, Cents, Goal, Month, Transaction } from '../engine/types.ts';
 
@@ -39,6 +40,12 @@ export interface BudgetStore {
   /** Sets the category's goal, replacing any existing one (one goal per category). */
   saveGoal: (goal: Goal) => Promise<void>;
   removeGoal: (categoryId: string) => Promise<void>;
+  renameGroup: (id: string, name: string) => Promise<void>;
+  renameCategory: (id: string, name: string) => Promise<void>;
+  /** Removes the category and its goal and assignments; its transactions become uncategorized. */
+  deleteCategory: (id: string) => Promise<void>;
+  /** Removes the group and everything in it (see deleteCategory). */
+  deleteGroup: (id: string) => Promise<void>;
   /** Replaces all data with a validated backup. */
   importBackup: (backup: BackupFile) => Promise<void>;
   /** Records that a backup was just exported. */
@@ -133,6 +140,32 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     removeGoal: async (categoryId) => {
       for (const g of get().state.goals.filter((g) => g.categoryId === categoryId)) await repo.deleteGoal(db, g.id);
       set((s) => ({ state: { ...s.state, goals: s.state.goals.filter((g) => g.categoryId !== categoryId) } }));
+    },
+
+    renameGroup: async (id, name) => {
+      const group = get().state.groups.find((g) => g.id === id);
+      if (!group || !name.trim()) return;
+      const updated = { ...group, name: name.trim() };
+      await repo.saveGroup(db, updated);
+      set((s) => ({ state: { ...s.state, groups: s.state.groups.map((g) => (g.id === id ? updated : g)) } }));
+    },
+
+    renameCategory: async (id, name) => {
+      const category = get().state.categories.find((c) => c.id === id);
+      if (!category || !name.trim()) return;
+      const updated = { ...category, name: name.trim() };
+      await repo.saveCategory(db, updated);
+      set((s) => ({ state: { ...s.state, categories: s.state.categories.map((c) => (c.id === id ? updated : c)) } }));
+    },
+
+    deleteCategory: async (id) => {
+      await repo.deleteCategory(db, id);
+      set((s) => ({ state: removeCategories(s.state, [id]) }));
+    },
+
+    deleteGroup: async (id) => {
+      await repo.deleteGroup(db, id);
+      set((s) => ({ state: removeGroup(s.state, id) }));
     },
 
     importBackup: async (backup) => {
