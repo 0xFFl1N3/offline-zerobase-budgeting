@@ -133,3 +133,35 @@ export function moveCategory(state: BudgetState, id: string, delta: -1 | 1): Bud
     categories: moveAmong(state.categories, id, delta, (c) => c.groupId === category.groupId, (c) => !c.archived),
   };
 }
+
+/** Puts one item directly before or after another among the same siblings and renumbers them 0..n-1. */
+function placeAmong<T extends Ordered>(items: T[], id: string, targetId: string, place: 'before' | 'after', isSibling: (t: T) => boolean): T[] {
+  if (id === targetId) return items;
+  const order = items.filter(isSibling).sort((a, b) => a.sortOrder - b.sortOrder);
+  const moved = order.find((t) => t.id === id);
+  if (!moved || !order.some((t) => t.id === targetId)) throw new Error('Unknown item.');
+  const rest = order.filter((t) => t.id !== id);
+  rest.splice(rest.findIndex((t) => t.id === targetId) + (place === 'after' ? 1 : 0), 0, moved);
+  const rank = new Map(rest.map((t, i) => [t.id, i]));
+  return items
+    .map((t) => (rank.has(t.id) ? { ...t, sortOrder: rank.get(t.id) as number } : t))
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+export const moveAccountTo = (state: BudgetState, id: string, targetId: string, place: 'before' | 'after'): BudgetState => ({
+  ...state,
+  accounts: placeAmong(state.accounts, id, targetId, place, () => true),
+});
+
+export const moveGroupTo = (state: BudgetState, id: string, targetId: string, place: 'before' | 'after'): BudgetState => ({
+  ...state,
+  groups: placeAmong(state.groups, id, targetId, place, () => true),
+});
+
+/** Moves a category before or after another category of the same group. */
+export function moveCategoryTo(state: BudgetState, id: string, targetId: string, place: 'before' | 'after'): BudgetState {
+  const category = state.categories.find((c) => c.id === id);
+  const target = state.categories.find((c) => c.id === targetId);
+  if (!category || !target || category.groupId !== target.groupId) throw new Error('Categories can only be reordered within their group.');
+  return { ...state, categories: placeAmong(state.categories, id, targetId, place, (c) => c.groupId === category.groupId) };
+}

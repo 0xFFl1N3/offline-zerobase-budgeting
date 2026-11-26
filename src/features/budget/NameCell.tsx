@@ -1,4 +1,4 @@
-import { MoveButtons } from '../../components/MoveButtons.tsx';
+import type { ReactNode } from 'react';
 
 interface Props {
   name: string;
@@ -9,13 +9,12 @@ interface Props {
   /** Label of the action shown on hover: "Delete", or "Archive" when the item has history. */
   actionLabel: string;
   onAction: () => void;
-  /** Reorder handlers; null = already at that end. */
-  onMoveUp: (() => void) | null;
-  onMoveDown: (() => void) | null;
+  /** Drag handle for reordering (see useReorder). */
+  handle: ReactNode;
 }
 
 /** A group or category name: click it to rename in place. An Archive or Delete action appears on hover or keyboard focus. */
-export function NameCell({ name, renaming, onStartRename, onRename, onCancelRename, actionLabel, onAction, onMoveUp, onMoveDown }: Props) {
+export function NameCell({ name, renaming, onStartRename, onRename, onCancelRename, actionLabel, onAction, handle }: Props) {
   if (renaming) {
     return (
       <input
@@ -51,7 +50,7 @@ export function NameCell({ name, renaming, onStartRename, onRename, onCancelRena
       >
         {actionLabel}
       </button>
-      <MoveButtons label={name} onUp={onMoveUp} onDown={onMoveDown} />
+      {handle}
     </span>
   );
 }

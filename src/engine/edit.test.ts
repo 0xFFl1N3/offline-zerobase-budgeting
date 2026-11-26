@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spendingReport } from './analytics.ts';
 import { accountBalance, readyToAssign } from './budget.ts';
-import { moveAccount, moveCategory, moveGroup, removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from './edit.ts';
+import { moveAccount, moveAccountTo, moveCategoryTo, moveGroupTo, moveCategory, moveGroup, removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from './edit.ts';
 import type { BudgetState } from './types.ts';
 
 const state = (): BudgetState => ({
@@ -150,4 +150,20 @@ test('moving skips archived and closed neighbours', () => {
   a = setAccountClosed(a, 'b', true);
   a = moveAccount(a, 'c', -1);
   assert.deepEqual(names(a.accounts.filter((x) => !x.closed)), ['Cash', 'Checking']);
+});
+
+test('drag and drop places an item before or after another one', () => {
+  let s = state();
+  s.categories.push({ id: 'water', groupId: 'g1', name: 'Water', sortOrder: 2, archived: false });
+  const g1 = (st: BudgetState) => names(st.categories.filter((c) => c.groupId === 'g1'));
+  assert.deepEqual(g1(moveCategoryTo(s, 'water', 'rent', 'before')), ['Water', 'Rent', 'Electricity']);
+  assert.deepEqual(g1(moveCategoryTo(s, 'rent', 'water', 'after')), ['Electricity', 'Water', 'Rent']);
+  assert.deepEqual(g1(moveCategoryTo(s, 'rent', 'rent', 'after')), ['Rent', 'Electricity', 'Water']);
+  assert.throws(() => moveCategoryTo(s, 'rent', 'games', 'before'), /within their group/);
+
+  assert.deepEqual(names(moveGroupTo(s, 'g2', 'g1', 'before').groups), ['Fun', 'Living']);
+  assert.deepEqual(moveGroupTo(s, 'g1', 'g2', 'after').groups.map((g) => g.sortOrder), [0, 1]);
+
+  const a = twoAccounts();
+  assert.deepEqual(names(moveAccountTo(a, 'b', 'a', 'before').accounts), ['Savings', 'Checking']);
 });

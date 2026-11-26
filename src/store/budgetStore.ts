@@ -3,7 +3,7 @@ import { createDb, type BudgetDB } from '../db/db.ts';
 import type { BackupFile } from '../db/backup.ts';
 import * as repo from '../db/repository.ts';
 import type { Currency } from '../engine/money.ts';
-import { moveAccount, moveCategory, moveGroup, removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from '../engine/edit.ts';
+import { moveAccount, moveAccountTo, moveCategory, moveCategoryTo, moveGroup, moveGroupTo, removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from '../engine/edit.ts';
 import { addMonths } from '../engine/months.ts';
 import type { Account, AccountType, BudgetState, Cents, Goal, Month, Transaction } from '../engine/types.ts';
 
@@ -40,6 +40,10 @@ export interface BudgetStore {
   moveAccount: (id: string, delta: -1 | 1) => Promise<void>;
   moveGroup: (id: string, delta: -1 | 1) => Promise<void>;
   moveCategory: (id: string, delta: -1 | 1) => Promise<void>;
+  /** Drag and drop: puts an item before or after another one among the same siblings. */
+  moveAccountTo: (id: string, targetId: string, place: 'before' | 'after') => Promise<void>;
+  moveGroupTo: (id: string, targetId: string, place: 'before' | 'after') => Promise<void>;
+  moveCategoryTo: (id: string, targetId: string, place: 'before' | 'after') => Promise<void>;
   addGroup: (name: string) => Promise<void>;
   addCategory: (groupId: string, name: string) => Promise<void>;
   /** Sets this month's Assigned amount for a category. */
@@ -145,6 +149,10 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     moveAccount: (id, delta) => applyOrder(moveAccount(get().state, id, delta)),
     moveGroup: (id, delta) => applyOrder(moveGroup(get().state, id, delta)),
     moveCategory: (id, delta) => applyOrder(moveCategory(get().state, id, delta)),
+
+    moveAccountTo: (id, targetId, place) => applyOrder(moveAccountTo(get().state, id, targetId, place)),
+    moveGroupTo: (id, targetId, place) => applyOrder(moveGroupTo(get().state, id, targetId, place)),
+    moveCategoryTo: (id, targetId, place) => applyOrder(moveCategoryTo(get().state, id, targetId, place)),
 
     addGroup: async (name) => {
       if (!name.trim()) return;

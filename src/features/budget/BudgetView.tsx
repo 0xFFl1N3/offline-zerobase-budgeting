@@ -4,6 +4,7 @@ import { formatMoney } from '../../engine/money.ts';
 import { formatMonth } from '../../engine/months.ts';
 import type { Cents } from '../../engine/types.ts';
 import { InlineAdd } from '../../components/InlineAdd.tsx';
+import { useReorder } from '../../components/reorder.tsx';
 import { MoneyField } from '../../components/MoneyField.tsx';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { GoalEditor } from './GoalEditor.tsx';
@@ -46,6 +47,10 @@ export function BudgetView() {
   const deleteGroup = useBudgetStore((s) => s.deleteGroup);
   const moveGroup = useBudgetStore((s) => s.moveGroup);
   const moveCategory = useBudgetStore((s) => s.moveCategory);
+  const moveGroupTo = useBudgetStore((s) => s.moveGroupTo);
+  const moveCategoryTo = useBudgetStore((s) => s.moveCategoryTo);
+  const groupDnd = useReorder((id, target, place) => void moveGroupTo(id, target, place), (id, d) => void moveGroup(id, d));
+  const categoryDnd = useReorder((id, target, place) => void moveCategoryTo(id, target, place), (id, d) => void moveCategory(id, d));
   const archiveCategory = useBudgetStore((s) => s.archiveCategory);
   const archiveGroup = useBudgetStore((s) => s.archiveGroup);
   const restoreCategory = useBudgetStore((s) => s.restoreCategory);
@@ -116,12 +121,12 @@ export function BudgetView() {
           </p>
         )}
 
-        {groups.map((group, groupIndex) => {
+        {groups.map((group) => {
           const cats = state.categories.filter((c) => c.groupId === group.id && !c.archived);
           const sum = (f: (id: string) => Cents) => cats.reduce((t, c) => t + f(c.id), 0);
           return (
             <div key={group.id} className="border-b border-slate-100 last:border-b-0">
-              <div className={`${COLUMNS} bg-slate-50 px-4 py-2 text-sm font-semibold`}>
+              <div {...groupDnd.rowProps(group.id, 'groups')} className={`${COLUMNS} bg-slate-50 px-4 py-2 text-sm font-semibold`}>
                 <NameCell
                   name={group.name}
                   renaming={renaming === group.id}
@@ -131,8 +136,7 @@ export function BudgetView() {
                     setRenaming(null);
                   }}
                   onCancelRename={() => setRenaming(null)}
-                  onMoveUp={groupIndex > 0 ? () => void moveGroup(group.id, -1) : null}
-                  onMoveDown={groupIndex < groups.length - 1 ? () => void moveGroup(group.id, 1) : null}
+                  handle={groupDnd.handle(group.id, group.name, 'groups')}
                   actionLabel={hasTransactions(cats.map((c) => c.id)) ? 'Archive' : 'Delete'}
                   onAction={() =>
                     removeOrArchive(
@@ -147,12 +151,12 @@ export function BudgetView() {
                 <span className="px-2 text-right tabular-nums">{formatMoney(sum((id) => categoryActivity(state, id, month)), currency)}</span>
                 <span className="px-2 text-right tabular-nums">{formatMoney(sum((id) => categoryAvailable(state, id, month)), currency)}</span>
               </div>
-              {cats.map((cat, catIndex) => {
+              {cats.map((cat) => {
                 const available = categoryAvailable(state, cat.id, month);
                 const goal = state.goals.find((g) => g.categoryId === cat.id);
                 return (
                   <div key={cat.id}>
-                  <div className={`${COLUMNS} px-4 py-1 text-sm`}>
+                  <div {...categoryDnd.rowProps(cat.id, group.id)} className={`${COLUMNS} px-4 py-1 text-sm`}>
                     <div className="pl-4">
                       <NameCell
                         name={cat.name}
@@ -163,8 +167,7 @@ export function BudgetView() {
                           setRenaming(null);
                         }}
                         onCancelRename={() => setRenaming(null)}
-                        onMoveUp={catIndex > 0 ? () => void moveCategory(cat.id, -1) : null}
-                        onMoveDown={catIndex < cats.length - 1 ? () => void moveCategory(cat.id, 1) : null}
+                        handle={categoryDnd.handle(cat.id, cat.name, group.id)}
                         actionLabel={hasTransactions([cat.id]) ? 'Archive' : 'Delete'}
                         onAction={() =>
                           removeOrArchive(`the category "${cat.name}"`, [cat.id], () => void deleteCategory(cat.id), () => void archiveCategory(cat.id))

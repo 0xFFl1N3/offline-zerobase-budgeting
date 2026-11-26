@@ -3,7 +3,7 @@ import { accountBalance } from '../../engine/budget.ts';
 import { formatMoney, parseMoney } from '../../engine/money.ts';
 import type { Account, AccountType } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
-import { MoveButtons } from '../../components/MoveButtons.tsx';
+import { useReorder } from '../../components/reorder.tsx';
 import { BackupPanel } from '../backup/BackupPanel.tsx';
 
 function AddAccountForm({ onDone }: { onDone: () => void }) {
@@ -129,6 +129,8 @@ export function AccountsSidebar() {
   const currency = useBudgetStore((s) => s.currency);
   const setAccountClosed = useBudgetStore((s) => s.setAccountClosed);
   const moveAccount = useBudgetStore((s) => s.moveAccount);
+  const moveAccountTo = useBudgetStore((s) => s.moveAccountTo);
+  const dnd = useReorder((id, target, place) => void moveAccountTo(id, target, place), (id, d) => void moveAccount(id, d));
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [showClosed, setShowClosed] = useState(false);
@@ -140,13 +142,13 @@ export function AccountsSidebar() {
     <aside className="w-64 shrink-0 border-r border-slate-200 bg-white p-4">
       <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Accounts</h2>
       <ul className="mt-3 space-y-1">
-        {accounts.map((a, index) =>
+        {accounts.map((a) =>
           editing === a.id ? (
             <li key={a.id}>
               <EditAccountForm account={a} onDone={() => setEditing(null)} />
             </li>
           ) : (
-            <li key={a.id} className="group flex items-center gap-2 text-sm">
+            <li key={a.id} {...dnd.rowProps(a.id, 'accounts')} className="group flex items-center gap-2 text-sm">
               <button
                 type="button"
                 onClick={() => setEditing(a.id)}
@@ -156,11 +158,7 @@ export function AccountsSidebar() {
               >
                 {a.name}
               </button>
-              <MoveButtons
-                label={a.name}
-                onUp={index > 0 ? () => void moveAccount(a.id, -1) : null}
-                onDown={index < accounts.length - 1 ? () => void moveAccount(a.id, 1) : null}
-              />
+              {dnd.handle(a.id, a.name, 'accounts')}
               <span className="ml-auto tabular-nums">{formatMoney(accountBalance(state, a.id), currency)}</span>
             </li>
           ),
