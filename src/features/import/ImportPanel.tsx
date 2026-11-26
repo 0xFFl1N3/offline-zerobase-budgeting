@@ -9,6 +9,7 @@ import {
   readRows,
   suggestCategory,
   toTransactions,
+  updateFromRow,
   type ColumnMapping,
   type CsvTable,
   type DateFormat,
@@ -16,6 +17,7 @@ import {
 } from '../../engine/csvImport.ts';
 import { formatMoney } from '../../engine/money.ts';
 import { accountBalances } from '../../engine/reconcile.ts';
+import { categoryLabel } from '../transactions/labels.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 
 const field = 'rounded border border-slate-300 bg-white px-2 py-1 text-sm';
@@ -99,26 +101,38 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
 
   const choiceFor = (row: ImportRow): Choice =>
     overrides.get(row.line) ?? {
-      include: row.problem === null && !matches.has(row.line),
+      include: row.problem === null && (!matches.has(row.line) || matches.get(row.line)!.kind === 'update'),
       payee: row.payee,
       categoryId: row.amount === null ? null : suggestCategory(memory, row.payee, row.amount),
     };
   const setChoice = (row: ImportRow, patch: Partial<Choice>) =>
     setOverrides((m) => new Map(m).set(row.line, { ...choiceFor(row), ...patch }));
 
+  const updateOf = (row: ImportRow) => {
+    const m = matches.get(row.line);
+    return m?.kind === 'update' ? state.transactions.find((t) => t.id === m.transactionId) : undefined;
+  };
   const chosen = rows.filter((r) => r.problem === null && choiceFor(r).include);
-  const missing = chosen.filter((r) => r.amount! < 0 && choiceFor(r).categoryId === null).length;
-  const chosenTotal = chosen.reduce((t, r) => t + r.amount!, 0);
+  const chosenNew = chosen.filter((r) => !updateOf(r));
+  const chosenUpdates = chosen.filter((r) => updateOf(r));
+  const missing = chosenNew.filter((r) => r.amount! < 0 && choiceFor(r).categoryId === null).length;
+  // Updated pending payments are already in the balance.
+  const chosenTotal = chosenNew.reduce((t, r) => t + r.amount!, 0);
 
   const runImport = () => {
     try {
-      const txs = toTransactions(
-        chosen.map((row) => ({ row, payee: choiceFor(row).payee, categoryId: choiceFor(row).categoryId })),
+      const added = toTransactions(
+        chosenNew.map((row) => ({ row, payee: choiceFor(row).payee, categoryId: choiceFor(row).categoryId })),
         accountId,
         () => crypto.randomUUID(),
       );
+      const updated = chosenUpdates.map((row) => updateFromRow(updateOf(row)!, row));
       const name = state.accounts.find((a) => a.id === accountId)?.name ?? '';
-      void importTransactions(txs).then(() => onClose(`Imported ${txs.length} transaction${txs.length === 1 ? '' : 's'} into ${name}.`));
+      const parts = [
+        added.length > 0 ? `imported ${added.length} transaction${added.length === 1 ? '' : 's'}` : '',
+        updated.length > 0 ? `updated ${updated.length} pending one${updated.length === 1 ? '' : 's'}` : '',
+      ].filter(Boolean).join(' and ');
+      void importTransactions([...added, ...updated]).then(() => onClose(`${parts.charAt(0).toUpperCase()}${parts.slice(1)} in ${name}.`));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The import failed.');
     }
@@ -161,8 +175,15 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
   const note = (row: ImportRow) => {
     if (row.problem) return <span className="text-red-600">{row.problem}</span>;
     const match = matches.get(row.line);
-    if (match === 'imported') return <span className="text-slate-500">Already imported</span>;
-    if (match === 'likely') return <span className="text-amber-700" title="A transaction with the same amount within three days is already in this account">Possible duplicate</span>;
+    if (match?.kind === 'imported') return <span className="text-slate-500">Already imported</span>;
+    if (match?.kind === 'update') {
+      return (
+        <span className="text-sky-700" title="Imported earlier while pending; importing updates that transaction instead of adding a new one">
+          {row.pending ? 'Updates the pending one' : 'Now booked: updates the pending one'}
+        </span>
+      );
+    }
+    if (match?.kind === 'likely') return <span className="text-amber-700" title="A transaction with the same amount within three days is already in this account">Possible duplicate</span>;
     if (row.pending) return <span className="text-slate-500" title="Imported as not cleared">Pending</span>;
     return null;
   };
@@ -284,15 +305,21 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
                       </td>
                       <td className="px-2 py-1.5 whitespace-nowrap tabular-nums">{row.date ?? '—'}</td>
                       <td className="px-2 py-1.5">
+                        {updateOf(row) ? (
+                          <span className="px-2">{updateOf(row)!.payee}</span>
+                        ) : (
                         <input
                           aria-label={`Payee for row ${row.line + 1}`}
                           value={choice.payee}
                           onChange={(e) => setChoice(row, { payee: e.target.value })}
                           className={`${field} w-full min-w-32`}
                         />
+                        )}
                       </td>
                       <td className="max-w-64 truncate px-2 py-1.5 text-slate-500" title={row.memo}>{row.memo}</td>
-                      <td className="px-2 py-1.5">{row.problem === null && categorySelect(row, choice)}</td>
+                      <td className="px-2 py-1.5">
+                        {row.problem === null && (updateOf(row) ? <span className="text-slate-500">{categoryLabel(state, updateOf(row)!)}</span> : categorySelect(row, choice))}
+                      </td>
                       <td className={`px-2 py-1.5 text-right whitespace-nowrap tabular-nums ${row.amount !== null && row.amount > 0 && !off ? 'text-emerald-700' : ''}`}>
                         {row.amount === null ? '—' : fmt(row.amount)}
                       </td>
@@ -325,7 +352,7 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
               {missing > 0 ? (
                 <span className="text-amber-700">{missing} outflow{missing === 1 ? ' needs' : 's need'} a category first.</span>
               ) : chosen.length > 0 ? (
-                `Total ${fmt(chosenTotal)}. Booked rows come in as cleared, pending ones as not cleared.`
+                `${chosenNew.length > 0 ? `New: ${fmt(chosenTotal)}. ` : ''}Booked rows come in as cleared, pending ones as not cleared.`
               ) : (
                 'Tick the rows to import.'
               )}

@@ -60,6 +60,7 @@ export function keepCleared(original: Transaction | undefined, edited: Transacti
   const next: Transaction = rest;
   if (!original) return next;
   if (original.importId !== undefined) next.importId = original.importId; // still the same bank row
+  if (original.importPending) next.importPending = true;
   if (original.cleared && original.accountId === edited.accountId) next.cleared = original.cleared;
   if (original.transferCleared && edited.transferAccountId !== null && original.transferAccountId === edited.transferAccountId) {
     next.transferCleared = original.transferCleared;

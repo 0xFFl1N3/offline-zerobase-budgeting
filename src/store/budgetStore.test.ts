@@ -334,3 +334,20 @@ test('clearing and reconciling persist across a reload', async () => {
   assert.equal(adj.cleared, 'reconciled');
   assert.match(s.accounts[0]!.lastReconciled!, /^\d{4}-\d{2}-\d{2}$/);
 });
+
+test('an import can add new transactions and replace an updated pending one in one go', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Giro', initialBalance: 0, currency: 'EUR' });
+  const acc = store.getState().state.accounts[0]!.id;
+  const base = { accountId: acc, payee: 'Shop', memo: '', transferAccountId: null, categoryId: null };
+  await store.getState().importTransactions([{ ...base, id: 'p', date: '2026-01-05', amount: 100, importId: 'csv2:a', importPending: true }]);
+  await store.getState().importTransactions([
+    { ...base, id: 'p', date: '2026-01-06', amount: 100, importId: 'csv2:b', cleared: 'cleared' },
+    { ...base, id: 'n', date: '2026-01-07', amount: 200, importId: 'csv2:c', cleared: 'cleared' },
+  ]);
+  assert.equal(store.getState().state.transactions.length, 2);
+  const reloaded = createBudgetStore(db, '2026-01');
+  await reloaded.getState().load();
+  const p = reloaded.getState().state.transactions.find((t) => t.id === 'p')!;
+  assert.deepEqual([p.date, p.cleared, p.importPending, p.importId], ['2026-01-06', 'cleared', undefined, 'csv2:b']);
+});

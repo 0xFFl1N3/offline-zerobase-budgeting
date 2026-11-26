@@ -131,8 +131,13 @@ export interface ImportRow {
   memo: string;
   amount: Cents | null;
   pending: boolean;
-  /** The same for the same bank row in any later export, so re-importing a file finds what is already there. */
+  /**
+   * A fingerprint of the payment (date, amount, payee, purpose), so the same payment in a later export is recognised.
+   * Status and value date are left out: they change when a pending payment is booked.
+   */
   importId: string;
+  /** The fingerprint used before 0.4.7 (of the whole row), still recognised for transactions imported then. */
+  legacyImportId: string;
   /** Why the row cannot be imported, if it can't. */
   problem: string | null;
 }
@@ -181,9 +186,12 @@ export function readRows(table: CsvTable, mapping: ColumnMapping): ImportRow[] {
     const memo = cell(row, mapping.memo).replace(/\s+/g, ' ');
     const payer = cell(row, mapping.payer);
     const raw = amount !== null && amount > 0 && payer !== '' ? payer : cell(row, mapping.payee) || payer;
-    const key = hash(row.join('\u001f'));
-    const n = (seen.get(key) ?? 0) + 1; // identical rows in one file (two coffees on one day) stay apart
+    const key = hash([date ?? cell(row, mapping.date), amount ?? '', raw, memo].join('\u001f'));
+    const n = (seen.get(key) ?? 0) + 1; // identical payments in one file (two coffees on one day) stay apart
     seen.set(key, n);
+    const legacyKey = hash(row.join('\u001f'));
+    const legacyN = (seen.get(`legacy:${legacyKey}`) ?? 0) + 1;
+    seen.set(`legacy:${legacyKey}`, legacyN);
     const problem = date === null ? 'No valid date' : amount === null ? 'No valid amount' : amount === 0 ? 'Amount is zero' : null;
     return {
       line,
@@ -192,41 +200,68 @@ export function readRows(table: CsvTable, mapping: ColumnMapping): ImportRow[] {
       memo,
       amount,
       pending: /vorgemerkt|pending|offen|ausstehend/i.test(cell(row, mapping.status)),
-      importId: `csv:${key}${n > 1 ? `#${n}` : ''}`,
+      importId: `csv2:${key}${n > 1 ? `#${n}` : ''}`,
+      legacyImportId: `csv:${legacyKey}${legacyN > 1 ? `#${legacyN}` : ''}`,
       problem,
     };
   });
 }
 
-export type MatchKind = 'imported' | 'likely';
+export type Match =
+  /** An earlier import brought in this payment. */
+  | { kind: 'imported' }
+  /** A transaction entered by hand has the same amount within three days. */
+  | { kind: 'likely' }
+  /** A pending payment imported earlier is now booked (or changed): importing updates that transaction. */
+  | { kind: 'update'; transactionId: string };
 
 const daysApart = (a: string, b: string) => Math.abs(Date.parse(a) - Date.parse(b)) / 86400000;
 
 /**
- * Rows already in the account: "imported" when an earlier import brought in the same bank row; "likely" when
- * a transaction entered by hand has the same amount within three days (each one matches at most one row).
+ * Which rows are already in the account. Imported payments are recognised by fingerprint. Two looser checks
+ * (same amount within three days, each transaction matching one row at most) catch the rest: one against
+ * transactions entered by hand, one against payments imported while still pending, whose fingerprint may
+ * have changed when the bank booked them. Booked imports are only matched by fingerprint, so two real
+ * purchases of the same amount a few days apart never hide each other.
  */
-export function findMatches(state: BudgetState, accountId: string, rows: ImportRow[]): Map<number, MatchKind> {
-  const result = new Map<number, MatchKind>();
+export function findMatches(state: BudgetState, accountId: string, rows: ImportRow[]): Map<number, Match> {
+  const result = new Map<number, Match>();
   const own = state.transactions.filter((t) => t.accountId === accountId || t.transferAccountId === accountId);
-  const importIds = new Set(own.map((t) => t.importId).filter((id) => id !== undefined));
-  const manual = own
-    .filter((t) => t.importId === undefined)
-    .map((t) => ({ date: t.date, amount: t.accountId === accountId ? t.amount : -t.amount, used: false }));
+  const knownIds = new Set(own.map((t) => t.importId).filter((id) => id !== undefined));
+  const inFile = new Set(rows.flatMap((r) => [r.importId, r.legacyImportId]));
+  const loose = own
+    .filter((t) => t.importId === undefined || (t.importPending === true && !inFile.has(t.importId)))
+    .map((t) => ({ t, amount: t.accountId === accountId ? t.amount : -t.amount, used: false }));
+
   for (const row of rows) {
-    if (importIds.has(row.importId)) {
-      result.set(row.line, 'imported');
-      continue;
-    }
-    if (row.date === null || row.amount === null) continue;
-    const candidates = manual.filter((m) => !m.used && m.amount === row.amount && daysApart(m.date, row.date!) <= 3);
-    candidates.sort((a, b) => daysApart(a.date, row.date!) - daysApart(b.date, row.date!));
-    if (candidates[0]) {
-      candidates[0].used = true;
-      result.set(row.line, 'likely');
-    }
+    if (knownIds.has(row.importId) || knownIds.has(row.legacyImportId)) result.set(row.line, { kind: 'imported' });
+  }
+  for (const row of rows) {
+    if (result.has(row.line) || row.date === null || row.amount === null) continue;
+    const candidates = loose.filter((m) => !m.used && m.amount === row.amount && daysApart(m.t.date, row.date!) <= 3);
+    // Prefer an earlier pending import (it is the same bank payment), then the closest date.
+    candidates.sort((a, b) => Number(b.t.importPending === true) - Number(a.t.importPending === true) || daysApart(a.t.date, row.date!) - daysApart(b.t.date, row.date!));
+    const best = candidates[0];
+    if (!best) continue;
+    best.used = true;
+    result.set(row.line, best.t.importPending ? { kind: 'update', transactionId: best.t.id } : { kind: 'likely' });
   }
   return result;
+}
+
+/**
+ * Brings an earlier pending import up to date with its row: the bank's date, the new fingerprint and, once booked,
+ * cleared. Payee, category and memo stay as you left them.
+ */
+export function updateFromRow(t: Transaction, row: ImportRow): Transaction {
+  if (row.date === null) throw new Error(`Row ${row.line + 1}: ${row.problem}.`);
+  const { importPending: _p, cleared: _c, ...rest } = t;
+  return {
+    ...rest,
+    date: row.date,
+    importId: row.importId,
+    ...(row.pending ? { importPending: true } : { cleared: t.cleared === 'reconciled' ? 'reconciled' : 'cleared' }),
+  };
 }
 
 const payeeKey = (payee: string, amount: Cents) => `${amount < 0 ? '-' : '+'}${payee.trim().toLowerCase()}`;
@@ -267,7 +302,7 @@ export function toTransactions(choices: ImportChoice[], accountId: string, newId
       memo: row.memo,
       amount: row.amount,
       transferAccountId: null,
-      ...(row.pending ? {} : { cleared: 'cleared' as const }),
+      ...(row.pending ? { importPending: true } : { cleared: 'cleared' as const }),
       importId: row.importId,
     };
   });

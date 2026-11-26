@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { detectSeparator, parseCsv } from './csv.ts';
-import { cleanPayee, detectDateFormat, findMatches, findTable, guessMapping, parseDate, payeeMemory, readRows, suggestCategory, toTransactions } from './csvImport.ts';
+import { cleanPayee, detectDateFormat, findMatches, findTable, guessMapping, parseDate, payeeMemory, readRows, suggestCategory, toTransactions, updateFromRow } from './csvImport.ts';
 import type { BudgetState, Transaction } from './types.ts';
 
 // Shaped like a DKB "Girokonto" export; names and numbers are made up.
@@ -115,7 +115,7 @@ test('matches: earlier imports by id, hand-entered ones by amount within three d
     t({ accountId: 'b', amount: -1640, date: '2026-11-24' }), // another account
     t({ importId: 'csv:other', amount: -1640, date: '2026-11-24' }), // a different bank row
   ]);
-  assert.deepEqual([...findMatches(s, 'a', rows)], [[0, 'imported'], [1, 'likely']]);
+  assert.deepEqual([...findMatches(s, 'a', rows)], [[0, { kind: 'imported' }], [1, { kind: 'likely' }]]);
 });
 
 test('payee memory suggests the last category per payee, separately for refunds, skipping archived ones', () => {
@@ -148,4 +148,64 @@ test('import builds cleared transactions (pending ones not cleared) and requires
     ['n2', 'Arbeitgeber GmbH', 250000, 'cleared', null, true],
   ]);
   assert.throws(() => toTransactions([{ row: rows[0]!, payee: 'x', categoryId: null }], 'a', () => 'z'), /needs a category/);
+});
+
+test('import marks pending rows so a later import can find them', () => {
+  const rows = readRows(table(), guessMapping(table()));
+  const [booked, pending] = toTransactions([{ row: rows[0]!, payee: 'E', categoryId: 'food' }, { row: rows[2]!, payee: 'E', categoryId: 'food' }], 'a', () => 'id');
+  assert.equal(booked!.importPending, undefined);
+  assert.equal(pending!.importPending, true);
+});
+
+// The same payment in a later export: booked now, a new value date and a customer reference filled in.
+const LATER = DKB.replace('"25.11.26";"25.11.26";"Vorgemerkt";"ISSUER";"EDEKA";"VISA Debitkartenumsatz vom 24.11.2026";"Ausgang";"DE00111";"-9,87";"";"";"333"',
+  '"25.11.26";"27.11.26";"Gebucht";"ISSUER";"EDEKA";"VISA Debitkartenumsatz vom 24.11.2026";"Ausgang";"DE00111";"-9,87";"";"";"999"');
+
+test('the fingerprint ignores status, value date and references, but not the payment itself', () => {
+  const before = readRows(table(), guessMapping(table()));
+  const t2 = findTable(parseCsv(LATER))!;
+  const after = readRows(t2, guessMapping(t2));
+  assert.equal(after[2]!.pending, false);
+  assert.equal(after[2]!.importId, before[2]!.importId);
+  assert.notEqual(after[2]!.legacyImportId, before[2]!.legacyImportId);
+  assert.ok(after.every((r, i) => r.importId === before[i]!.importId));
+  assert.ok(before.every((r) => r.importId.startsWith('csv2:')));
+});
+
+test('transactions imported with the old whole-row fingerprint are still recognised', () => {
+  const rows = readRows(table(), guessMapping(table()));
+  const s = state([t({ importId: rows[3]!.legacyImportId, amount: 250000, date: '2026-11-24' })]);
+  assert.deepEqual([...findMatches(s, 'a', rows)], [[3, { kind: 'imported' }]]);
+});
+
+test('a pending import whose row changed is updated instead of added; booked imports only match by fingerprint', () => {
+  const rows = readRows(table(), guessMapping(table()));
+  const s = state([
+    // imported while pending under some other fingerprint (e.g. the bank changed the date when booking)
+    t({ id: 'p', importId: 'csv2:older', importPending: true, amount: -987, date: '2026-11-24', payee: 'Edeka', categoryId: 'food', memo: 'mine' }),
+    // a booked import of a different purchase with the same amount as the Netflix row: must not hide it
+    t({ id: 'b', importId: 'csv2:other', cleared: 'cleared', amount: -2199, date: '2026-11-25' }),
+  ]);
+  const m = findMatches(s, 'a', rows);
+  assert.deepEqual(m.get(2), { kind: 'update', transactionId: 'p' });
+  assert.equal(m.get(1), undefined);
+
+  const t2 = findTable(parseCsv(LATER))!;
+  const bookedRow = readRows(t2, guessMapping(t2))[2]!;
+  const updated = updateFromRow(s.transactions[0]!, bookedRow);
+  assert.equal(updated.cleared, 'cleared');
+  assert.equal(updated.importPending, undefined);
+  assert.equal(updated.importId, bookedRow.importId);
+  assert.equal(updated.date, '2026-11-25');
+  assert.deepEqual([updated.payee, updated.categoryId, updated.memo, updated.id], ['Edeka', 'food', 'mine', 'p']);
+  // Still pending in the new file: stays pending, only the date and fingerprint follow the bank.
+  const stillPending = updateFromRow(s.transactions[0]!, rows[2]!);
+  assert.equal(stillPending.importPending, true);
+  assert.equal(stillPending.cleared, undefined);
+});
+
+test('a pending import still in the file by fingerprint is simply "already imported"', () => {
+  const rows = readRows(table(), guessMapping(table()));
+  const s = state([t({ importId: rows[2]!.importId, importPending: true, amount: -987, date: '2026-11-25' })]);
+  assert.deepEqual([...findMatches(s, 'a', rows)], [[2, { kind: 'imported' }]]);
 });

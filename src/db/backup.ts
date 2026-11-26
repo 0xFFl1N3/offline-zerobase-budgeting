@@ -204,6 +204,7 @@ function parseData(raw: unknown): BudgetState {
       ...parseSplits(o),
       ...parseCleared(o),
       ...(o.importId !== undefined && { importId: str(o, 'importId', 'Transaction') }),
+      ...(o.importPending !== undefined && { importPending: bool(o, 'importPending', 'Transaction') }),
     };
   });
 

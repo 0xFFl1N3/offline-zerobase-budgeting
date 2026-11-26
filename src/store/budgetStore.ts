@@ -72,7 +72,7 @@ export interface BudgetStore {
   /** Adds a transaction, or replaces the one with the same id. */
   saveTransaction: (t: Transaction) => Promise<void>;
   removeTransaction: (id: string) => Promise<void>;
-  /** Adds many transactions at once (a bank import). */
+  /** Adds or replaces many transactions at once (a bank import, including updated pending ones). */
   importTransactions: (transactions: Transaction[]) => Promise<void>;
   /** Sets the cleared status of one account's side of a transaction. */
   setCleared: (transactionId: string, accountId: string, status: ClearedStatus) => Promise<void>;
@@ -284,7 +284,8 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
 
     importTransactions: async (transactions) => {
       await repo.saveTransactions(db, transactions);
-      set((s) => ({ state: { ...s.state, transactions: [...s.state.transactions, ...transactions] } }));
+      const ids = new Set(transactions.map((t) => t.id));
+      set((s) => ({ state: { ...s.state, transactions: [...s.state.transactions.filter((t) => !ids.has(t.id)), ...transactions] } }));
     },
 
     setCleared: async (transactionId, accountId, status) => {

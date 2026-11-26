@@ -80,7 +80,7 @@ export function bookNext(rec: RecurringTransaction, id: string, amount?: number)
 export const skipNext = (rec: RecurringTransaction): RecurringTransaction => ({ ...rec, handled: rec.handled + 1 });
 
 const templateOf = (t: Transaction): RecurringTransaction['template'] => {
-  const { id: _id, date: _date, splits, cleared: _c, transferCleared: _tc, importId: _i, ...rest } = t;
+  const { id: _id, date: _date, splits, cleared: _c, transferCleared: _tc, importId: _i, importPending: _ip, ...rest } = t;
   return { ...rest, ...(splits && { splits: splits.map((s) => ({ ...s })) }) };
 };
 
