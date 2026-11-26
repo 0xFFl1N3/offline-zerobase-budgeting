@@ -6,6 +6,7 @@ import { SettingsView } from './features/settings/SettingsView.tsx';
 import { Setup } from './features/setup/Setup.tsx';
 import { TransactionsView } from './features/transactions/TransactionsView.tsx';
 import { useBudgetStore } from './store/budgetStore.ts';
+import { APP_VERSION } from './version.ts';
 
 type Tab = 'budget' | 'transactions' | 'analytics' | 'settings';
 
@@ -19,8 +20,14 @@ export default function App() {
     void load();
   }, [load]);
 
+  const version = (
+    <div className="pointer-events-none fixed bottom-2 left-3 select-none text-xs text-slate-600" aria-label={`Version ${APP_VERSION}`}>
+      v{APP_VERSION}
+    </div>
+  );
+
   if (!ready) return <main className="p-8 text-slate-500">Loading…</main>;
-  if (!hasAccounts) return <div className="min-h-screen bg-slate-50 text-slate-900"><Setup /></div>;
+  if (!hasAccounts) return <div className="min-h-screen bg-slate-50 text-slate-900"><Setup />{version}</div>;
 
   const tabClass = (t: Tab) =>
     `px-4 py-3 text-sm font-medium border-b-2 ${tab === t ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-600 hover:text-slate-900'}`;
@@ -37,6 +44,7 @@ export default function App() {
         </nav>
         <div className="mx-auto max-w-6xl">{tab === 'budget' ? <BudgetView /> : tab === 'transactions' ? <TransactionsView /> : tab === 'analytics' ? <AnalyticsView /> : <SettingsView />}</div>
       </div>
+      {version}
     </div>
   );
 }
