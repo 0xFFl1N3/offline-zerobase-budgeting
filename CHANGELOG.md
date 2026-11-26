@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.5.0 – 2026-11-26
+
+### Added
+- Phone layout: tabs move to a bar at the bottom, and the accounts list opens from a menu button at the top.
+
 ## 0.4.13 – 2026-11-26
 
 ### Changed

@@ -126,7 +126,8 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
   );
 }
 
-export function AccountsSidebar() {
+/** The accounts list with balances, editing and backups. `className` sets its width and border for where it is shown. */
+export function AccountsSidebar({ className = 'w-64 border-r border-slate-200' }: { className?: string }) {
   const state = useBudgetStore((s) => s.state);
   const currency = useBudgetStore((s) => s.currency);
   const setAccountClosed = useBudgetStore((s) => s.setAccountClosed);
@@ -141,7 +142,7 @@ export function AccountsSidebar() {
   const total = accounts.reduce((sum, a) => sum + accountBalance(state, a.id), 0);
 
   return (
-    <aside className="w-64 shrink-0 border-r border-slate-200 bg-white p-4">
+    <aside className={`shrink-0 bg-white p-4 ${className}`}>
       <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Accounts</h2>
       <ul className="mt-3 space-y-1">
         {accounts.map((a) =>
