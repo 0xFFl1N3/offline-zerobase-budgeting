@@ -1,0 +1,106 @@
+import type { BudgetState, Cents, Goal, GoalProgress, Month } from './types.ts';
+import { addMonths, monthOf, monthsBetween } from './months.ts';
+
+const isCategorised = (t: { categoryId: string | null; transferAccountId: string | null }) =>
+  t.categoryId !== null && t.transferAccountId === null;
+
+/** Balance of one account, counting transactions up to and including `upToMonth` (all if omitted). */
+export function accountBalance(state: BudgetState, accountId: string, upToMonth?: Month): Cents {
+  const account = state.accounts.find((a) => a.id === accountId);
+  if (!account) throw new Error(`Unknown account: ${accountId}`);
+  let balance = account.openingBalance;
+  for (const t of state.transactions) {
+    if (upToMonth !== undefined && monthOf(t.date) > upToMonth) continue;
+    if (t.accountId === accountId) balance += t.amount;
+    if (t.transferAccountId === accountId) balance -= t.amount;
+  }
+  return balance;
+}
+
+export function categoryAssigned(state: BudgetState, categoryId: string, month: Month): Cents {
+  return state.monthlyBudgets
+    .filter((b) => b.categoryId === categoryId && b.month === month)
+    .reduce((sum, b) => sum + b.assigned, 0);
+}
+
+/** Sum of the category's transactions in one month (negative = spending). */
+export function categoryActivity(state: BudgetState, categoryId: string, month: Month): Cents {
+  return state.transactions
+    .filter((t) => isCategorised(t) && t.categoryId === categoryId && monthOf(t.date) === month)
+    .reduce((sum, t) => sum + t.amount, 0);
+}
+
+/** Category balance at the end of `month`: everything assigned and spent up to then (unspent money rolls over). */
+export function categoryAvailable(state: BudgetState, categoryId: string, month: Month): Cents {
+  let total = 0;
+  for (const b of state.monthlyBudgets) {
+    if (b.categoryId === categoryId && b.month <= month) total += b.assigned;
+  }
+  for (const t of state.transactions) {
+    if (isCategorised(t) && t.categoryId === categoryId && monthOf(t.date) <= month) total += t.amount;
+  }
+  return total;
+}
+
+export const isOverspent = (state: BudgetState, categoryId: string, month: Month): boolean =>
+  categoryAvailable(state, categoryId, month) < 0;
+
+/** Ready to Assign = all account balances minus all category balances, as of the end of `month`. */
+export function readyToAssign(state: BudgetState, month: Month): Cents {
+  let total = 0;
+  for (const a of state.accounts) total += accountBalance(state, a.id, month);
+  for (const b of state.monthlyBudgets) {
+    if (b.month <= month) total -= b.assigned;
+  }
+  for (const t of state.transactions) {
+    if (isCategorised(t) && monthOf(t.date) <= month) total -= t.amount;
+  }
+  return total;
+}
+
+const clampPercent = (current: Cents, target: Cents): number => {
+  if (target <= 0) return 0;
+  const pct = Math.min(100, Math.max(0, (current / target) * 100));
+  return Math.round(pct * 10) / 10;
+};
+
+function balanceGoalProgress(
+  state: BudgetState,
+  goal: Goal,
+  target: Cents,
+  targetDate: Month | undefined,
+  month: Month,
+): GoalProgress {
+  const available = categoryAvailable(state, goal.categoryId, month);
+  let neededThisMonth: Cents;
+  if (targetDate === undefined) {
+    neededThisMonth = Math.max(0, target - available);
+  } else {
+    const monthsLeft = Math.max(1, monthsBetween(month, targetDate) + 1);
+    const availableBefore = categoryAvailable(state, goal.categoryId, addMonths(month, -1));
+    const monthly = Math.ceil(Math.max(0, target - availableBefore) / monthsLeft);
+    neededThisMonth = Math.max(0, monthly - categoryAssigned(state, goal.categoryId, month));
+  }
+  return { goalId: goal.id, target, current: available, percent: clampPercent(available, target), neededThisMonth };
+}
+
+export function goalProgress(state: BudgetState, goal: Goal, month: Month): GoalProgress {
+  switch (goal.type) {
+    case 'target_balance':
+      return balanceGoalProgress(state, goal, goal.targetAmount ?? 0, goal.targetDate, month);
+    case 'target_by_date':
+      if (goal.targetDate === undefined) throw new Error('target_by_date goal needs a targetDate');
+      return balanceGoalProgress(state, goal, goal.targetAmount ?? 0, goal.targetDate, month);
+    case 'monthly_amount': {
+      const target = goal.monthlyAmount ?? 0;
+      const assigned = categoryAssigned(state, goal.categoryId, month);
+      return {
+        goalId: goal.id,
+        target,
+        current: assigned,
+        percent: clampPercent(assigned, target),
+        neededThisMonth: Math.max(0, target - assigned),
+      };
+    }
+  }
+}
