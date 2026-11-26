@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createDb, type BudgetDB } from '../db/db.ts';
+import type { BackupFile } from '../db/backup.ts';
 import * as repo from '../db/repository.ts';
 import type { Currency } from '../engine/money.ts';
 import { addMonths } from '../engine/months.ts';
@@ -23,6 +24,8 @@ export interface BudgetStore {
   state: BudgetState;
   currency: Currency;
   month: Month;
+  /** ISO timestamp of the last backup export, or null. */
+  lastBackupAt: string | null;
   load: () => Promise<void>;
   completeSetup: (input: { accountName: string; initialBalance: Cents; currency: Currency }) => Promise<void>;
   addAccount: (name: string, type: AccountType, openingBalance: Cents) => Promise<void>;
@@ -36,6 +39,10 @@ export interface BudgetStore {
   /** Sets the category's goal, replacing any existing one (one goal per category). */
   saveGoal: (goal: Goal) => Promise<void>;
   removeGoal: (categoryId: string) => Promise<void>;
+  /** Replaces all data with a validated backup. */
+  importBackup: (backup: BackupFile) => Promise<void>;
+  /** Records that a backup was just exported. */
+  markBackedUp: () => Promise<void>;
   shiftMonth: (n: number) => void;
 }
 
@@ -53,15 +60,16 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     state: emptyState(),
     currency: 'EUR',
     month: startMonth,
+    lastBackupAt: null,
 
     load: async () => {
       const { state, settings } = await repo.loadAll(db);
-      set({ state, currency: settings.currency, ready: true });
+      set({ state, currency: settings.currency, lastBackupAt: settings.lastBackupAt, ready: true });
     },
 
     completeSetup: async ({ accountName, initialBalance, currency }) => {
       const account = newAccount(accountName, 'checking', initialBalance);
-      await repo.saveSettings(db, { currency });
+      await repo.saveSettings(db, { currency, lastBackupAt: get().lastBackupAt });
       await repo.saveAccount(db, account);
       set((s) => ({ currency, state: { ...s.state, accounts: [...s.state.accounts, account] } }));
     },
@@ -125,6 +133,18 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     removeGoal: async (categoryId) => {
       for (const g of get().state.goals.filter((g) => g.categoryId === categoryId)) await repo.deleteGoal(db, g.id);
       set((s) => ({ state: { ...s.state, goals: s.state.goals.filter((g) => g.categoryId !== categoryId) } }));
+    },
+
+    importBackup: async (backup) => {
+      const settings = { currency: backup.settings.currency, lastBackupAt: get().lastBackupAt };
+      await repo.replaceAll(db, backup.data, settings);
+      set({ state: backup.data, currency: settings.currency });
+    },
+
+    markBackedUp: async () => {
+      const lastBackupAt = new Date().toISOString();
+      await repo.saveSettings(db, { currency: get().currency, lastBackupAt });
+      set({ lastBackupAt });
     },
 
     shiftMonth: (n) => set((s) => ({ month: addMonths(s.month, n) })),

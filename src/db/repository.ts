@@ -18,9 +18,11 @@ function normalizeGoal(g: Goal): Goal {
 
 export interface Settings {
   currency: Currency;
+  /** ISO timestamp of the last backup export, or null if never. */
+  lastBackupAt: string | null;
 }
 
-const DEFAULT_SETTINGS: Settings = { currency: 'EUR' };
+const DEFAULT_CURRENCY: Currency = 'EUR';
 
 export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; settings: Settings }> {
   const [accounts, groups, categories, goals, monthlyBudgets, transactions, settingRows] = await Promise.all([
@@ -33,7 +35,7 @@ export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; setti
     db.settings.toArray(),
   ]);
   const byKey = new Map(settingRows.map((r) => [r.key, r.value]));
-  const currency = byKey.get('currency') === 'USD' ? 'USD' : DEFAULT_SETTINGS.currency;
+  const currency = byKey.get('currency') === 'USD' ? 'USD' : DEFAULT_CURRENCY;
   return {
     state: {
       accounts,
@@ -43,7 +45,7 @@ export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; setti
       monthlyBudgets,
       transactions,
     },
-    settings: { currency },
+    settings: { currency, lastBackupAt: byKey.get('lastBackupAt') ?? null },
   };
 }
 
@@ -61,5 +63,29 @@ export async function setAssigned(db: BudgetDB, categoryId: string, month: Month
   else await db.monthlyBudgets.put({ categoryId, month, assigned });
 }
 
-export const saveSettings = (db: BudgetDB, s: Settings) =>
-  db.settings.put({ key: 'currency', value: s.currency });
+export async function saveSettings(db: BudgetDB, s: Settings) {
+  await db.settings.put({ key: 'currency', value: s.currency });
+  if (s.lastBackupAt) await db.settings.put({ key: 'lastBackupAt', value: s.lastBackupAt });
+  else await db.settings.delete('lastBackupAt');
+}
+
+/** Replaces everything in the database with the given data, atomically. */
+export async function replaceAll(db: BudgetDB, state: BudgetState, settings: Settings) {
+  await db.transaction(
+    'rw',
+    [db.accounts, db.groups, db.categories, db.goals, db.monthlyBudgets, db.transactions, db.settings],
+    async () => {
+      await Promise.all([
+        db.accounts.clear(), db.groups.clear(), db.categories.clear(), db.goals.clear(),
+        db.monthlyBudgets.clear(), db.transactions.clear(), db.settings.clear(),
+      ]);
+      await db.accounts.bulkPut(state.accounts);
+      await db.groups.bulkPut(state.groups);
+      await db.categories.bulkPut(state.categories);
+      await db.goals.bulkPut(state.goals);
+      await db.monthlyBudgets.bulkPut(state.monthlyBudgets);
+      await db.transactions.bulkPut(state.transactions);
+      await saveSettings(db, settings);
+    },
+  );
+}
