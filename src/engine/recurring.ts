@@ -1,5 +1,6 @@
+import { archivedCategoryIds, categoryParts } from './budget.ts';
 import { addDays, addMonthsClamped } from './dates.ts';
-import type { Frequency, RecurringTransaction, Transaction } from './types.ts';
+import type { BudgetState, Frequency, RecurringTransaction, Transaction } from './types.ts';
 
 export const FREQUENCIES: Frequency[] = ['weekly', 'biweekly', 'monthly', 'yearly'];
 
@@ -139,4 +140,31 @@ export function setRecurringPaused(rec: RecurringTransaction, paused: boolean, t
   let handled = rec.handled;
   for (let i = 0; i < MAX_BACKLOG && occurrenceDate(rec.startDate, rec.frequency, handled) < today; i++) handled++;
   return { ...rec, paused: false, handled };
+}
+
+/** Series that still run (not paused, not ended) and book into one of the accounts or categories. */
+export function activeSeriesUsing(state: BudgetState, refs: { accountIds?: string[]; categoryIds?: string[] }): RecurringTransaction[] {
+  const accounts = new Set(refs.accountIds ?? []);
+  const categories = new Set(refs.categoryIds ?? []);
+  return state.recurring.filter((rec) => {
+    if (rec.paused || nextDate(rec) === null) return false;
+    const t = rec.template;
+    if (accounts.has(t.accountId) || (t.transferAccountId !== null && accounts.has(t.transferAccountId))) return true;
+    return categoryParts(t).some((p) => categories.has(p.categoryId));
+  });
+}
+
+/** Pauses the given series. Used when their account is closed or their category archived, so nothing books out of sight. */
+export function pauseSeries(state: BudgetState, ids: string[]): BudgetState {
+  const pause = new Set(ids);
+  return { ...state, recurring: state.recurring.map((r) => (pause.has(r.id) ? { ...r, paused: true } : r)) };
+}
+
+/** Why a series cannot be booked right now, if it can't: it would land in a closed account or an archived category. */
+export function bookingBlocked(state: BudgetState, rec: RecurringTransaction): 'closedAccount' | 'archivedCategory' | null {
+  const t = rec.template;
+  const closed = (id: string | null) => id !== null && state.accounts.find((a) => a.id === id)?.closed === true;
+  if (closed(t.accountId) || closed(t.transferAccountId)) return 'closedAccount';
+  const archived = archivedCategoryIds(state);
+  return categoryParts(t).some((p) => archived.has(p.categoryId)) ? 'archivedCategory' : null;
 }

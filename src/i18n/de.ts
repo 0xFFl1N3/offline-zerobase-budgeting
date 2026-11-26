@@ -437,4 +437,10 @@ export const de: Messages = {
   'analytics.topPayeesHint': 'Wohin in diesem Zeitraum das meiste Geld ging',
   'analytics.spentTotal': '{amount} insgesamt ausgegeben',
   'analytics.morePayees': { one: ' · {count} weiterer Empfänger nicht aufgeführt', other: ' · {count} weitere Empfänger nicht aufgeführt' },
+
+  // Recurring series and closing or archiving
+  'account.closePauses': { one: 'Die wiederkehrende Buchung {names} wird pausiert.', other: 'Die {count} wiederkehrenden Buchungen ({names}) werden pausiert.' },
+  'budget.archivePauses': { one: 'Die wiederkehrende Buchung {names}, die sie nutzt, wird pausiert.', other: 'Die {count} wiederkehrenden Buchungen, die sie nutzen ({names}), werden pausiert.' },
+  'recur.blockedAccount': 'Kann nicht gebucht werden: Das Konto ist geschlossen. Überspringe sie oder bearbeite bzw. lösche die Serie.',
+  'recur.blockedCategory': 'Kann nicht gebucht werden: Die Kategorie ist archiviert. Überspringe sie oder stelle die Kategorie wieder her.',
 };

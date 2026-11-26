@@ -7,6 +7,7 @@ import { MoveButtons, useReorder } from '../../components/reorder.tsx';
 import { BackupPanel } from '../backup/BackupPanel.tsx';
 import { t } from '../../i18n/i18n.ts';
 import { errorText } from '../../i18n/errors.ts';
+import { activeSeriesUsing } from '../../engine/recurring.ts';
 
 function AddAccountForm({ onDone }: { onDone: () => void }) {
   const addAccount = useBudgetStore((s) => s.addAccount);
@@ -101,7 +102,10 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
           <button
             type="button"
             onClick={() => {
-              if (window.confirm(t('account.closeConfirm', { name: account.name }))) {
+              const series = activeSeriesUsing(state, { accountIds: [account.id] });
+              const lines = [t('account.closeConfirm', { name: account.name })];
+              if (series.length > 0) lines.push(t('account.closePauses', { count: series.length, names: series.map((r) => r.template.payee || t('recur.noPayee')).join(', ') }));
+              if (window.confirm(lines.join('\n\n'))) {
                 void run(() => setAccountClosed(account.id, true));
               }
             }}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
 import { formatDate, toISODate } from '../../engine/months.ts';
 import { t as tr } from '../../i18n/i18n.ts';
-import { dueItems, type DueItem } from '../../engine/recurring.ts';
+import { bookingBlocked, dueItems, type DueItem } from '../../engine/recurring.ts';
 import type { RecurringTransaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { categoryLabel } from '../transactions/labels.ts';
@@ -17,6 +17,8 @@ function DueRow({ item, rec }: { item: DueItem; rec: RecurringTransaction }) {
   const [amountText, setAmountText] = useState(toAmountInput(Math.abs(t.amount)));
   const [error, setError] = useState<string | null>(null);
   const account = state.accounts.find((a) => a.id === t.accountId)?.name ?? '?';
+  // A series whose account was closed or category archived (e.g. before 0.6.5) must not book out of sight.
+  const blocked = bookingBlocked(state, rec);
 
   const confirm = () => {
     const cents = parseMoney(amountText);
@@ -45,9 +47,10 @@ function DueRow({ item, rec }: { item: DueItem; rec: RecurringTransaction }) {
             className="w-24 rounded border border-slate-300 bg-white px-2 py-1 text-right tabular-nums"
           />
         )}
-        <button type="button" onClick={confirm} className="rounded bg-sky-600 px-3 py-1 text-white hover:bg-sky-700">{tr('recur.confirm')}</button>
+        {!blocked && <button type="button" onClick={confirm} className="rounded bg-sky-600 px-3 py-1 text-white hover:bg-sky-700">{tr('recur.confirm')}</button>}
         <button type="button" onClick={() => void skipRecurring(rec.id)} className="text-slate-600 hover:underline">{tr('recur.skip')}</button>
       </span>
+      {blocked && <span className="w-full text-xs text-amber-900">{tr(blocked === 'closedAccount' ? 'recur.blockedAccount' : 'recur.blockedCategory')}</span>}
       {error && <span className="w-full text-xs text-red-600">{error}</span>}
     </li>
   );

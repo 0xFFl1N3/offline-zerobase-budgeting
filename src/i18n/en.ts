@@ -440,6 +440,12 @@ export const en = {
   'analytics.topPayeesHint': 'Where the most money went in this period',
   'analytics.spentTotal': '{amount} spent in total',
   'analytics.morePayees': { one: ' · {count} more payee not listed', other: ' · {count} more payees not listed' },
+
+  // Recurring series and closing or archiving
+  'account.closePauses': { one: 'Its recurring transaction {names} will be paused.', other: 'Its {count} recurring transactions ({names}) will be paused.' },
+  'budget.archivePauses': { one: 'The recurring transaction {names} that uses it will be paused.', other: 'The {count} recurring transactions that use it ({names}) will be paused.' },
+  'recur.blockedAccount': "Can't be booked: its account is closed. Skip it, or edit or delete the series.",
+  'recur.blockedCategory': "Can't be booked: its category is archived. Skip it, or restore the category.",
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

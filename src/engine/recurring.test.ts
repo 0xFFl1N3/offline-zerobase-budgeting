@@ -118,3 +118,40 @@ test('accounts and categories used by a series cannot be deleted', () => {
   assert.throws(() => removeAccount(state, 'a'), /Close it instead/);
   assert.throws(() => removeCategories(state, ['rent']), /Archive it instead/);
 });
+
+test('series using a closed account or archived category are found, paused and refused for booking', async () => {
+  const { activeSeriesUsing, pauseSeries, bookingBlocked } = await import('./recurring.ts');
+  const tpl = (extra: object) => ({ accountId: 'a', payee: 'P', categoryId: 'food', memo: '', amount: -100, transferAccountId: null, ...extra });
+  const series = (id: string, extra: object, more: object = {}) => ({ id, template: tpl(extra), frequency: 'monthly' as const, startDate: '2026-01-01', handled: 0, endDate: null, paused: false, ...more });
+  const state = {
+    accounts: [
+      { id: 'a', name: 'A', type: 'checking' as const, openingBalance: 0, sortOrder: 0, closed: false },
+      { id: 'b', name: 'B', type: 'savings' as const, openingBalance: 0, sortOrder: 1, closed: false },
+    ],
+    groups: [{ id: 'g', name: 'G', sortOrder: 0, archived: false }],
+    categories: [
+      { id: 'food', groupId: 'g', name: 'Food', sortOrder: 0, archived: false },
+      { id: 'fun', groupId: 'g', name: 'Fun', sortOrder: 1, archived: false },
+    ],
+    goals: [], monthlyBudgets: [], transactions: [],
+    recurring: [
+      series('r1', {}),
+      series('r2', { accountId: 'b', categoryId: 'fun' }),
+      series('r3', { categoryId: null, transferAccountId: 'b' }),
+      series('r4', { categoryId: null, splits: [{ categoryId: 'fun', amount: -50 }, { categoryId: 'food', amount: -50 }] }),
+      series('r5', {}, { paused: true }),
+      series('r6', {}, { endDate: '2025-12-31' }),
+    ],
+  };
+  assert.deepEqual(activeSeriesUsing(state, { accountIds: ['b'] }).map((r) => r.id), ['r2', 'r3']);
+  assert.deepEqual(activeSeriesUsing(state, { categoryIds: ['food'] }).map((r) => r.id), ['r1', 'r4']);
+  const paused = pauseSeries(state, ['r1']);
+  assert.equal(paused.recurring.find((r) => r.id === 'r1')!.paused, true);
+  assert.equal(paused.recurring.find((r) => r.id === 'r2')!.paused, false);
+
+  assert.equal(bookingBlocked(state, state.recurring[0]!), null);
+  const closedB = { ...state, accounts: state.accounts.map((a) => (a.id === 'b' ? { ...a, closed: true } : a)) };
+  assert.equal(bookingBlocked(closedB, state.recurring[2]!), 'closedAccount');
+  const archivedFun = { ...state, categories: state.categories.map((c) => (c.id === 'fun' ? { ...c, archived: true } : c)) };
+  assert.equal(bookingBlocked(archivedFun, state.recurring[3]!), 'archivedCategory');
+});

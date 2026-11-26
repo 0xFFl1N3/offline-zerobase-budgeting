@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { touchesCategory, categoryActivity, categoryAssigned, categoryAvailable, readyToAssign } from '../../engine/budget.ts';
 import { autoAssignPlan } from '../../engine/autoassign.ts';
+import { activeSeriesUsing } from '../../engine/recurring.ts';
 import { formatMoney } from '../../engine/money.ts';
 import { formatMonth } from '../../engine/months.ts';
 import type { Cents } from '../../engine/types.ts';
@@ -89,6 +90,8 @@ export function BudgetView() {
     const balance = ids.reduce((t, id) => t + categoryAvailable(state, id, '9999-12'), 0);
     const lines = [t('budget.archiveQuestion', { label }), t('budget.archiveWhy')];
     if (balance !== 0) lines.push(t(balance > 0 ? 'budget.archiveReturns' : 'budget.archiveTaken', { amount: fmt(Math.abs(balance)) }));
+    const series = activeSeriesUsing(state, { categoryIds: ids });
+    if (series.length > 0) lines.push(t('budget.archivePauses', { count: series.length, names: series.map((r) => r.template.payee || t('recur.noPayee')).join(', ') }));
     lines.push(t('budget.archiveRestore'));
     if (window.confirm(lines.join('\n\n'))) doArchive();
   };

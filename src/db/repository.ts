@@ -87,13 +87,22 @@ export const deleteGroup = (db: BudgetDB, groupId: string) =>
   });
 
 /** Saves groups and categories whose archived flag changed. */
-export const saveArchiveChanges = (db: BudgetDB, groups: CategoryGroup[], categories: Category[]) =>
-  db.transaction('rw', [db.groups, db.categories], async () => {
+/** Saves archived or restored groups and categories, and any series paused because of them. */
+export const saveArchiveChanges = (db: BudgetDB, groups: CategoryGroup[], categories: Category[], series: RecurringTransaction[] = []) =>
+  db.transaction('rw', [db.groups, db.categories, db.recurring], async () => {
     await db.groups.bulkPut(groups);
     await db.categories.bulkPut(categories);
+    await db.recurring.bulkPut(series);
   });
 
 export const saveRecurring = (db: BudgetDB, r: RecurringTransaction) => db.recurring.put(r);
+
+/** Saves an account together with series that were paused because of it. */
+export const saveAccountAndSeries = (db: BudgetDB, a: Account, series: RecurringTransaction[]) =>
+  db.transaction('rw', [db.accounts, db.recurring], async () => {
+    await db.accounts.put(a);
+    await db.recurring.bulkPut(series);
+  });
 export const deleteRecurring = (db: BudgetDB, id: string) => db.recurring.delete(id);
 
 /** Saves a template together with the transaction it just booked (if any), atomically. */

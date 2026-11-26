@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.6.5 – 2026-11-26
+
+### Fixed
+- Closing an account or archiving a category now pauses the recurring transactions that use it (the confirmation names them). Before, they kept booking into the hidden account or category and Ready to Assign dropped without a visible reason.
+- A due recurring transaction that points to a closed account or an archived category can no longer be confirmed; the banner explains why.
+
 ## 0.6.4 – 2026-11-26
 
 ### Fixed

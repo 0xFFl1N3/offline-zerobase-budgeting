@@ -351,3 +351,27 @@ test('an import can add new transactions and replace an updated pending one in o
   const p = reloaded.getState().state.transactions.find((t) => t.id === 'p')!;
   assert.deepEqual([p.date, p.cleared, p.importPending, p.importId], ['2026-01-06', 'cleared', undefined, 'csv2:b']);
 });
+
+test('closing an account or archiving a category pauses the series that use it, and that persists', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 0, currency: 'EUR' });
+  await store.getState().addAccount('Old', 'savings', 0);
+  await store.getState().addGroup('Fun');
+  await store.getState().addCategory(store.getState().state.groups[0]!.id, 'Streaming');
+  const [chk, old] = store.getState().state.accounts as [Account, Account];
+  const cat = store.getState().state.categories[0]!;
+  const base = { payee: 'Netflix', memo: '', transferAccountId: null, amount: -1399 };
+  await store.getState().startRecurringSeries({ ...base, id: 'n1', accountId: chk.id, categoryId: cat.id, date: '2099-01-01' }, 'monthly', null);
+  await store.getState().startRecurringSeries({ ...base, id: 'n2', accountId: old.id, categoryId: cat.id, date: '2099-01-01', payee: 'Gym' }, 'monthly', null);
+
+  await store.getState().setAccountClosed(old.id, true);
+  let rec = store.getState().state.recurring;
+  assert.deepEqual(rec.map((r) => [r.template.payee, r.paused]).sort(), [['Gym', true], ['Netflix', false]]);
+
+  await store.getState().archiveCategory(cat.id);
+  const reloaded = createBudgetStore(db, '2026-01');
+  await reloaded.getState().load();
+  rec = reloaded.getState().state.recurring;
+  assert.deepEqual(rec.map((r) => [r.template.payee, r.paused]).sort(), [['Gym', true], ['Netflix', true]]);
+  assert.equal(reloaded.getState().state.accounts.find((a) => a.id === old.id)!.closed, true);
+});

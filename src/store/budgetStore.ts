@@ -6,7 +6,7 @@ import type { Currency } from '../engine/money.ts';
 import { moveAccount, moveAccountTo, moveCategory, moveCategoryTo, moveGroup, moveGroupTo, removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from '../engine/edit.ts';
 import { autoAssignPlan, planAssignments } from '../engine/autoassign.ts';
 import { addMonths } from '../engine/months.ts';
-import { bookNext, recurringFrom, setRecurringPaused, skipNext, startRecurring, updateRecurring, type RecurringChanges } from '../engine/recurring.ts';
+import { activeSeriesUsing, bookNext, pauseSeries, recurringFrom, setRecurringPaused, skipNext, startRecurring, updateRecurring, type RecurringChanges } from '../engine/recurring.ts';
 import { toISODate } from '../engine/months.ts';
 import { reconcile, withCleared } from '../engine/reconcile.ts';
 import type { Account, AccountType, BudgetState, Cents, ClearedStatus, Frequency, Goal, Month, Transaction } from '../engine/types.ts';
@@ -116,11 +116,17 @@ const newAccount = (name: string, type: AccountType, openingBalance: Cents, sort
 export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth()) {
   return create<BudgetStore>()((set, get) => {
     /** Persists the groups and categories whose archived flag changed, then updates the state. */
-    const applyArchive = async (next: BudgetState) => {
+    const applyArchive = async (archivedState: BudgetState) => {
       const prev = get().state;
-      const changedGroups = next.groups.filter((g) => g.archived !== prev.groups.find((p) => p.id === g.id)?.archived);
-      const changedCategories = next.categories.filter((c) => c.archived !== prev.categories.find((p) => p.id === c.id)?.archived);
-      await repo.saveArchiveChanges(db, changedGroups, changedCategories);
+      const changedGroups = archivedState.groups.filter((g) => g.archived !== prev.groups.find((p) => p.id === g.id)?.archived);
+      const changedCategories = archivedState.categories.filter((c) => c.archived !== prev.categories.find((p) => p.id === c.id)?.archived);
+      // Series that book into a category being archived are paused, or they would keep spending out of sight.
+      const nowArchived = changedCategories.filter((c) => c.archived).map((c) => c.id);
+      const groupArchived = new Set(changedGroups.filter((g) => g.archived).map((g) => g.id));
+      for (const c of archivedState.categories) if (groupArchived.has(c.groupId)) nowArchived.push(c.id);
+      const series = activeSeriesUsing(prev, { categoryIds: nowArchived });
+      const next = pauseSeries(archivedState, series.map((r) => r.id));
+      await repo.saveArchiveChanges(db, changedGroups, changedCategories, next.recurring.filter((r) => series.some((s) => s.id === r.id)));
       set({ state: next });
     };
 
@@ -166,8 +172,11 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     },
 
     setAccountClosed: async (id, closed) => {
-      const next = setAccountClosed(get().state, id, closed);
-      await repo.saveAccount(db, next.accounts.find((a) => a.id === id)!);
+      let next = setAccountClosed(get().state, id, closed);
+      // Closing pauses the series that book into the account (reopening leaves them paused; resume them yourself).
+      const series = closed ? activeSeriesUsing(next, { accountIds: [id] }) : [];
+      next = pauseSeries(next, series.map((r) => r.id));
+      await repo.saveAccountAndSeries(db, next.accounts.find((a) => a.id === id)!, next.recurring.filter((r) => series.some((s) => s.id === r.id)));
       set({ state: next });
     },
 
