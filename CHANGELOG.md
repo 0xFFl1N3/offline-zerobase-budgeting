@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.8.1 – 2026-11-26
+
+### Added
+- Click the version number (bottom left, or in the accounts menu on phones) to see what changed. After an update it shows a "New" tag until you have looked, and the new versions are marked in the list.
+
 ## 0.8.0 – 2026-11-26
 
 ### Added

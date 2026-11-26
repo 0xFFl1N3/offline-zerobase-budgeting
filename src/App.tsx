@@ -15,8 +15,8 @@ import { useLanguage, useT, type MessageKey } from './i18n/i18n.ts';
 import { requestPersistence } from './persistence.ts';
 import { useNavigation, type Tab } from './store/navigation.ts';
 import { UndoBar } from './features/undo/UndoBar.tsx';
+import { VersionButton } from './features/changelog/Changelog.tsx';
 import { useAutoBackup } from './features/backup/AutoBackupCard.tsx';
-import { APP_VERSION } from './version.ts';
 
 
 const TABS: { id: Tab; label: MessageKey; icon: () => ReactNode }[] = [
@@ -65,8 +65,8 @@ export default function App() {
   }, [drawer]);
 
   const version = (
-    <div className="pointer-events-none fixed bottom-2 left-3 hidden select-none text-xs text-slate-600 md:block" aria-label={t('app.version', { version: APP_VERSION })}>
-      v{APP_VERSION}
+    <div className="fixed bottom-2 left-3 hidden md:block">
+      <VersionButton />
     </div>
   );
 
@@ -75,7 +75,9 @@ export default function App() {
     return (
       <div key={language} className="min-h-screen bg-slate-50 text-slate-900">
         <Setup />
-        <p className="pb-4 text-center text-xs text-slate-600 md:hidden">v{APP_VERSION}</p>
+        <p className="pb-4 text-center md:hidden">
+          <VersionButton />
+        </p>
         {version}
       </div>
     );
@@ -165,7 +167,9 @@ export default function App() {
               </button>
             </div>
             <AccountsSidebar className="w-full" />
-            <p className="mt-auto px-4 pb-4 text-xs text-slate-600">v{APP_VERSION}</p>
+            <p className="mt-auto px-4 pb-4">
+              <VersionButton />
+            </p>
           </div>
         </div>
       )}

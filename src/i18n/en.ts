@@ -498,6 +498,13 @@ export const en = {
   'undo.goal': 'Goal removed.',
   'undo.button': 'Undo',
   'undo.dismiss': 'Close',
+
+  // Changelog
+  'changelog.title': 'What changed',
+  'changelog.open': 'See what changed',
+  'changelog.new': 'New',
+  'changelog.current': 'this version',
+  'changelog.close': 'Close',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

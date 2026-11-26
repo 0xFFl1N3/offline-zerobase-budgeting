@@ -495,4 +495,11 @@ export const de: Messages = {
   'undo.goal': 'Ziel entfernt.',
   'undo.button': 'Rückgängig',
   'undo.dismiss': 'Schließen',
+
+  // Changelog
+  'changelog.title': 'Änderungen (Englisch)',
+  'changelog.open': 'Änderungen ansehen',
+  'changelog.new': 'Neu',
+  'changelog.current': 'diese Version',
+  'changelog.close': 'Schließen',
 };
