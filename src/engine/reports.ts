@@ -88,3 +88,34 @@ export function netWorth(state: BudgetState, months: Month[]): MonthValue[] {
     return { month, value: running };
   });
 }
+
+export interface TrendTarget {
+  kind: 'category' | 'group';
+  id: string;
+}
+
+/** Spending per month for one category, or for all categories of one group (archived ones included). Refunds lower it. */
+export function spendingTrend(state: BudgetState, months: Month[], target: TrendTarget): MonthValue[] {
+  const ids = new Set(target.kind === 'category' ? [target.id] : state.categories.filter((c) => c.groupId === target.id).map((c) => c.id));
+  const index = new Map(months.map((m, i) => [m, i]));
+  const rows: MonthValue[] = months.map((month) => ({ month, value: 0 }));
+  for (const t of state.transactions) {
+    const i = index.get(monthOf(t.date));
+    if (i === undefined) continue;
+    for (const part of categoryParts(t)) if (ids.has(part.categoryId)) rows[i]!.value -= part.amount;
+  }
+  return rows;
+}
+
+/** The category with the most spending in the months, to show first. */
+export function biggestCategory(state: BudgetState, months: Month[]): string | undefined {
+  const index = new Set(months);
+  const spent = new Map<string, Cents>();
+  for (const t of state.transactions) {
+    if (!index.has(monthOf(t.date))) continue;
+    for (const part of categoryParts(t)) spent.set(part.categoryId, (spent.get(part.categoryId) ?? 0) - part.amount);
+  }
+  let best: string | undefined;
+  for (const [id, amount] of spent) if (amount > 0 && (best === undefined || amount > spent.get(best)!)) best = id;
+  return best;
+}

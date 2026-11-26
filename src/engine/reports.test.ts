@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { incomeVsSpending, netWorth, reportMonths } from './reports.ts';
+import { biggestCategory, incomeVsSpending, netWorth, reportMonths, spendingTrend } from './reports.ts';
 import type { BudgetState, Transaction } from './types.ts';
 
 let n = 0;
@@ -81,4 +81,21 @@ test('net worth is opening balances plus everything up to each month end; transf
     { month: '2026-02', value: 70000 },
     { month: '2026-03', value: 270000 },
   ]);
+});
+
+test('spending trend for a category or a whole group, counting split parts and refunds', () => {
+  const s = state([
+    tx('2026-01-02', 'rent', -90000),
+    tx('2026-01-03', 'food', -20000),
+    tx('2026-02-03', 'food', -25000),
+    tx('2026-02-04', 'food', 5000),
+    tx('2026-02-05', null, -10000, { splits: [{ categoryId: 'food', amount: -6000 }, { categoryId: 'games', amount: -4000 }] }),
+  ]);
+  const months = ['2026-01', '2026-02'];
+  assert.deepEqual(spendingTrend(s, months, { kind: 'category', id: 'food' }).map((r) => r.value), [20000, 26000]);
+  assert.deepEqual(spendingTrend(s, months, { kind: 'group', id: 'g1' }).map((r) => r.value), [110000, 26000]);
+  assert.deepEqual(spendingTrend(s, months, { kind: 'group', id: 'g2' }).map((r) => r.value), [0, 4000]);
+  assert.equal(biggestCategory(s, months), 'rent');
+  assert.equal(biggestCategory(s, ['2026-02']), 'food');
+  assert.equal(biggestCategory(s, ['2025-01']), undefined);
 });

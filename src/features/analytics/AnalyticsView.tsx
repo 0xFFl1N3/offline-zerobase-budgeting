@@ -3,13 +3,14 @@ import { spendingReport, type GroupBy, type ReportKind, type SpendingReport } fr
 import { formatMoney } from '../../engine/money.ts';
 import { formatMonth, formatMonthRange } from '../../engine/months.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
-import { incomeVsSpending, netWorth, reportMonths, type RangeKey } from '../../engine/reports.ts';
+import { biggestCategory, incomeVsSpending, netWorth, reportMonths, spendingTrend, type RangeKey, type TrendTarget } from '../../engine/reports.ts';
 import { useIsDark } from '../../theme.ts';
 import { buildColorMap } from './colors.ts';
 import { IncomeSpendingChart } from './IncomeSpendingChart.tsx';
 import { NetWorthChart } from './NetWorthChart.tsx';
 import { PieChart } from './PieChart.tsx';
 import { RangeSwitch } from './RangeSwitch.tsx';
+import { TrendChart } from './TrendChart.tsx';
 
 const KINDS: ReportKind[] = ['month', 'year-to-date', 'monthly-average'];
 
@@ -45,6 +46,14 @@ export function AnalyticsView() {
   const months = useMemo(() => reportMonths(state, range, month), [state, range, month]);
   const incomeRows = useMemo(() => incomeVsSpending(state, months), [state, months]);
   const worthRows = useMemo(() => netWorth(state, months), [state, months]);
+  // Until a category is picked, the trend shows the one with the most spending in the range.
+  const [pickedTrend, setPickedTrend] = useState<TrendTarget | null>(null);
+  const trendTarget = useMemo<TrendTarget | null>(() => {
+    if (pickedTrend) return pickedTrend;
+    const id = biggestCategory(state, months);
+    return id ? { kind: 'category', id } : null;
+  }, [pickedTrend, state, months]);
+  const trendRows = useMemo(() => (trendTarget ? spendingTrend(state, months, trendTarget) : []), [state, months, trendTarget]);
 
   const toggle = (value: GroupBy, label: string) => (
     <button
@@ -119,6 +128,7 @@ export function AnalyticsView() {
       <div className="mt-4 grid gap-6 lg:grid-cols-2">
         <IncomeSpendingChart rows={incomeRows} currency={currency} />
         <NetWorthChart rows={worthRows} currency={currency} />
+        <TrendChart state={state} target={trendTarget} onTarget={setPickedTrend} rows={trendRows} currency={currency} />
       </div>
     </section>
   );
