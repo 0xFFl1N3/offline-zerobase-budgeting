@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { t } from '../../i18n/i18n.ts';
 
 interface Props {
   name: string;
@@ -20,7 +21,7 @@ export function NameCell({ name, renaming, onStartRename, onRename, onCancelRena
       <input
         autoFocus
         defaultValue={name}
-        aria-label={`Rename ${name}`}
+        aria-label={t('budget.renameName', { name })}
         onFocus={(e) => e.currentTarget.select()}
         onBlur={onCancelRename}
         onKeyDown={(e) => {
@@ -36,8 +37,8 @@ export function NameCell({ name, renaming, onStartRename, onRename, onCancelRena
       <button
         type="button"
         onClick={onStartRename}
-        aria-label={`Rename ${name}`}
-        title="Click to rename"
+        aria-label={t('budget.renameName', { name })}
+        title={t('budget.clickToRename')}
         className="cursor-text rounded text-left hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
       >
         {name}
@@ -45,7 +46,7 @@ export function NameCell({ name, renaming, onStartRename, onRename, onCancelRena
       <button
         type="button"
         onClick={onAction}
-        aria-label={`${actionLabel} ${name}`}
+        aria-label={t('budget.actionName', { action: actionLabel, name })}
         className="invisible text-xs font-normal text-red-600 hover:underline group-hover:visible group-focus-within:visible"
       >
         {actionLabel}

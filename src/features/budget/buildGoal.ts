@@ -1,4 +1,5 @@
 import type { Cents, Goal, GoalType } from '../../engine/types.ts';
+import type { MessageKey } from '../../i18n/en.ts';
 
 /** What the goal editor holds. For monthly_amount, `amount` is the monthly amount. */
 export interface GoalForm {
@@ -8,19 +9,20 @@ export interface GoalForm {
   targetDate: string;
 }
 
-export type BuildGoalResult = { ok: true; goal: Goal } | { ok: false; error: string };
+/** `error` is the text to show, as a key of the translations. */
+export type BuildGoalResult = { ok: true; goal: Goal } | { ok: false; error: MessageKey };
 
 const MONTH = /^\d{4}-\d{2}$/;
 
 export function buildGoal(form: GoalForm, categoryId: string, id: string): BuildGoalResult {
-  if (!(form.amount > 0)) return { ok: false, error: 'Enter an amount greater than zero.' };
+  if (!(form.amount > 0)) return { ok: false, error: 'goal.errorPositive' };
   const date = form.targetDate.trim();
 
   switch (form.type) {
     case 'monthly_amount':
       return { ok: true, goal: { id, categoryId, type: 'monthly_amount', monthlyAmount: form.amount } };
     case 'target_balance':
-      if (date !== '' && !MONTH.test(date)) return { ok: false, error: 'Pick a valid month.' };
+      if (date !== '' && !MONTH.test(date)) return { ok: false, error: 'goal.errorMonth' };
       return {
         ok: true,
         goal: {

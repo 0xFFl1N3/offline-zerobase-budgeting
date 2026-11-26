@@ -8,6 +8,11 @@ export function formatMoney(cents: Cents, currency: Currency = 'EUR', locale = g
   return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(cents / 100);
 }
 
+/** An amount as it is typed into a field: "1234.50" in English, "1234,50" in German (no currency, no grouping). */
+export function toAmountInput(cents: Cents, locale = getLocale()): string {
+  return new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(cents / 100);
+}
+
 /**
  * Parses user input such as "12.50", "12,50", "1.234,56", "1,234.56", "-5", "(5)", "€ 3".
  * A separator followed by 1-2 digits at the end is the decimal point; otherwise it is a thousands separator.

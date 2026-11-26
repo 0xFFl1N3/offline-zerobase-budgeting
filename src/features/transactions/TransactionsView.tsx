@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState, type FormEvent } from 'react';
 import { archivedCategoryIds, runningBalances } from '../../engine/budget.ts';
-import { formatMoney, parseMoney } from '../../engine/money.ts';
+import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
 import { toISODate } from '../../engine/months.ts';
 import { clearedStatus, isReconciled, keepCleared } from '../../engine/reconcile.ts';
 import { FREQUENCIES, FREQUENCY_LABELS } from '../../engine/recurring.ts';
@@ -91,8 +91,8 @@ export function TransactionsView() {
   const startEdit = (t: Transaction) => {
     if (isReconciled(t) && !window.confirm('This transaction is reconciled. Edit it anyway? Changing the amount or date will make the account differ from the reconciled statement.')) return;
     setForm(toForm(t));
-    setAmountText((Math.abs(t.amount) / 100).toFixed(2));
-    setSplitRows(t.splits ? t.splits.map((p) => ({ categoryId: p.categoryId, text: (Math.abs(p.amount) / 100).toFixed(2) })) : null);
+    setAmountText(toAmountInput(Math.abs(t.amount)));
+    setSplitRows(t.splits ? t.splits.map((p) => ({ categoryId: p.categoryId, text: toAmountInput(Math.abs(p.amount)) })) : null);
     setEditingId(t.id);
     setError(null);
     setFormOpen(true);
@@ -325,7 +325,7 @@ export function TransactionsView() {
               </div>
             ))}
             <div className="flex flex-wrap items-center gap-4 text-sm">
-              <button type="button" onClick={() => setSplitRows([...splitRows, { categoryId: '', text: splitRemaining && splitRemaining > 0 ? (splitRemaining / 100).toFixed(2) : '' }])} className="text-sky-700 hover:underline">
+              <button type="button" onClick={() => setSplitRows([...splitRows, { categoryId: '', text: splitRemaining && splitRemaining > 0 ? toAmountInput(splitRemaining) : '' }])} className="text-sky-700 hover:underline">
                 + Add part
               </button>
               {splitRemaining !== null && (

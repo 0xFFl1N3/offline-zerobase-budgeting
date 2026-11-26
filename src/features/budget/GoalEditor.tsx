@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react';
-import { parseMoney } from '../../engine/money.ts';
+import { parseMoney, toAmountInput } from '../../engine/money.ts';
 import type { Category, Goal, GoalType } from '../../engine/types.ts';
+import { t, type MessageKey } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { buildGoal, goalToForm } from './buildGoal.ts';
 
-const TYPE_LABELS: Record<GoalType, string> = {
-  target_balance: 'Save up to an amount',
-  monthly_amount: 'Assign a set amount every month',
+const TYPE_LABELS: Record<GoalType, MessageKey> = {
+  target_balance: 'goal.typeTarget',
+  monthly_amount: 'goal.typeMonthly',
 };
 
 interface Props {
@@ -21,16 +22,16 @@ export function GoalEditor({ category, goal, onClose }: Props) {
 
   const initial = goal ? goalToForm(goal) : { type: 'target_balance' as GoalType, amount: 0, targetDate: '' };
   const [type, setType] = useState<GoalType>(initial.type);
-  const [amountText, setAmountText] = useState(initial.amount ? (initial.amount / 100).toFixed(2) : '');
+  const [amountText, setAmountText] = useState(initial.amount ? toAmountInput(initial.amount) : '');
   const [targetDate, setTargetDate] = useState(initial.targetDate);
   const [error, setError] = useState<string | null>(null);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const amount = parseMoney(amountText);
-    if (amount === null) return setError('Enter a valid amount, e.g. 1000.');
+    if (amount === null) return setError(t('goal.errorAmount'));
     const result = buildGoal({ type, amount, targetDate }, category.id, goal?.id ?? crypto.randomUUID());
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return setError(t(result.error));
     void saveGoal(result.goal);
     onClose();
   };
@@ -39,33 +40,33 @@ export function GoalEditor({ category, goal, onClose }: Props) {
   const label = 'text-xs font-medium text-slate-600';
   return (
     <form onSubmit={submit} className="mx-4 mb-2 ml-8 flex flex-wrap items-end gap-3 rounded bg-slate-50 p-3">
-      <span className="w-full text-sm font-medium">Goal for {category.name}</span>
+      <span className="w-full text-sm font-medium">{t('goal.for', { name: category.name })}</span>
       <label className={label}>
-        Type
+        {t('goal.type')}
         <select value={type} onChange={(e) => setType(e.target.value as GoalType)} className={`${field} mt-1 block`}>
-          {(Object.keys(TYPE_LABELS) as GoalType[]).map((t) => (
-            <option key={t} value={t}>{TYPE_LABELS[t]}</option>
+          {(Object.keys(TYPE_LABELS) as GoalType[]).map((type) => (
+            <option key={type} value={type}>{t(TYPE_LABELS[type])}</option>
           ))}
         </select>
       </label>
       <label className={label}>
-        {type === 'monthly_amount' ? 'Per month' : 'Target amount'}
+        {type === 'monthly_amount' ? t('goal.perMonth') : t('goal.target')}
         <input
           autoFocus
           value={amountText}
           onChange={(e) => setAmountText(e.target.value)}
           inputMode="decimal"
-          placeholder="0.00"
+          placeholder={t('common.amountPlaceholder')}
           className={`${field} mt-1 block w-32 text-right tabular-nums`}
         />
       </label>
       {type !== 'monthly_amount' && (
         <label className={label}>
-          By month (optional)
+          {t('goal.byMonth')}
           <input type="month" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className={`${field} mt-1 block`} />
         </label>
       )}
-      <button type="submit" className="rounded bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">Save goal</button>
+      <button type="submit" className="rounded bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">{t('goal.save')}</button>
       {goal && (
         <button
           type="button"
@@ -75,10 +76,10 @@ export function GoalEditor({ category, goal, onClose }: Props) {
           }}
           className="text-sm text-red-600 hover:underline"
         >
-          Remove goal
+          {t('goal.remove')}
         </button>
       )}
-      <button type="button" onClick={onClose} className="text-sm text-slate-600 hover:underline">Cancel</button>
+      <button type="button" onClick={onClose} className="text-sm text-slate-600 hover:underline">{t('common.cancel')}</button>
       {error && <p className="w-full text-sm text-red-600">{error}</p>}
     </form>
   );

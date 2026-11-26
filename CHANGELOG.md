@@ -2,6 +2,14 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.6.1 – 2026-11-26
+
+### Added
+- German texts for the Budget tab, goals, accounts, reordering and backups.
+
+### Changed
+- Amount fields use the language's decimal mark (250,00 in German).
+
 ## 0.6.0 – 2026-11-26
 
 ### Added

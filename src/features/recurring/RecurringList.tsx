@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatMoney, parseMoney } from '../../engine/money.ts';
+import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
 import { FREQUENCIES, FREQUENCY_LABELS, nextDate } from '../../engine/recurring.ts';
 import type { Frequency, RecurringTransaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
@@ -12,7 +12,7 @@ function EditForm({ rec, onDone }: { rec: RecurringTransaction; onDone: () => vo
   const isSplit = (rec.template.splits?.length ?? 0) > 0;
   const [payee, setPayee] = useState(rec.template.payee);
   const [memo, setMemo] = useState(rec.template.memo);
-  const [amount, setAmount] = useState((Math.abs(rec.template.amount) / 100).toFixed(2));
+  const [amount, setAmount] = useState(toAmountInput(Math.abs(rec.template.amount)));
   const [frequency, setFrequency] = useState<Frequency>(rec.frequency);
   const [endDate, setEndDate] = useState(rec.endDate ?? '');
   const [error, setError] = useState<string | null>(null);

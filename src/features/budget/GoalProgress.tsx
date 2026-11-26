@@ -2,6 +2,7 @@ import { goalProgress } from '../../engine/budget.ts';
 import { formatMoney, type Currency } from '../../engine/money.ts';
 import { formatMonth } from '../../engine/months.ts';
 import type { BudgetState, Goal, Month } from '../../engine/types.ts';
+import { t } from '../../i18n/i18n.ts';
 
 interface Props {
   state: BudgetState;
@@ -14,12 +15,15 @@ export function GoalProgress({ state, goal, month, currency }: Props) {
   const p = goalProgress(state, goal, month);
   const fmt = (c: number) => formatMoney(c, currency);
 
+  const amounts = { current: fmt(p.current), target: fmt(p.target) };
   const base =
     goal.type === 'monthly_amount'
-      ? `${fmt(p.current)} of ${fmt(p.target)} assigned this month`
-      : `${fmt(p.current)} of ${fmt(p.target)}${goal.targetDate ? ` by ${formatMonth(goal.targetDate)}` : ''}`;
+      ? t('goal.monthlyProgress', amounts)
+      : goal.targetDate
+        ? t('goal.progressBy', { ...amounts, month: formatMonth(goal.targetDate) })
+        : t('goal.progress', amounts);
   const status =
-    p.neededThisMonth > 0 ? `assign ${fmt(p.neededThisMonth)} more` : p.percent >= 100 ? 'funded' : 'on track';
+    p.neededThisMonth > 0 ? t('goal.assignMore', { amount: fmt(p.neededThisMonth) }) : p.percent >= 100 ? t('goal.funded') : t('goal.onTrack');
   const funded = p.neededThisMonth === 0;
 
   return (

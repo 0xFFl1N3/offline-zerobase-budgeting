@@ -27,3 +27,10 @@ test('formatMoney formats cents', () => {
   assert.equal(formatMoney(123456, 'USD', 'en-US'), '$1,234.56');
   assert.equal(formatMoney(-500, 'USD', 'en-US'), '-$5.00');
 });
+
+test('amounts for input fields use the language\'s decimal mark and no grouping', async () => {
+  const { toAmountInput } = await import('./money.ts');
+  assert.equal(toAmountInput(123456, 'en-US'), '1234.56');
+  assert.equal(toAmountInput(123456, 'de-DE'), '1234,56');
+  assert.equal(toAmountInput(-500, 'de-DE'), '-5,00');
+});

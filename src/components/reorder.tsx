@@ -1,4 +1,5 @@
 import { useState, type DragEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { t } from '../i18n/i18n.ts';
 
 export type Place = 'before' | 'after';
 
@@ -42,8 +43,8 @@ export function useReorder(
     <button
       type="button"
       draggable
-      aria-label={`Reorder ${label}`}
-      title="Drag to reorder (or use the arrow keys)"
+      aria-label={t('reorder.handle', { name: label })}
+      title={t('reorder.handleTitle')}
       onDragStart={(e) => {
         e.dataTransfer.setData(mime(scope), id);
         e.dataTransfer.effectAllowed = 'move';
@@ -74,10 +75,10 @@ export function MoveButtons({ label, first, last, onStep }: { label: string; fir
   const button = 'flex h-9 w-9 items-center justify-center rounded border border-slate-300 bg-white text-slate-700 disabled:opacity-30';
   return (
     <span className="flex shrink-0 gap-1">
-      <button type="button" aria-label={`Move ${label} up`} disabled={first} onClick={() => onStep(-1)} className={button}>
+      <button type="button" aria-label={t('reorder.up', { name: label })} disabled={first} onClick={() => onStep(-1)} className={button}>
         ↑
       </button>
-      <button type="button" aria-label={`Move ${label} down`} disabled={last} onClick={() => onStep(1)} className={button}>
+      <button type="button" aria-label={t('reorder.down', { name: label })} disabled={last} onClick={() => onStep(1)} className={button}>
         ↓
       </button>
     </span>

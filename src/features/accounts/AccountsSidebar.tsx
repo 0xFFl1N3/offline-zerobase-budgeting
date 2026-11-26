@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { accountBalance } from '../../engine/budget.ts';
-import { formatMoney, parseMoney } from '../../engine/money.ts';
+import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
 import type { Account, AccountType } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { MoveButtons, useReorder } from '../../components/reorder.tsx';
 import { BackupPanel } from '../backup/BackupPanel.tsx';
+import { t } from '../../i18n/i18n.ts';
 
 function AddAccountForm({ onDone }: { onDone: () => void }) {
   const addAccount = useBudgetStore((s) => s.addAccount);
@@ -23,16 +24,16 @@ function AddAccountForm({ onDone }: { onDone: () => void }) {
   const field = 'w-full rounded border border-slate-300 px-2 py-1 text-sm';
   return (
     <form onSubmit={submit} className="mt-3 space-y-2">
-      <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Account name" className={field} />
+      <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={t('account.namePlaceholder')} className={field} />
       <select value={type} onChange={(e) => setType(e.target.value as AccountType)} className={field}>
-        <option value="checking">Checking</option>
-        <option value="cash">Cash</option>
-        <option value="savings">Savings</option>
+        <option value="checking">{t('account.checking')}</option>
+        <option value="cash">{t('account.cash')}</option>
+        <option value="savings">{t('account.savings')}</option>
       </select>
-      <input value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="Balance" inputMode="decimal" className={field} />
+      <input value={balance} onChange={(e) => setBalance(e.target.value)} placeholder={t('account.balancePlaceholder')} inputMode="decimal" className={field} />
       <div className="flex gap-2">
-        <button type="submit" className="rounded bg-sky-600 px-3 py-1 text-sm text-white hover:bg-sky-700">Add</button>
-        <button type="button" onClick={onDone} className="text-sm text-slate-600 hover:underline">Cancel</button>
+        <button type="submit" className="rounded bg-sky-600 px-3 py-1 text-sm text-white hover:bg-sky-700">{t('common.add')}</button>
+        <button type="button" onClick={onDone} className="text-sm text-slate-600 hover:underline">{t('common.cancel')}</button>
       </div>
     </form>
   );
@@ -46,7 +47,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
   const deleteAccount = useBudgetStore((s) => s.deleteAccount);
   const [name, setName] = useState(account.name);
   const [type, setType] = useState<AccountType>(account.type);
-  const [opening, setOpening] = useState((account.openingBalance / 100).toFixed(2));
+  const [opening, setOpening] = useState(toAmountInput(account.openingBalance));
   const [error, setError] = useState<string | null>(null);
 
   const used =
@@ -59,15 +60,15 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
       await fn();
       onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      setError(e instanceof Error ? e.message : t('account.errorGeneric'));
     }
   };
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const cents = parseMoney(opening);
-    if (!name.trim()) return setError('An account needs a name.');
-    if (cents === null) return setError('Enter the opening balance as a number.');
+    if (!name.trim()) return setError(t('account.errorName'));
+    if (cents === null) return setError(t('account.errorOpening'));
     void run(() => editAccount(account.id, { name, type, openingBalance: cents }));
   };
 
@@ -75,50 +76,50 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
   return (
     <form onSubmit={submit} className="mt-1 mb-2 space-y-2 rounded border border-slate-200 bg-slate-50 p-2">
       <label className="block text-xs font-medium text-slate-600">
-        Name
+        {t('account.name')}
         <input autoFocus value={name} onChange={(e) => setName(e.target.value)} className={`${field} mt-1`} />
       </label>
       <label className="block text-xs font-medium text-slate-600">
-        Type
+        {t('account.type')}
         <select value={type} onChange={(e) => setType(e.target.value as AccountType)} className={`${field} mt-1`}>
-          <option value="checking">Checking</option>
-          <option value="cash">Cash</option>
-          <option value="savings">Savings</option>
+          <option value="checking">{t('account.checking')}</option>
+          <option value="cash">{t('account.cash')}</option>
+          <option value="savings">{t('account.savings')}</option>
         </select>
       </label>
       <label className="block text-xs font-medium text-slate-600">
-        Opening balance
+        {t('account.opening')}
         <input value={opening} onChange={(e) => setOpening(e.target.value)} inputMode="decimal" className={`${field} mt-1 text-right tabular-nums`} />
       </label>
-      <p className="text-xs text-slate-500">The opening balance counts toward Ready to Assign; changing it changes that amount.</p>
+      <p className="text-xs text-slate-500">{t('account.openingHint')}</p>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex flex-wrap items-center gap-3">
-        <button type="submit" className="rounded bg-sky-600 px-3 py-1 text-sm text-white hover:bg-sky-700">Save</button>
-        <button type="button" onClick={onDone} className="text-sm text-slate-600 hover:underline">Cancel</button>
+        <button type="submit" className="rounded bg-sky-600 px-3 py-1 text-sm text-white hover:bg-sky-700">{t('common.save')}</button>
+        <button type="button" onClick={onDone} className="text-sm text-slate-600 hover:underline">{t('common.cancel')}</button>
         {used ? (
           <button
             type="button"
             onClick={() => {
-              if (window.confirm(`Close ${account.name}? It disappears from the account list and from new transactions; past transactions stay. You can reopen it from the Closed list.`)) {
+              if (window.confirm(t('account.closeConfirm', { name: account.name }))) {
                 void run(() => setAccountClosed(account.id, true));
               }
             }}
             className="ml-auto text-sm text-red-600 hover:underline"
-            title={balance !== 0 ? `Balance is ${formatMoney(balance, currency)}; move it to another account first.` : undefined}
+            title={balance !== 0 ? t('account.closeBalance', { amount: formatMoney(balance, currency) }) : undefined}
           >
-            Close account
+            {t('account.close')}
           </button>
         ) : (
           <button
             type="button"
             onClick={() => {
-              const lines = [`Delete ${account.name}?`];
-              if (account.openingBalance !== 0) lines.push(`Its opening balance of ${formatMoney(account.openingBalance, currency)} is removed from Ready to Assign.`);
+              const lines = [t('account.deleteConfirm', { name: account.name })];
+              if (account.openingBalance !== 0) lines.push(t('account.deleteOpening', { amount: formatMoney(account.openingBalance, currency) }));
               if (window.confirm(lines.join('\n\n'))) void run(() => deleteAccount(account.id));
             }}
             className="ml-auto text-sm text-red-600 hover:underline"
           >
-            Delete account
+            {t('account.delete')}
           </button>
         )}
       </div>
@@ -146,14 +147,14 @@ export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg
   return (
     <aside className={`shrink-0 bg-white p-4 ${className}`}>
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Accounts</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('account.heading')}</h2>
         {accounts.length > 1 && (
           <button
             type="button"
             onClick={() => setReordering((v) => !v)}
             className={`rounded px-2 py-1 text-xs md:hidden ${reordering ? 'bg-sky-600 text-white' : 'text-sky-700'}`}
           >
-            {reordering ? 'Done' : 'Reorder'}
+            {reordering ? t('common.done') : t('budget.reorder')}
           </button>
         )}
       </div>
@@ -173,8 +174,8 @@ export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg
               <button
                 type="button"
                 onClick={() => setEditing(a.id)}
-                aria-label={`Edit ${a.name}`}
-                title="Click to edit"
+                aria-label={t('account.editName', { name: a.name })}
+                title={t('account.clickToEdit')}
                 className="truncate rounded text-left hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
               >
                 {a.name}
@@ -186,27 +187,27 @@ export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg
         )}
       </ul>
       <div className="mt-3 flex justify-between border-t border-slate-200 pt-2 text-sm font-medium">
-        <span>Total</span>
+        <span>{t('account.total')}</span>
         <span className="tabular-nums">{formatMoney(total, currency)}</span>
       </div>
       {adding ? (
         <AddAccountForm onDone={() => setAdding(false)} />
       ) : (
         <button type="button" onClick={() => setAdding(true)} className="mt-4 text-sm text-sky-700 hover:underline">
-          + Add account
+          + {t('account.add')}
         </button>
       )}
       {closed.length > 0 && (
         <div className="mt-4 text-sm">
           <button type="button" onClick={() => setShowClosed((v) => !v)} aria-expanded={showClosed} className="text-slate-600 hover:underline">
-            {showClosed ? '▾' : '▸'} Closed ({closed.length})
+            {showClosed ? '▾' : '▸'} {t('account.closed', { count: closed.length })}
           </button>
           {showClosed && (
             <ul className="mt-2 space-y-1">
               {closed.map((a) => (
                 <li key={a.id} className="flex items-center justify-between gap-2">
                   <span className="truncate text-slate-500">{a.name}</span>
-                  <button type="button" onClick={() => void setAccountClosed(a.id, false)} className="text-sky-700 hover:underline">Reopen</button>
+                  <button type="button" onClick={() => void setAccountClosed(a.id, false)} className="text-sky-700 hover:underline">{t('account.reopen')}</button>
                 </li>
               ))}
             </ul>

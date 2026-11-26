@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatMoney, parseMoney } from '../../engine/money.ts';
+import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
 import { toISODate } from '../../engine/months.ts';
 import { dueItems, type DueItem } from '../../engine/recurring.ts';
 import type { RecurringTransaction } from '../../engine/types.ts';
@@ -13,7 +13,7 @@ function DueRow({ item, rec }: { item: DueItem; rec: RecurringTransaction }) {
   const skipRecurring = useBudgetStore((s) => s.skipRecurring);
   const t = rec.template;
   const isSplit = (t.splits?.length ?? 0) > 0;
-  const [amountText, setAmountText] = useState((Math.abs(t.amount) / 100).toFixed(2));
+  const [amountText, setAmountText] = useState(toAmountInput(Math.abs(t.amount)));
   const [error, setError] = useState<string | null>(null);
   const account = state.accounts.find((a) => a.id === t.accountId)?.name ?? '?';
 

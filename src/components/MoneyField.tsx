@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
-import { parseMoney } from '../engine/money.ts';
+import { parseMoney, toAmountInput } from '../engine/money.ts';
 import type { Cents } from '../engine/types.ts';
 
-const toText = (cents: Cents) => (cents / 100).toFixed(2);
+const toText = (cents: Cents) => toAmountInput(cents);
 
 interface Props {
   value: Cents;
