@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.7.3 – 2026-11-26
+
+### Added
+- Age of money on the Analytics tab: how many days your money sat in your accounts before you spent it, averaged over your last 10 payments, with a chart of how it changed.
+
 ## 0.7.2 – 2026-11-26
 
 ### Added

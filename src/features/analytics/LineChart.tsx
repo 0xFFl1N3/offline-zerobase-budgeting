@@ -10,10 +10,11 @@ interface Props {
   color: string;
   label: string;
   describe: (row: MonthValue) => string;
+  formatTick?: (value: number) => string;
 }
 
 /** One series over months: a 2px line, with a marker on the hovered month. */
-export function LineChart({ rows, currency, color, label, describe }: Props) {
+export function LineChart({ rows, currency, color, label, describe, formatTick }: Props) {
   const [active, setActive] = useState<number | null>(null);
   const scale = niceScale(rows.map((r) => r.value));
   const [box, width] = useChartWidth();
@@ -34,6 +35,7 @@ export function LineChart({ rows, currency, color, label, describe }: Props) {
         active={active}
         onActive={setActive}
         describe={(i) => describe(rows[i]!)}
+        formatTick={formatTick}
       >
         <g pointerEvents="none">
           {rows.length === 1 ? (

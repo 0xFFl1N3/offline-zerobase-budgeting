@@ -472,4 +472,13 @@ export const de: Messages = {
 
   // Import
   'import.useForOthers': { one: 'Auch für die andere Zeile von {payee}', other: 'Auch für die anderen {count} Zeilen von {payee}' },
+
+  // Analytics
+  'analytics.ageOfMoney': 'Alter des Geldes',
+  'analytics.ageHint': 'Wie lange dein Geld auf den Konten lag, bevor du es ausgegeben hast, über deine letzten 10 Ausgaben. Ab 30 Tagen lebst du vom Einkommen des Vormonats.',
+  'analytics.ageDays': { one: '{count} Tag', other: '{count} Tage' },
+  'analytics.ageTick': '{count} T',
+  'analytics.ageNotYet': 'Wird angezeigt, sobald es mindestens 10 Ausgaben gibt.',
+  'analytics.ageLabel': 'Alter des Geldes am Ende jedes Monats',
+  'analytics.ageMonthAgo': 'vor einem Monat {days}',
 };

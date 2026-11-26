@@ -475,6 +475,15 @@ export const en = {
 
   // Import
   'import.useForOthers': { one: 'Use for the other row from {payee}', other: 'Use for the other {count} rows from {payee}' },
+
+  // Analytics
+  'analytics.ageOfMoney': 'Age of money',
+  'analytics.ageHint': 'How long your money sat in your accounts before you spent it, over your last 10 payments. 30 days or more means you live on last month’s income.',
+  'analytics.ageDays': { one: '{count} day', other: '{count} days' },
+  'analytics.ageTick': '{count} d',
+  'analytics.ageNotYet': 'Shows once there are at least 10 payments.',
+  'analytics.ageLabel': 'Age of money at the end of each month',
+  'analytics.ageMonthAgo': '{days} a month ago',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

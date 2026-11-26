@@ -6,6 +6,7 @@ import { useBudgetStore } from '../../store/budgetStore.ts';
 import { biggestCategory, incomeVsSpending, netWorth, reportMonths, spendingTrend, topPayees, type RangeKey, type TrendTarget } from '../../engine/reports.ts';
 import { t } from '../../i18n/i18n.ts';
 import { useIsDark } from '../../theme.ts';
+import { AgeOfMoneyCard } from './AgeOfMoneyCard.tsx';
 import { buildColorMap } from './colors.ts';
 import { IncomeSpendingChart } from './IncomeSpendingChart.tsx';
 import { NetWorthChart } from './NetWorthChart.tsx';
@@ -132,6 +133,7 @@ export function AnalyticsView() {
         <NetWorthChart rows={worthRows} currency={currency} />
         <TrendChart state={state} target={trendTarget} onTarget={setPickedTrend} rows={trendRows} currency={currency} />
         <TopPayees data={payees} currency={currency} />
+        <AgeOfMoneyCard state={state} months={months} currency={currency} />
       </div>
     </section>
   );

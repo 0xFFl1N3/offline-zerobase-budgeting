@@ -43,10 +43,12 @@ interface Props {
   /** Accessible description of one month, read when its column is focused. */
   describe: (index: number) => string;
   children: ReactNode;
+  /** Y-axis label; money by default. */
+  formatTick?: (value: number) => string;
 }
 
 /** Axes, gridlines, month labels and one hover/focus column per month. The marks go in `children`. */
-export function ChartFrame({ width, months, scale, currency, label, active, onActive, describe, children }: Props) {
+export function ChartFrame({ width, months, scale, currency, label, active, onActive, describe, children, formatTick }: Props) {
   const W = width;
   const col = plotWidth(W) / months.length;
   const every = labelEvery(months.length, plotWidth(W));
@@ -63,7 +65,7 @@ export function ChartFrame({ width, months, scale, currency, label, active, onAc
             strokeWidth={1}
           />
           <text x={PAD.left - 6} y={yOf(t, scale)} dy="0.32em" textAnchor="end" className="fill-slate-500 text-[11px] tabular-nums">
-            {formatCompact(t, currency)}
+            {formatTick ? formatTick(t) : formatCompact(t, currency)}
           </text>
         </g>
       ))}
