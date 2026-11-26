@@ -3,13 +3,14 @@ import { spendingReport, type GroupBy, type ReportKind, type SpendingReport } fr
 import { formatMoney } from '../../engine/money.ts';
 import { formatMonth, formatMonthRange } from '../../engine/months.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
-import { biggestCategory, incomeVsSpending, netWorth, reportMonths, spendingTrend, type RangeKey, type TrendTarget } from '../../engine/reports.ts';
+import { biggestCategory, incomeVsSpending, netWorth, reportMonths, spendingTrend, topPayees, type RangeKey, type TrendTarget } from '../../engine/reports.ts';
 import { useIsDark } from '../../theme.ts';
 import { buildColorMap } from './colors.ts';
 import { IncomeSpendingChart } from './IncomeSpendingChart.tsx';
 import { NetWorthChart } from './NetWorthChart.tsx';
 import { PieChart } from './PieChart.tsx';
 import { RangeSwitch } from './RangeSwitch.tsx';
+import { TopPayees } from './TopPayees.tsx';
 import { TrendChart } from './TrendChart.tsx';
 
 const KINDS: ReportKind[] = ['month', 'year-to-date', 'monthly-average'];
@@ -53,6 +54,7 @@ export function AnalyticsView() {
     const id = biggestCategory(state, months);
     return id ? { kind: 'category', id } : null;
   }, [pickedTrend, state, months]);
+  const payees = useMemo(() => topPayees(state, months), [state, months]);
   const trendRows = useMemo(() => (trendTarget ? spendingTrend(state, months, trendTarget) : []), [state, months, trendTarget]);
 
   const toggle = (value: GroupBy, label: string) => (
@@ -129,6 +131,7 @@ export function AnalyticsView() {
         <IncomeSpendingChart rows={incomeRows} currency={currency} />
         <NetWorthChart rows={worthRows} currency={currency} />
         <TrendChart state={state} target={trendTarget} onTarget={setPickedTrend} rows={trendRows} currency={currency} />
+        <TopPayees data={payees} currency={currency} />
       </div>
     </section>
   );

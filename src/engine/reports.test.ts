@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { biggestCategory, incomeVsSpending, netWorth, reportMonths, spendingTrend } from './reports.ts';
+import { biggestCategory, incomeVsSpending, netWorth, reportMonths, spendingTrend, topPayees } from './reports.ts';
 import type { BudgetState, Transaction } from './types.ts';
 
 let n = 0;
@@ -98,4 +98,31 @@ test('spending trend for a category or a whole group, counting split parts and r
   assert.equal(biggestCategory(s, months), 'rent');
   assert.equal(biggestCategory(s, ['2026-02']), 'food');
   assert.equal(biggestCategory(s, ['2025-01']), undefined);
+});
+
+test('top payees: merged ignoring case and spaces, latest spelling, refunds net, income and transfers ignored', () => {
+  const s = state([
+    tx('2026-01-02', 'food', -2000, { payee: 'REWE ' }),
+    tx('2026-01-20', 'food', -3000, { payee: 'Rewe' }),
+    tx('2026-01-21', 'food', 500, { payee: 'rewe' }), // refund; the latest spelling wins
+    tx('2026-01-05', 'rent', -90000, { payee: 'Landlord' }),
+    tx('2026-01-06', 'games', -1000, { payee: '' }),
+    tx('2026-01-07', null, 300000, { payee: 'Employer' }),
+    tx('2026-01-08', null, -5000, { payee: 'Savings', transferAccountId: 'b' }),
+    tx('2026-01-09', 'games', -4000, { payee: 'Steam' }),
+    tx('2026-01-10', 'games', 4000, { payee: 'Steam' }), // fully refunded: left out
+    tx('2026-03-01', 'rent', -1, { payee: 'Elsewhere' }), // outside the range
+  ]);
+  const r = topPayees(s, ['2026-01', '2026-02']);
+  assert.deepEqual(r.rows, [
+    { label: 'Landlord', amount: 90000, count: 1 },
+    { label: 'rewe', amount: 4500, count: 3 },
+    { label: '(no payee)', amount: 1000, count: 1 },
+  ]);
+  assert.equal(r.total, 95500);
+  assert.equal(r.others, 0);
+  const top1 = topPayees(s, ['2026-01'], 1);
+  assert.equal(top1.rows.length, 1);
+  assert.equal(top1.others, 2);
+  assert.equal(top1.total, 95500);
 });

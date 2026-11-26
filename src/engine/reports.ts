@@ -119,3 +119,49 @@ export function biggestCategory(state: BudgetState, months: Month[]): string | u
   for (const [id, amount] of spent) if (amount > 0 && (best === undefined || amount > spent.get(best)!)) best = id;
   return best;
 }
+
+export interface PayeeRow {
+  label: string;
+  amount: Cents;
+  /** Transactions with this payee in the period. */
+  count: number;
+}
+
+export interface TopPayees {
+  rows: PayeeRow[];
+  /** Spending of all payees in the period, listed or not. */
+  total: Cents;
+  /** Payees with spending that did not make the list. */
+  others: number;
+}
+
+export const NO_PAYEE = '(no payee)';
+
+/**
+ * Where the money went: spending per payee in the months, largest first. Payees match ignoring case and spaces
+ * at the ends, and show the most recent spelling. Refunds from the same payee lower its amount; transfers and income don't count.
+ */
+export function topPayees(state: BudgetState, months: Month[], limit = 10): TopPayees {
+  const inRange = new Set(months);
+  const byKey = new Map<string, PayeeRow & { latest: string }>();
+  for (const t of state.transactions) {
+    if (!inRange.has(monthOf(t.date))) continue;
+    const parts = categoryParts(t);
+    if (parts.length === 0) continue;
+    const name = t.payee.trim();
+    const key = name.toLowerCase();
+    const row = byKey.get(key) ?? { label: name || NO_PAYEE, amount: 0, count: 0, latest: '' };
+    for (const part of parts) row.amount -= part.amount;
+    row.count++;
+    if (t.date >= row.latest) {
+      row.latest = t.date;
+      row.label = name || NO_PAYEE;
+    }
+    byKey.set(key, row);
+  }
+  const all = [...byKey.values()]
+    .filter((r) => r.amount > 0)
+    .sort((a, b) => b.amount - a.amount || a.label.localeCompare(b.label))
+    .map(({ label, amount, count }) => ({ label, amount, count }));
+  return { rows: all.slice(0, limit), total: all.reduce((t, r) => t + r.amount, 0), others: Math.max(0, all.length - limit) };
+}
