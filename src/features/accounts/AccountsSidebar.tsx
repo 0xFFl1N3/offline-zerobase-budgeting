@@ -3,6 +3,7 @@ import { accountBalance } from '../../engine/budget.ts';
 import { formatMoney, parseMoney } from '../../engine/money.ts';
 import type { AccountType } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
+import { BackupPanel } from '../backup/BackupPanel.tsx';
 
 function AddAccountForm({ onDone }: { onDone: () => void }) {
   const addAccount = useBudgetStore((s) => s.addAccount);
@@ -65,6 +66,7 @@ export function AccountsSidebar() {
           + Add account
         </button>
       )}
+      <BackupPanel />
     </aside>
   );
 }
