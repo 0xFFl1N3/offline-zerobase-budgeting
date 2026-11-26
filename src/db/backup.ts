@@ -93,10 +93,10 @@ function unique(ids: string[], what: string) {
 
 function parseData(raw: unknown): BudgetState {
   if (!isObj(raw)) throw new Error('The file has no data section.');
-  const accounts: Account[] = list(raw, 'accounts').map((o) => {
+  const accounts: Account[] = list(raw, 'accounts').map((o, index) => {
     const type = str(o, 'type', 'Account') as AccountType;
     if (!ACCOUNT_TYPES.includes(type)) throw new Error(`Account: unknown type "${type}".`);
-    return { id: str(o, 'id', 'Account'), name: str(o, 'name', 'Account'), type, openingBalance: int(o, 'openingBalance', 'Account'), closed: bool(o, 'closed', 'Account') };
+    return { id: str(o, 'id', 'Account'), name: str(o, 'name', 'Account'), type, openingBalance: int(o, 'openingBalance', 'Account'), sortOrder: o.sortOrder === undefined ? index : int(o, 'sortOrder', 'Account'), closed: bool(o, 'closed', 'Account') };
   });
   const groups: CategoryGroup[] = list(raw, 'groups').map((o) => ({
     id: str(o, 'id', 'Group'), name: str(o, 'name', 'Group'), sortOrder: int(o, 'sortOrder', 'Group'), archived: bool(o, 'archived', 'Group'),

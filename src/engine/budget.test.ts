@@ -16,8 +16,8 @@ const FEB = '2026-02';
 function baseState(): BudgetState {
   return {
     accounts: [
-      { id: 'chk', name: 'Checking', type: 'checking', openingBalance: 100000, closed: false },
-      { id: 'sav', name: 'Savings', type: 'savings', openingBalance: 0, closed: false },
+      { id: 'chk', name: 'Checking', type: 'checking', openingBalance: 100000, sortOrder: 0, closed: false },
+      { id: 'sav', name: 'Savings', type: 'savings', openingBalance: 0, sortOrder: 0, closed: false },
     ],
     groups: [{ id: 'g1', name: 'Living', sortOrder: 0, archived: false }],
     categories: [

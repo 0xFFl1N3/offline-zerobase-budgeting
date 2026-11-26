@@ -9,6 +9,7 @@ export interface Account {
   name: string;
   type: AccountType;
   openingBalance: Cents;
+  sortOrder: number;
   closed: boolean;
 }
 

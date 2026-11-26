@@ -9,8 +9,8 @@ import { loadAll } from './repository.ts';
 
 const sample = (): BudgetState => ({
   accounts: [
-    { id: 'a', name: 'Checking', type: 'checking', openingBalance: 100000, closed: false },
-    { id: 'b', name: 'Savings', type: 'savings', openingBalance: 0, closed: false },
+    { id: 'a', name: 'Checking', type: 'checking', openingBalance: 100000, sortOrder: 0, closed: false },
+    { id: 'b', name: 'Savings', type: 'savings', openingBalance: 0, sortOrder: 0, closed: false },
   ],
   groups: [{ id: 'g', name: 'Living', sortOrder: 0, archived: false }],
   categories: [{ id: 'c', groupId: 'g', name: 'Rent', sortOrder: 0, archived: false }],

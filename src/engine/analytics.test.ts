@@ -17,8 +17,8 @@ const tx = (date: string, categoryId: string | null, amount: number, extra: Part
 
 const base = (transactions: Transaction[], monthlyBudgets: BudgetState['monthlyBudgets'] = []): BudgetState => ({
   accounts: [
-    { id: 'a', name: 'Checking', type: 'checking', openingBalance: 0, closed: false },
-    { id: 'b', name: 'Savings', type: 'savings', openingBalance: 0, closed: false },
+    { id: 'a', name: 'Checking', type: 'checking', openingBalance: 0, sortOrder: 0, closed: false },
+    { id: 'b', name: 'Savings', type: 'savings', openingBalance: 0, sortOrder: 0, closed: false },
   ],
   groups: [
     { id: 'g1', name: 'Living', sortOrder: 0, archived: false },

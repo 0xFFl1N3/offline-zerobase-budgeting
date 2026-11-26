@@ -25,7 +25,7 @@ test('loadAll on an empty database returns defaults', async () => {
 
 test('saved records come back from loadAll', async () => {
   const db = freshDb();
-  await saveAccount(db, { id: 'a', name: 'Checking', type: 'checking', openingBalance: 5000, closed: false });
+  await saveAccount(db, { id: 'a', name: 'Checking', type: 'checking', openingBalance: 5000, sortOrder: 0, closed: false });
   await saveGroup(db, { id: 'g2', name: 'Fun', sortOrder: 2, archived: false });
   await saveGroup(db, { id: 'g1', name: 'Living', sortOrder: 1, archived: false });
   await saveCategory(db, { id: 'c', groupId: 'g1', name: 'Rent', sortOrder: 0, archived: false });

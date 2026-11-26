@@ -38,7 +38,10 @@ export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; setti
   const currency = byKey.get('currency') === 'USD' ? 'USD' : DEFAULT_CURRENCY;
   return {
     state: {
-      accounts,
+      // Accounts saved before ordering existed have no sortOrder: keep the order they came in.
+      accounts: accounts
+        .map((a, index) => (typeof a.sortOrder === 'number' ? a : { ...a, sortOrder: index }))
+        .sort((a, b) => a.sortOrder - b.sortOrder),
       groups: groups.sort((a, b) => a.sortOrder - b.sortOrder),
       categories: categories.sort((a, b) => a.sortOrder - b.sortOrder),
       goals: goals.map(normalizeGoal),
@@ -117,3 +120,11 @@ export async function replaceAll(db: BudgetDB, state: BudgetState, settings: Set
     },
   );
 }
+
+/** Saves accounts, groups and categories whose sort order changed. */
+export const saveOrder = (db: BudgetDB, accounts: Account[], groups: CategoryGroup[], categories: Category[]) =>
+  db.transaction('rw', [db.accounts, db.groups, db.categories], async () => {
+    await db.accounts.bulkPut(accounts);
+    await db.groups.bulkPut(groups);
+    await db.categories.bulkPut(categories);
+  });

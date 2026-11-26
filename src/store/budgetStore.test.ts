@@ -201,3 +201,28 @@ test('editing, closing and deleting accounts persist across a reload', async () 
   await reloaded.getState().deleteAccount(old.id);
   assert.equal(reloaded.getState().state.accounts.length, 2);
 });
+
+test('reordering persists across a reload', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 0, currency: 'EUR' });
+  await store.getState().addAccount('Cash', 'cash', 0);
+  await store.getState().addGroup('Living');
+  await store.getState().addGroup('Fun');
+  const living = store.getState().state.groups[0]!;
+  const fun = store.getState().state.groups[1]!;
+  await store.getState().addCategory(living.id, 'Rent');
+  await store.getState().addCategory(living.id, 'Power');
+  const power = store.getState().state.categories[1]!;
+  const cash = store.getState().state.accounts[1]!;
+
+  await store.getState().moveAccount(cash.id, -1);
+  await store.getState().moveGroup(fun.id, -1);
+  await store.getState().moveCategory(power.id, -1);
+
+  const reloaded = createBudgetStore(db, '2026-01');
+  await reloaded.getState().load();
+  const s = reloaded.getState().state;
+  assert.deepEqual(s.accounts.map((a) => a.name), ['Cash', 'Checking']);
+  assert.deepEqual(s.groups.map((g) => g.name), ['Fun', 'Living']);
+  assert.deepEqual(s.categories.map((c) => c.name), ['Power', 'Rent']);
+});

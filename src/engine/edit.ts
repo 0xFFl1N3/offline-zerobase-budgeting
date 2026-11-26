@@ -88,3 +88,48 @@ export function removeAccount(state: BudgetState, accountId: string): BudgetStat
   if (hasTransactions(state, accountId)) throw new Error('An account with transactions cannot be deleted. Close it instead.');
   return { ...state, accounts: state.accounts.filter((a) => a.id !== accountId) };
 }
+
+interface Ordered {
+  id: string;
+  sortOrder: number;
+}
+
+/**
+ * Moves one item up (-1) or down (+1) among its siblings, skipping hidden ones (archived or closed), and renumbers
+ * the siblings 0..n-1. Returns the list sorted by sortOrder; unchanged if the item is already at that end.
+ */
+function moveAmong<T extends Ordered>(items: T[], id: string, delta: -1 | 1, isSibling: (t: T) => boolean, isShown: (t: T) => boolean): T[] {
+  const siblings = items.filter(isSibling).sort((a, b) => a.sortOrder - b.sortOrder);
+  const from = siblings.findIndex((t) => t.id === id);
+  if (from < 0) throw new Error('Unknown item.');
+  let to = from + delta;
+  while (siblings[to] && !isShown(siblings[to] as T)) to += delta;
+  if (to < 0 || to >= siblings.length) return items;
+  const order = [...siblings];
+  const [moved] = order.splice(from, 1);
+  order.splice(to, 0, moved as T);
+  const rank = new Map(order.map((t, i) => [t.id, i]));
+  return items
+    .map((t) => (rank.has(t.id) ? { ...t, sortOrder: rank.get(t.id) as number } : t))
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+export const moveAccount = (state: BudgetState, id: string, delta: -1 | 1): BudgetState => ({
+  ...state,
+  accounts: moveAmong(state.accounts, id, delta, () => true, (a) => !a.closed),
+});
+
+export const moveGroup = (state: BudgetState, id: string, delta: -1 | 1): BudgetState => ({
+  ...state,
+  groups: moveAmong(state.groups, id, delta, () => true, (g) => !g.archived),
+});
+
+/** Moves a category up or down within its group. */
+export function moveCategory(state: BudgetState, id: string, delta: -1 | 1): BudgetState {
+  const category = state.categories.find((c) => c.id === id);
+  if (!category) throw new Error('Unknown category.');
+  return {
+    ...state,
+    categories: moveAmong(state.categories, id, delta, (c) => c.groupId === category.groupId, (c) => !c.archived),
+  };
+}

@@ -1,3 +1,5 @@
+import { MoveButtons } from '../../components/MoveButtons.tsx';
+
 interface Props {
   name: string;
   renaming: boolean;
@@ -7,10 +9,13 @@ interface Props {
   /** Label of the action shown on hover: "Delete", or "Archive" when the item has history. */
   actionLabel: string;
   onAction: () => void;
+  /** Reorder handlers; null = already at that end. */
+  onMoveUp: (() => void) | null;
+  onMoveDown: (() => void) | null;
 }
 
 /** A group or category name: click it to rename in place. An Archive or Delete action appears on hover or keyboard focus. */
-export function NameCell({ name, renaming, onStartRename, onRename, onCancelRename, actionLabel, onAction }: Props) {
+export function NameCell({ name, renaming, onStartRename, onRename, onCancelRename, actionLabel, onAction, onMoveUp, onMoveDown }: Props) {
   if (renaming) {
     return (
       <input
@@ -46,6 +51,7 @@ export function NameCell({ name, renaming, onStartRename, onRename, onCancelRena
       >
         {actionLabel}
       </button>
+      <MoveButtons label={name} onUp={onMoveUp} onDown={onMoveDown} />
     </span>
   );
 }

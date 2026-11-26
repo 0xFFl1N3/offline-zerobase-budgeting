@@ -44,6 +44,8 @@ export function BudgetView() {
   const renameCategory = useBudgetStore((s) => s.renameCategory);
   const deleteCategory = useBudgetStore((s) => s.deleteCategory);
   const deleteGroup = useBudgetStore((s) => s.deleteGroup);
+  const moveGroup = useBudgetStore((s) => s.moveGroup);
+  const moveCategory = useBudgetStore((s) => s.moveCategory);
   const archiveCategory = useBudgetStore((s) => s.archiveCategory);
   const archiveGroup = useBudgetStore((s) => s.archiveGroup);
   const restoreCategory = useBudgetStore((s) => s.restoreCategory);
@@ -114,7 +116,7 @@ export function BudgetView() {
           </p>
         )}
 
-        {groups.map((group) => {
+        {groups.map((group, groupIndex) => {
           const cats = state.categories.filter((c) => c.groupId === group.id && !c.archived);
           const sum = (f: (id: string) => Cents) => cats.reduce((t, c) => t + f(c.id), 0);
           return (
@@ -129,6 +131,8 @@ export function BudgetView() {
                     setRenaming(null);
                   }}
                   onCancelRename={() => setRenaming(null)}
+                  onMoveUp={groupIndex > 0 ? () => void moveGroup(group.id, -1) : null}
+                  onMoveDown={groupIndex < groups.length - 1 ? () => void moveGroup(group.id, 1) : null}
                   actionLabel={hasTransactions(cats.map((c) => c.id)) ? 'Archive' : 'Delete'}
                   onAction={() =>
                     removeOrArchive(
@@ -143,7 +147,7 @@ export function BudgetView() {
                 <span className="px-2 text-right tabular-nums">{formatMoney(sum((id) => categoryActivity(state, id, month)), currency)}</span>
                 <span className="px-2 text-right tabular-nums">{formatMoney(sum((id) => categoryAvailable(state, id, month)), currency)}</span>
               </div>
-              {cats.map((cat) => {
+              {cats.map((cat, catIndex) => {
                 const available = categoryAvailable(state, cat.id, month);
                 const goal = state.goals.find((g) => g.categoryId === cat.id);
                 return (
@@ -159,6 +163,8 @@ export function BudgetView() {
                           setRenaming(null);
                         }}
                         onCancelRename={() => setRenaming(null)}
+                        onMoveUp={catIndex > 0 ? () => void moveCategory(cat.id, -1) : null}
+                        onMoveDown={catIndex < cats.length - 1 ? () => void moveCategory(cat.id, 1) : null}
                         actionLabel={hasTransactions([cat.id]) ? 'Archive' : 'Delete'}
                         onAction={() =>
                           removeOrArchive(`the category "${cat.name}"`, [cat.id], () => void deleteCategory(cat.id), () => void archiveCategory(cat.id))

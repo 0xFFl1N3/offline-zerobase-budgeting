@@ -3,7 +3,7 @@ import { createDb, type BudgetDB } from '../db/db.ts';
 import type { BackupFile } from '../db/backup.ts';
 import * as repo from '../db/repository.ts';
 import type { Currency } from '../engine/money.ts';
-import { removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from '../engine/edit.ts';
+import { moveAccount, moveCategory, moveGroup, removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from '../engine/edit.ts';
 import { addMonths } from '../engine/months.ts';
 import type { Account, AccountType, BudgetState, Cents, Goal, Month, Transaction } from '../engine/types.ts';
 
@@ -36,6 +36,10 @@ export interface BudgetStore {
   setAccountClosed: (id: string, closed: boolean) => Promise<void>;
   /** Deletes an account without transactions. */
   deleteAccount: (id: string) => Promise<void>;
+  /** Moves an account, group or category one step up (-1) or down (+1) among its visible siblings. */
+  moveAccount: (id: string, delta: -1 | 1) => Promise<void>;
+  moveGroup: (id: string, delta: -1 | 1) => Promise<void>;
+  moveCategory: (id: string, delta: -1 | 1) => Promise<void>;
   addGroup: (name: string) => Promise<void>;
   addCategory: (groupId: string, name: string) => Promise<void>;
   /** Sets this month's Assigned amount for a category. */
@@ -65,11 +69,12 @@ export interface BudgetStore {
   shiftMonth: (n: number) => void;
 }
 
-const newAccount = (name: string, type: AccountType, openingBalance: Cents): Account => ({
+const newAccount = (name: string, type: AccountType, openingBalance: Cents, sortOrder: number): Account => ({
   id: crypto.randomUUID(),
   name: name.trim(),
   type,
   openingBalance,
+  sortOrder,
   closed: false,
 });
 
@@ -81,6 +86,15 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       const changedGroups = next.groups.filter((g) => g.archived !== prev.groups.find((p) => p.id === g.id)?.archived);
       const changedCategories = next.categories.filter((c) => c.archived !== prev.categories.find((p) => p.id === c.id)?.archived);
       await repo.saveArchiveChanges(db, changedGroups, changedCategories);
+      set({ state: next });
+    };
+
+    /** Persists the accounts, groups and categories whose sort order changed, then updates the state. */
+    const applyOrder = async (next: BudgetState) => {
+      const prev = get().state;
+      const changed = <T extends { id: string; sortOrder: number }>(now: T[], before: T[]) =>
+        now.filter((t) => t.sortOrder !== before.find((p) => p.id === t.id)?.sortOrder);
+      await repo.saveOrder(db, changed(next.accounts, prev.accounts), changed(next.groups, prev.groups), changed(next.categories, prev.categories));
       set({ state: next });
     };
 
@@ -97,7 +111,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     },
 
     completeSetup: async ({ accountName, initialBalance, currency }) => {
-      const account = newAccount(accountName, 'checking', initialBalance);
+      const account = newAccount(accountName, 'checking', initialBalance, 0);
       await repo.saveSettings(db, { currency, lastBackupAt: get().lastBackupAt });
       await repo.saveAccount(db, account);
       set((s) => ({ currency, state: { ...s.state, accounts: [...s.state.accounts, account] } }));
@@ -105,7 +119,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
 
     addAccount: async (name, type, openingBalance) => {
       if (!name.trim()) return;
-      const account = newAccount(name, type, openingBalance);
+      const account = newAccount(name, type, openingBalance, get().state.accounts.reduce((max, a) => Math.max(max, a.sortOrder + 1), 0));
       await repo.saveAccount(db, account);
       set((s) => ({ state: { ...s.state, accounts: [...s.state.accounts, account] } }));
     },
@@ -127,6 +141,10 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       await repo.deleteAccount(db, id);
       set({ state: next });
     },
+
+    moveAccount: (id, delta) => applyOrder(moveAccount(get().state, id, delta)),
+    moveGroup: (id, delta) => applyOrder(moveGroup(get().state, id, delta)),
+    moveCategory: (id, delta) => applyOrder(moveCategory(get().state, id, delta)),
 
     addGroup: async (name) => {
       if (!name.trim()) return;

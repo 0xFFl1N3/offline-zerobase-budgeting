@@ -2,11 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spendingReport } from './analytics.ts';
 import { accountBalance, readyToAssign } from './budget.ts';
-import { removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from './edit.ts';
+import { moveAccount, moveCategory, moveGroup, removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from './edit.ts';
 import type { BudgetState } from './types.ts';
 
 const state = (): BudgetState => ({
-  accounts: [{ id: 'a', name: 'Checking', type: 'checking', openingBalance: 100000, closed: false }],
+  accounts: [{ id: 'a', name: 'Checking', type: 'checking', openingBalance: 100000, sortOrder: 0, closed: false }],
   groups: [
     { id: 'g1', name: 'Living', sortOrder: 0, archived: false },
     { id: 'g2', name: 'Fun', sortOrder: 1, archived: false },
@@ -89,7 +89,7 @@ test('archiving an overspent category takes the shortfall from Ready to Assign',
 
 const twoAccounts = (): BudgetState => {
   const s = state();
-  s.accounts.push({ id: 'b', name: 'Savings', type: 'savings', openingBalance: 5000, closed: false });
+  s.accounts.push({ id: 'b', name: 'Savings', type: 'savings', openingBalance: 5000, sortOrder: 0, closed: false });
   return s;
 };
 
@@ -119,4 +119,35 @@ test('an account is deleted only when nothing refers to it', () => {
   assert.throws(() => removeAccount(s, 'a'), /Close it instead/);
   s.transactions.push({ id: 't2', accountId: 'a', date: '2026-01-06', payee: '', categoryId: null, memo: '', amount: -1000, transferAccountId: 'b' });
   assert.throws(() => removeAccount(s, 'b'), /Close it instead/);
+});
+
+const names = (items: { name: string }[]) => items.map((i) => i.name);
+
+test('groups and categories move up and down; the ends stay put', () => {
+  let s = state();
+  s = moveGroup(s, 'g2', -1);
+  assert.deepEqual(names(s.groups), ['Fun', 'Living']);
+  assert.deepEqual(s.groups.map((g) => g.sortOrder), [0, 1]);
+  assert.deepEqual(names(moveGroup(s, 'g1', 1).groups), ['Fun', 'Living']); // Living is already last
+
+  s = moveCategory(s, 'power', -1);
+  assert.deepEqual(names(s.categories.filter((c) => c.groupId === 'g1')), ['Electricity', 'Rent']);
+  // other groups are untouched
+  assert.deepEqual(names(s.categories.filter((c) => c.groupId === 'g2')), ['Games']);
+  assert.deepEqual(names(moveCategory(s, 'power', -1).categories.filter((c) => c.groupId === 'g1')), ['Electricity', 'Rent']);
+});
+
+test('moving skips archived and closed neighbours', () => {
+  let s = state();
+  s.categories.push({ id: 'water', groupId: 'g1', name: 'Water', sortOrder: 2, archived: false });
+  s = setCategoryArchived(s, 'power', true);
+  s = moveCategory(s, 'water', -1); // swaps with Rent, jumping over archived Electricity
+  assert.deepEqual(names(s.categories.filter((c) => c.groupId === 'g1' && !c.archived)), ['Water', 'Rent']);
+
+  let a = twoAccounts();
+  a.accounts.push({ id: 'c', name: 'Cash', type: 'cash', openingBalance: 0, sortOrder: 2, closed: false });
+  a = updateAccount(a, 'b', { openingBalance: 0 });
+  a = setAccountClosed(a, 'b', true);
+  a = moveAccount(a, 'c', -1);
+  assert.deepEqual(names(a.accounts.filter((x) => !x.closed)), ['Cash', 'Checking']);
 });
