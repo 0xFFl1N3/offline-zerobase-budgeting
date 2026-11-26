@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.8.2 – 2026-11-27
+
+### Fixed
+- Publishing the website could fail when a failed run was started again.
+
 ## 0.8.1 – 2026-11-26
 
 ### Added

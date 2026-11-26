@@ -1,4 +1,8 @@
 # Builds the app and publishes it to GitHub Pages on every push to main.
+#
+# Two jobs: build uploads the site once, deploy publishes it. If publishing fails, use
+# "Re-run failed jobs" so only deploy runs again and reuses the upload (re-running the
+# build too would upload a second copy, which the deploy step refuses).
 name: Deploy to GitHub Pages
 
 on:
@@ -16,23 +20,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
         with:
           node-version: lts/*
           cache: npm
       - run: npm ci
       - run: npm test
       - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
