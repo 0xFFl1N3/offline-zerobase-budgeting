@@ -49,7 +49,9 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
   const [opening, setOpening] = useState((account.openingBalance / 100).toFixed(2));
   const [error, setError] = useState<string | null>(null);
 
-  const used = state.transactions.some((t) => t.accountId === account.id || t.transferAccountId === account.id);
+  const used =
+    state.transactions.some((t) => t.accountId === account.id || t.transferAccountId === account.id) ||
+    state.recurring.some((r) => r.template.accountId === account.id || r.template.transferAccountId === account.id);
   const balance = accountBalance(state, account.id);
 
   const run = async (fn: () => Promise<void>) => {

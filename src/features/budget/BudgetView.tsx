@@ -61,7 +61,8 @@ export function BudgetView() {
   const [autoMessage, setAutoMessage] = useState<{ month: string; text: string } | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
 
-  const hasTransactions = (ids: string[]) => state.transactions.some((t) => touchesCategory(t, ids));
+  const hasTransactions = (ids: string[]) =>
+    state.transactions.some((t) => touchesCategory(t, ids)) || state.recurring.some((r) => touchesCategory(r.template, ids));
   const fmt = (c: Cents) => formatMoney(c, currency);
 
   /**

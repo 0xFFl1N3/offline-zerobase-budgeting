@@ -1,9 +1,14 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { Fragment, useMemo, useState, type FormEvent } from 'react';
 import { archivedCategoryIds, runningBalances } from '../../engine/budget.ts';
 import { formatMoney, parseMoney } from '../../engine/money.ts';
 import { toISODate } from '../../engine/months.ts';
-import type { Account, BudgetState, Transaction } from '../../engine/types.ts';
+import { FREQUENCIES, FREQUENCY_LABELS } from '../../engine/recurring.ts';
+import type { Account, Frequency, Transaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
+import { DueBanner } from '../recurring/DueBanner.tsx';
+import { MakeRecurringForm } from '../recurring/MakeRecurringForm.tsx';
+import { RecurringList } from '../recurring/RecurringList.tsx';
+import { categoryLabel } from './labels.ts';
 import { filterTransactions, hasActiveFilters, NO_FILTERS, type TxFilters } from './filterTransactions.ts';
 import { buildTransaction, toForm, type TxForm, type TxKind } from './buildTransaction.ts';
 
@@ -18,37 +23,23 @@ const blankForm = (accounts: Account[], kind: TxKind = 'outflow'): TxForm => ({
   amount: 0,
 });
 
-function categoryLabel(state: BudgetState, t: Transaction): string {
-  if (t.transferAccountId) {
-    const from = state.accounts.find((a) => a.id === t.accountId)?.name ?? '?';
-    const to = state.accounts.find((a) => a.id === t.transferAccountId)?.name ?? '?';
-    return `Transfer: ${from} → ${to}`;
-  }
-  if (t.splits && t.splits.length > 0) {
-    const names = [...new Set(t.splits.map((p) => state.categories.find((c) => c.id === p.categoryId)?.name ?? 'Unknown category'))];
-    return `Split: ${names.join(', ')}`;
-  }
-  if (t.categoryId) {
-    const category = state.categories.find((c) => c.id === t.categoryId);
-    if (!category) return 'Unknown category';
-    const archived = category.archived || state.groups.find((g) => g.id === category.groupId)?.archived;
-    return archived ? `${category.name} (archived)` : category.name;
-  }
-  return t.amount > 0 ? 'Income (Ready to Assign)' : 'Needs a category';
-}
-
 const field = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-sm';
 
 export function TransactionsView() {
   const state = useBudgetStore((s) => s.state);
   const currency = useBudgetStore((s) => s.currency);
   const saveTransaction = useBudgetStore((s) => s.saveTransaction);
+  const startRecurringSeries = useBudgetStore((s) => s.startRecurringSeries);
   const removeTransaction = useBudgetStore((s) => s.removeTransaction);
 
   const accounts = state.accounts.filter((a) => !a.closed);
 
   const [form, setForm] = useState<TxForm>(() => blankForm(accounts));
   const [amountText, setAmountText] = useState('');
+  /** Repeat choice for a new transaction; '' = just once. */
+  const [repeat, setRepeat] = useState<Frequency | ''>('');
+  /** The transaction whose "make recurring" panel is open. */
+  const [repeatingId, setRepeatingId] = useState<string | null>(null);
   /** When set, the outflow is split: one row per part, with the amount as typed. */
   const [splitRows, setSplitRows] = useState<{ categoryId: string; text: string }[] | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -63,6 +54,7 @@ export function TransactionsView() {
     setForm({ ...blankForm(accounts, keep?.kind), date: keep?.date ?? toISODate(), accountId: keep?.accountId ?? accounts[0]?.id ?? '' });
     setAmountText('');
     setSplitRows(null);
+    setRepeat('');
     setEditingId(null);
     setError(null);
   };
@@ -79,7 +71,8 @@ export function TransactionsView() {
     }
     const result = buildTransaction({ ...form, amount: Math.abs(parsed), splits }, editingId ?? crypto.randomUUID());
     if (!result.ok) return setError(result.error);
-    void saveTransaction(result.transaction);
+    if (repeat && !editingId) void startRecurringSeries(result.transaction, repeat, null);
+    else void saveTransaction(result.transaction);
     reset(form);
   };
 
@@ -127,6 +120,8 @@ export function TransactionsView() {
 
   return (
     <section className="p-6">
+      <DueBanner />
+
       <form onSubmit={submit} className="rounded-lg bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold">{editingId ? 'Edit transaction' : 'Add transaction'}</h2>
         <div className="mt-3 flex flex-wrap items-end gap-3">
@@ -206,6 +201,17 @@ export function TransactionsView() {
             Memo
             <input value={form.memo} onChange={(e) => update({ memo: e.target.value })} placeholder="Optional" className={`${field} mt-1 block`} />
           </label>
+          {!editingId && (
+            <label className="text-xs font-medium text-slate-600">
+              Repeat
+              <select aria-label="Repeat" value={repeat} onChange={(e) => setRepeat(e.target.value as Frequency | '')} className={`${field} mt-1 block`}>
+                <option value="">Once</option>
+                {FREQUENCIES.map((f) => (
+                  <option key={f} value={f}>{FREQUENCY_LABELS[f]}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="text-xs font-medium text-slate-600">
             Amount
             <input value={amountText} onChange={(e) => setAmountText(e.target.value)} inputMode="decimal" placeholder="0.00" className={`${field} mt-1 block w-28 text-right tabular-nums`} />
@@ -261,6 +267,8 @@ export function TransactionsView() {
         )}
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       </form>
+
+      <RecurringList />
 
       <div className="mt-6 flex flex-wrap items-end gap-3">
         <label className="text-xs font-medium text-slate-600">
@@ -346,7 +354,8 @@ export function TransactionsView() {
               const mirrored = filterAccount !== 'all' && t.transferAccountId === filterAccount && t.accountId !== filterAccount;
               const amount = mirrored ? -t.amount : t.amount;
               return (
-                <tr key={t.id} className="border-b border-slate-100 last:border-b-0">
+                <Fragment key={t.id}>
+                <tr className="border-b border-slate-100 last:border-b-0">
                   <td className="px-4 py-2 whitespace-nowrap">{t.date}</td>
                   <td className="px-4 py-2">{accountName(t.accountId)}</td>
                   <td className="px-4 py-2">{t.payee}</td>
@@ -357,6 +366,7 @@ export function TransactionsView() {
                   {balances && <td className="px-4 py-2 text-right tabular-nums text-slate-600">{formatMoney(balances.get(t.id) ?? 0, currency)}</td>}
                   <td className="px-4 py-2 whitespace-nowrap text-right">
                     <button type="button" onClick={() => startEdit(t)} className="text-sky-700 hover:underline">Edit</button>
+                    <button type="button" onClick={() => setRepeatingId(repeatingId === t.id ? null : t.id)} className="ml-3 text-sky-700 hover:underline">Repeat…</button>
                     <button
                       type="button"
                       onClick={() => {
@@ -368,6 +378,14 @@ export function TransactionsView() {
                     </button>
                   </td>
                 </tr>
+                {repeatingId === t.id && (
+                  <tr className="border-b border-slate-100">
+                    <td colSpan={balances ? 9 : 8} className="p-0">
+                      <MakeRecurringForm transaction={t} onDone={() => setRepeatingId(null)} />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
           </tbody>

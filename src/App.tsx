@@ -5,6 +5,8 @@ import { BudgetView } from './features/budget/BudgetView.tsx';
 import { SettingsView } from './features/settings/SettingsView.tsx';
 import { Setup } from './features/setup/Setup.tsx';
 import { TransactionsView } from './features/transactions/TransactionsView.tsx';
+import { dueItems } from './engine/recurring.ts';
+import { toISODate } from './engine/months.ts';
 import { useBudgetStore } from './store/budgetStore.ts';
 import { APP_VERSION } from './version.ts';
 
@@ -13,6 +15,7 @@ type Tab = 'budget' | 'transactions' | 'analytics' | 'settings';
 export default function App() {
   const ready = useBudgetStore((s) => s.ready);
   const hasAccounts = useBudgetStore((s) => s.state.accounts.length > 0);
+  const dueCount = useBudgetStore((s) => dueItems(s.state.recurring, toISODate()).length);
   const load = useBudgetStore((s) => s.load);
   const [tab, setTab] = useState<Tab>('budget');
 
@@ -38,7 +41,14 @@ export default function App() {
       <div className="min-w-0 flex-1">
         <nav className="flex gap-2 border-b border-slate-200 bg-white px-4">
           <button type="button" className={tabClass('budget')} onClick={() => setTab('budget')}>Budget</button>
-          <button type="button" className={tabClass('transactions')} onClick={() => setTab('transactions')}>Transactions</button>
+          <button type="button" className={tabClass('transactions')} onClick={() => setTab('transactions')}>
+            Transactions
+            {dueCount > 0 && (
+              <span className="ml-2 rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-semibold text-white" title={`${dueCount} recurring transaction${dueCount === 1 ? '' : 's'} due`}>
+                {dueCount}
+              </span>
+            )}
+          </button>
           <button type="button" className={tabClass('analytics')} onClick={() => setTab('analytics')}>Analytics</button>
           <button type="button" className={`${tabClass('settings')} ml-auto`} onClick={() => setTab('settings')}>Settings</button>
         </nav>
