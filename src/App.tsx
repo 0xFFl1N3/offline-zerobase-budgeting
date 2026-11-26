@@ -14,6 +14,7 @@ import { useBudgetStore } from './store/budgetStore.ts';
 import { useLanguage, useT, type MessageKey } from './i18n/i18n.ts';
 import { requestPersistence } from './persistence.ts';
 import { useNavigation, type Tab } from './store/navigation.ts';
+import { UndoBar } from './features/undo/UndoBar.tsx';
 import { useAutoBackup } from './features/backup/AutoBackupCard.tsx';
 import { APP_VERSION } from './version.ts';
 
@@ -133,6 +134,8 @@ export default function App() {
           {active === 'budget' ? <BudgetView /> : active === 'transactions' ? <TransactionsView /> : active === 'analytics' ? <AnalyticsView /> : <SettingsView />}
         </div>
       </div>
+
+      <UndoBar />
 
       {/* Phone: tabs along the bottom, within thumb reach. */}
       <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">

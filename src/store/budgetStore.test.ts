@@ -375,3 +375,47 @@ test('closing an account or archiving a category pauses the series that use it, 
   assert.deepEqual(rec.map((r) => [r.template.payee, r.paused]).sort(), [['Gym', true], ['Netflix', true]]);
   assert.equal(reloaded.getState().state.accounts.find((a) => a.id === old.id)!.closed, true);
 });
+
+test('undo brings back the latest delete, in memory and in the database', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  await store.getState().addGroup('Living');
+  await store.getState().addCategory(store.getState().state.groups[0]!.id, 'Rent');
+  const account = store.getState().state.accounts[0]!;
+  const rent = store.getState().state.categories[0]!;
+  const tx: Transaction = { id: 't1', accountId: account.id, date: '2026-01-05', payee: 'Landlord', categoryId: rent.id, memo: '', amount: -50000, transferAccountId: null };
+  await store.getState().saveTransaction(tx);
+
+  await store.getState().removeTransaction('t1');
+  assert.equal(store.getState().undo?.kind, 'transaction');
+  assert.equal(store.getState().state.transactions.length, 0);
+  await store.getState().undoDelete();
+  assert.equal(store.getState().undo, null);
+  assert.deepEqual(store.getState().state.transactions, [tx]);
+
+  // Undo also reaches the database: a reload sees the restored data.
+  await store.getState().addAccount('Cash', 'cash', 0);
+  const cash = store.getState().state.accounts.find((a) => a.name === 'Cash')!;
+  await store.getState().deleteAccount(cash.id);
+  assert.equal(store.getState().state.accounts.length, 1);
+  await store.getState().undoDelete();
+  const reloaded = createBudgetStore(db, '2026-01');
+  await reloaded.getState().load();
+  assert.deepEqual(reloaded.getState().state.accounts.map((a) => a.name).sort(), ['Cash', 'Checking']);
+  assert.equal(reloaded.getState().state.transactions.length, 1);
+});
+
+test('any other change ends the chance to undo', async () => {
+  const { store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  await store.getState().addGroup('Living');
+  await store.getState().addGroup('Fun');
+  await store.getState().deleteGroup(store.getState().state.groups[1]!.id);
+  assert.equal(store.getState().undo?.kind, 'group');
+  store.getState().shiftMonth(1); // not a budget change
+  assert.equal(store.getState().undo?.kind, 'group');
+  await store.getState().addGroup('Travel');
+  assert.equal(store.getState().undo, null);
+  await store.getState().undoDelete(); // nothing to undo
+  assert.deepEqual(store.getState().state.groups.map((g) => g.name).sort(), ['Living', 'Travel']);
+});

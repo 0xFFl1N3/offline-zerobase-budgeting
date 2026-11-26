@@ -32,6 +32,11 @@ export interface BudgetStore {
   month: Month;
   /** ISO timestamp of the last backup export, or null. */
   lastBackupAt: string | null;
+  /** The latest delete, until it is undone, dismissed or another change is made. */
+  undo: UndoEntry | null;
+  /** Restores the data from just before the latest delete. */
+  undoDelete: () => Promise<void>;
+  dismissUndo: () => void;
   load: () => Promise<void>;
   completeSetup: (input: { accountName: string; initialBalance: Cents; currency: Currency }) => Promise<void>;
   addAccount: (name: string, type: AccountType, openingBalance: Cents) => Promise<void>;
@@ -104,6 +109,16 @@ export interface BudgetStore {
   shiftMonth: (n: number) => void;
 }
 
+/** What was deleted, for the Undo bar's text. */
+export type UndoKind = 'transaction' | 'account' | 'category' | 'group' | 'recurring' | 'goal';
+export interface UndoEntry {
+  kind: UndoKind;
+  /** The whole budget as it was just before the delete. */
+  before: BudgetState;
+  /** When the delete happened (ms), so a new delete restarts the bar. */
+  at: number;
+}
+
 const newAccount = (name: string, type: AccountType, openingBalance: Cents, sortOrder: number): Account => ({
   id: crypto.randomUUID(),
   name: name.trim(),
@@ -114,7 +129,14 @@ const newAccount = (name: string, type: AccountType, openingBalance: Cents, sort
 });
 
 export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth()) {
-  return create<BudgetStore>()((set, get) => {
+  const store = create<BudgetStore>()((set, get) => {
+    /** Runs a delete and keeps the data from before it for Undo. */
+    const undoable = async (kind: UndoKind, run: () => Promise<BudgetState>) => {
+      const before = get().state;
+      const next = await run();
+      set({ state: next, undo: { kind, before, at: Date.now() } });
+    };
+
     /** Persists the groups and categories whose archived flag changed, then updates the state. */
     const applyArchive = async (archivedState: BudgetState) => {
       const prev = get().state;
@@ -145,6 +167,15 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     currency: 'EUR',
     month: startMonth,
     lastBackupAt: null,
+    undo: null,
+
+    undoDelete: async () => {
+      const entry = get().undo;
+      if (!entry) return;
+      await repo.replaceAll(db, entry.before, { currency: get().currency, lastBackupAt: get().lastBackupAt });
+      set({ state: entry.before, undo: null });
+    },
+    dismissUndo: () => set({ undo: null }),
 
     load: async () => {
       const { state, settings } = await repo.loadAll(db);
@@ -180,11 +211,12 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set({ state: next });
     },
 
-    deleteAccount: async (id) => {
-      const next = removeAccount(get().state, id);
-      await repo.deleteAccount(db, id);
-      set({ state: next });
-    },
+    deleteAccount: (id) =>
+      undoable('account', async () => {
+        const next = removeAccount(get().state, id);
+        await repo.deleteAccount(db, id);
+        return next;
+      }),
 
     moveAccount: (id, delta) => applyOrder(moveAccount(get().state, id, delta)),
     moveGroup: (id, delta) => applyOrder(moveGroup(get().state, id, delta)),
@@ -279,10 +311,12 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set((s) => ({ state: { ...s.state, recurring: s.state.recurring.map((r) => (r.id === id ? next : r)) } }));
     },
 
-    deleteRecurring: async (id) => {
-      await repo.deleteRecurring(db, id);
-      set((s) => ({ state: { ...s.state, recurring: s.state.recurring.filter((r) => r.id !== id) } }));
-    },
+    deleteRecurring: (id) =>
+      undoable('recurring', async () => {
+        await repo.deleteRecurring(db, id);
+        const s = get().state;
+        return { ...s, recurring: s.recurring.filter((r) => r.id !== id) };
+      }),
 
     saveTransaction: async (t) => {
       await repo.saveTransaction(db, t);
@@ -315,10 +349,12 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set({ state: result.state });
     },
 
-    removeTransaction: async (id) => {
-      await repo.deleteTransaction(db, id);
-      set((s) => ({ state: { ...s.state, transactions: s.state.transactions.filter((x) => x.id !== id) } }));
-    },
+    removeTransaction: (id) =>
+      undoable('transaction', async () => {
+        await repo.deleteTransaction(db, id);
+        const s = get().state;
+        return { ...s, transactions: s.transactions.filter((x) => x.id !== id) };
+      }),
 
     saveGoal: async (goal) => {
       const replaced = get().state.goals.filter((g) => g.categoryId === goal.categoryId && g.id !== goal.id);
@@ -329,10 +365,12 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       }));
     },
 
-    removeGoal: async (categoryId) => {
-      for (const g of get().state.goals.filter((g) => g.categoryId === categoryId)) await repo.deleteGoal(db, g.id);
-      set((s) => ({ state: { ...s.state, goals: s.state.goals.filter((g) => g.categoryId !== categoryId) } }));
-    },
+    removeGoal: (categoryId) =>
+      undoable('goal', async () => {
+        for (const g of get().state.goals.filter((g) => g.categoryId === categoryId)) await repo.deleteGoal(db, g.id);
+        const s = get().state;
+        return { ...s, goals: s.goals.filter((g) => g.categoryId !== categoryId) };
+      }),
 
     renameGroup: async (id, name) => {
       const group = get().state.groups.find((g) => g.id === id);
@@ -350,17 +388,19 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set((s) => ({ state: { ...s.state, categories: s.state.categories.map((c) => (c.id === id ? updated : c)) } }));
     },
 
-    deleteCategory: async (id) => {
-      const next = removeCategories(get().state, [id]); // throws before touching the database if invalid
-      await repo.deleteCategory(db, id);
-      set({ state: next });
-    },
+    deleteCategory: (id) =>
+      undoable('category', async () => {
+        const next = removeCategories(get().state, [id]); // throws before touching the database if invalid
+        await repo.deleteCategory(db, id);
+        return next;
+      }),
 
-    deleteGroup: async (id) => {
-      const next = removeGroup(get().state, id);
-      await repo.deleteGroup(db, id);
-      set({ state: next });
-    },
+    deleteGroup: (id) =>
+      undoable('group', async () => {
+        const next = removeGroup(get().state, id);
+        await repo.deleteGroup(db, id);
+        return next;
+      }),
 
     archiveCategory: (id) => applyArchive(setCategoryArchived(get().state, id, true)),
     archiveGroup: (id) => applyArchive(setGroupArchived(get().state, id, true)),
@@ -393,6 +433,11 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     shiftMonth: (n) => set((s) => ({ month: addMonths(s.month, n) })),
     };
   });
+  // Undo only covers the latest delete: any other change to the budget ends it, so it never throws away later work.
+  store.subscribe((now, prev) => {
+    if (now.undo && now.undo === prev.undo && now.state !== prev.state) store.setState({ undo: null });
+  });
+  return store;
 }
 
 /** The app's store, backed by the browser's IndexedDB. */

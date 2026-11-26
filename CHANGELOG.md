@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.8.0 – 2026-11-26
+
+### Added
+- Undo: after deleting a transaction, account, category, group, recurring transaction or goal, a bar offers to undo it for 10 seconds. Only the latest delete can be undone, and only until the next change.
+
 ## 0.7.4 – 2026-11-26
 
 ### Added

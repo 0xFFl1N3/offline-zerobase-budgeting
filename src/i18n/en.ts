@@ -488,6 +488,16 @@ export const en = {
   // Analytics
   'analytics.showTransactions': 'Show the transactions for {name}',
   'analytics.clickHint': 'Select a slice or name to see its transactions.',
+
+  // Undo
+  'undo.transaction': 'Transaction deleted.',
+  'undo.account': 'Account deleted.',
+  'undo.category': 'Category deleted.',
+  'undo.group': 'Group deleted.',
+  'undo.recurring': 'Recurring transaction deleted.',
+  'undo.goal': 'Goal removed.',
+  'undo.button': 'Undo',
+  'undo.dismiss': 'Close',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

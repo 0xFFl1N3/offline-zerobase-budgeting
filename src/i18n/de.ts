@@ -485,4 +485,14 @@ export const de: Messages = {
   // Analytics
   'analytics.showTransactions': 'Buchungen für {name} anzeigen',
   'analytics.clickHint': 'Wähle ein Segment oder einen Namen, um die Buchungen zu sehen.',
+
+  // Undo
+  'undo.transaction': 'Buchung gelöscht.',
+  'undo.account': 'Konto gelöscht.',
+  'undo.category': 'Kategorie gelöscht.',
+  'undo.group': 'Gruppe gelöscht.',
+  'undo.recurring': 'Wiederkehrende Buchung gelöscht.',
+  'undo.goal': 'Ziel entfernt.',
+  'undo.button': 'Rückgängig',
+  'undo.dismiss': 'Schließen',
 };
