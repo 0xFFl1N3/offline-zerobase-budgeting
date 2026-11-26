@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.6.4 – 2026-11-26
+
+### Fixed
+- Names in a few English messages are in double quotes again.
+- On phones, the last transaction is no longer hidden behind the round + button.
+
 ## 0.6.3 – 2026-11-26
 
 ### Added

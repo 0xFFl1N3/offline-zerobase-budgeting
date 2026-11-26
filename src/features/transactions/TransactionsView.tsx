@@ -474,7 +474,8 @@ export function TransactionsView() {
       </div>
 
       {/* Phones: one card per transaction; tap it for Edit, Repeat and Delete. */}
-      <ul className="mt-2 divide-y divide-slate-100 rounded-lg bg-white shadow-sm md:hidden">
+      {/* mb-20 keeps the last card clear of the round + button. */}
+      <ul className="mt-2 mb-20 divide-y divide-slate-100 rounded-lg bg-white shadow-sm md:hidden">
         {rows.length === 0 && (
           <li className="px-3 py-6 text-sm text-slate-500">{activeFilters ? tr('tx.noMatch') : tr('tx.none')}</li>
         )}
