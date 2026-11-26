@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AccountsSidebar } from './features/accounts/AccountsSidebar.tsx';
 import { BudgetView } from './features/budget/BudgetView.tsx';
 import { Setup } from './features/setup/Setup.tsx';
+import { TransactionsView } from './features/transactions/TransactionsView.tsx';
 import { useBudgetStore } from './store/budgetStore.ts';
 
 type Tab = 'budget' | 'transactions';
@@ -30,11 +31,7 @@ export default function App() {
           <button type="button" className={tabClass('budget')} onClick={() => setTab('budget')}>Budget</button>
           <button type="button" className={tabClass('transactions')} onClick={() => setTab('transactions')}>Transactions</button>
         </nav>
-        {tab === 'budget' ? (
-          <BudgetView />
-        ) : (
-          <p className="p-6 text-slate-500">Transactions are coming in the next phase.</p>
-        )}
+        <div className="mx-auto max-w-6xl">{tab === 'budget' ? <BudgetView /> : <TransactionsView />}</div>
       </div>
     </div>
   );
