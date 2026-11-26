@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.4.9 – 2026-11-26
+
+### Added
+- The app can be published to GitHub Pages; every push to main builds and publishes it.
+
 ## 0.4.8 – 2026-11-26
 
 ### Added
