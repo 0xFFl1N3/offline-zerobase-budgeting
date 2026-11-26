@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.5.7 – 2026-11-26
+
+### Fixed
+- Publishing to GitHub Pages works again.
+
 ## 0.5.6 – 2026-11-26
 
 ### Fixed
