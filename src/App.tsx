@@ -16,6 +16,7 @@ import { requestPersistence } from './persistence.ts';
 import { useNavigation, type Tab } from './store/navigation.ts';
 import { UndoBar } from './features/undo/UndoBar.tsx';
 import { VersionButton } from './features/changelog/Changelog.tsx';
+import { ErrorBar, LoadFailed } from './features/errors/ErrorBar.tsx';
 import { useAutoBackup } from './features/backup/AutoBackupCard.tsx';
 
 
@@ -32,6 +33,7 @@ export default function App() {
   const currency = useBudgetStore((s) => s.currency);
   const dueCount = useBudgetStore((s) => dueItems(s.state.recurring, toISODate()).length);
   const load = useBudgetStore((s) => s.load);
+  const problem = useBudgetStore((s) => s.problem);
   const t = useT();
   // Changing the language redraws everything below, so amounts and dates pick up the new format too.
   const language = useLanguage();
@@ -70,11 +72,12 @@ export default function App() {
     </div>
   );
 
-  if (!ready) return <main className="p-8 text-slate-500">{t('app.loading')}</main>;
+  if (!ready) return problem ? <LoadFailed problem={problem} /> : <main className="p-8 text-slate-500">{t('app.loading')}</main>;
   if (state.accounts.length === 0) {
     return (
       <div key={language} className="min-h-screen bg-slate-50 text-slate-900">
         <Setup />
+        <ErrorBar />
         <p className="pb-4 text-center md:hidden">
           <VersionButton />
         </p>
@@ -138,6 +141,7 @@ export default function App() {
       </div>
 
       <UndoBar />
+      <ErrorBar />
 
       {/* Phone: tabs along the bottom, within thumb reach. */}
       <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">

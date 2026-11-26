@@ -44,3 +44,67 @@ export function errorText(error: unknown, wrap?: MessageKey): string {
   }
   return wrap ? t(wrap, { detail: message }) : message;
 }
+
+// --- What an error means -------------------------------------------------------------------------------
+// The one place that decides how a failure is shown. The store reports storage and unexpected errors in
+// the error bar; rule errors are shown next to what was clicked (see useAction).
+
+/** A problem to show in the error bar. Text is looked up when shown, so it follows the language. */
+export interface Problem {
+  kind: 'storage' | 'unexpected' | 'rule';
+  message: MessageKey;
+  /** Shown as {detail} where the message has it (the technical reason, or a rule error's text). */
+  detail: string;
+  /** Reloading the page is likely to help. */
+  reload: boolean;
+}
+
+/** Browser database errors (by name, as IndexedDB and Dexie report them) and the message for each. */
+const STORAGE: Record<string, { message: MessageKey; reload: boolean }> = {
+  QuotaExceededError: { message: 'error.storageFull', reload: false },
+  DatabaseClosedError: { message: 'error.storageClosed', reload: true },
+  VersionChangeError: { message: 'error.storageClosed', reload: true },
+  VersionError: { message: 'error.storageClosed', reload: true },
+  OpenFailedError: { message: 'error.storageBlocked', reload: true },
+  MissingAPIError: { message: 'error.storageBlocked', reload: false },
+  SecurityError: { message: 'error.storageBlocked', reload: false },
+  InvalidStateError: { message: 'error.storageFailed', reload: true },
+  TransactionInactiveError: { message: 'error.storageFailed', reload: true },
+  AbortError: { message: 'error.storageFailed', reload: true },
+  ReadOnlyError: { message: 'error.storageFailed', reload: true },
+  UnknownError: { message: 'error.storageFailed', reload: true },
+  DataError: { message: 'error.storageFailed', reload: true },
+  ConstraintError: { message: 'error.storageFailed', reload: true },
+  TimeoutError: { message: 'error.storageFailed', reload: true },
+};
+
+function names(error: unknown): string[] {
+  const found: string[] = [];
+  // Dexie wraps the browser's error and keeps it as `inner`.
+  for (let e: unknown = error, depth = 0; e && typeof e === 'object' && depth < 4; e = (e as { inner?: unknown }).inner, depth++) {
+    const name = (e as { name?: unknown }).name;
+    if (typeof name === 'string') found.push(name);
+  }
+  return found;
+}
+
+export function classify(error: unknown): Problem {
+  const detail = error instanceof Error ? error.message : String(error ?? '');
+  if (error instanceof Error && error.name === 'RuleError') return { kind: 'rule', message: 'error.rule', detail: errorText(error), reload: false };
+  // The most specific (innermost) known name wins, e.g. a QuotaExceededError inside a Dexie AbortError.
+  for (const name of names(error).reverse()) {
+    const known = STORAGE[name];
+    if (known) return { kind: 'storage', ...known, detail };
+  }
+  return { kind: 'unexpected', message: 'error.unexpected', detail, reload: true };
+}
+
+const REPORTED = Symbol('reported');
+
+/** Marks an error as already shown, so the safety net for unhandled errors does not show it again. */
+export function markReported<T>(error: T): T {
+  if (error && typeof error === 'object') (error as Record<symbol, boolean>)[REPORTED] = true;
+  return error;
+}
+
+export const isReported = (error: unknown): boolean => !!error && typeof error === 'object' && (error as Record<symbol, boolean>)[REPORTED] === true;

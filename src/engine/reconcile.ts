@@ -1,4 +1,5 @@
 import type { Account, BudgetState, Cents, ClearedStatus, Transaction } from './types.ts';
+import { RuleError } from './ruleError.ts';
 
 export const ADJUSTMENT_PAYEE = 'Reconciliation adjustment';
 
@@ -15,7 +16,7 @@ export function clearedStatus(t: Transaction, accountId: string): ClearedStatus 
 export function withCleared(t: Transaction, accountId: string, status: ClearedStatus): Transaction {
   if (t.accountId === accountId) return { ...t, cleared: status };
   if (t.transferAccountId === accountId) return { ...t, transferCleared: status };
-  throw new Error('That transaction is not in this account.');
+  throw new RuleError('That transaction is not in this account.');
 }
 
 /** True if either side is reconciled; changing such a transaction should be confirmed first. */
@@ -37,7 +38,7 @@ export interface AccountBalances {
 
 export function accountBalances(state: BudgetState, accountId: string): AccountBalances {
   const account = state.accounts.find((a) => a.id === accountId);
-  if (!account) throw new Error(`Unknown account: ${accountId}`);
+  if (!account) throw new RuleError(`Unknown account: ${accountId}`);
   let cleared = account.openingBalance;
   let uncleared = 0;
   let clearedCount = 0;
@@ -90,7 +91,7 @@ export interface ReconcileResult {
  */
 export function reconcile(state: BudgetState, accountId: string, statementBalance: Cents, options: ReconcileOptions): ReconcileResult {
   const difference = statementBalance - accountBalances(state, accountId).cleared;
-  if (difference < 0 && options.categoryId === null) throw new Error('An adjustment that lowers the balance needs a category.');
+  if (difference < 0 && options.categoryId === null) throw new RuleError('An adjustment that lowers the balance needs a category.');
   const adjustment: Transaction | null =
     difference === 0
       ? null

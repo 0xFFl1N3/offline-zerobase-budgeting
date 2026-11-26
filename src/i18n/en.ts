@@ -505,6 +505,18 @@ export const en = {
   'changelog.new': 'New',
   'changelog.current': 'this version',
   'changelog.close': 'Close',
+
+  // Errors
+  'error.rule': '{detail}',
+  'error.storageFull': "Couldn't save: this device's storage is full. Free up space, then try again.",
+  'error.storageClosed': "Couldn't save: the app was updated or opened in another tab. Reload this page.",
+  'error.storageBlocked': "This browser doesn't let the app store data (for example in a private window or with site data blocked).",
+  'error.storageFailed': "Couldn't save your change. Reload the page and try again.",
+  'error.unexpected': 'Something went wrong. Reload the page; if it happens again, export a backup to be safe.',
+  'error.reload': 'Reload',
+  'error.close': 'Close',
+  'error.loadFailed': "Your budget couldn't be opened.",
+  'error.details': 'Details: {detail}',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

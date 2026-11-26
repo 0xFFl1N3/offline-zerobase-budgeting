@@ -1,6 +1,7 @@
 import { archivedCategoryIds, categoryParts } from './budget.ts';
 import { addDays, addMonthsClamped } from './dates.ts';
 import type { BudgetState, Frequency, RecurringTransaction, Transaction } from './types.ts';
+import { RuleError } from './ruleError.ts';
 
 export const FREQUENCIES: Frequency[] = ['weekly', 'biweekly', 'monthly', 'yearly'];
 
@@ -66,7 +67,7 @@ const fromTemplate = (rec: RecurringTransaction, date: string, id: string, amoun
 /** Books the next occurrence as a real transaction and moves the template on. `amount` (positive) overrides the usual amount. */
 export function bookNext(rec: RecurringTransaction, id: string, amount?: number): { transaction: Transaction; recurring: RecurringTransaction } {
   const date = nextDate(rec);
-  if (date === null) throw new Error('This recurring transaction has ended.');
+  if (date === null) throw new RuleError('This recurring transaction has ended.');
   return { transaction: fromTemplate(rec, date, id, amount), recurring: { ...rec, handled: rec.handled + 1 } };
 }
 
@@ -79,7 +80,7 @@ const templateOf = (t: Transaction): RecurringTransaction['template'] => {
 };
 
 function checkEnd(startDate: string, endDate: string | null) {
-  if (endDate !== null && endDate < startDate) throw new Error('The end date cannot be before the first date.');
+  if (endDate !== null && endDate < startDate) throw new RuleError('The end date cannot be before the first date.');
 }
 
 /**
@@ -122,7 +123,7 @@ export function updateRecurring(rec: RecurringTransaction, changes: RecurringCha
   if (changes.payee !== undefined) next.template.payee = changes.payee.trim();
   if (changes.memo !== undefined) next.template.memo = changes.memo.trim();
   if (changes.amount !== undefined && !rec.template.splits) {
-    if (!(changes.amount > 0)) throw new Error('Enter an amount greater than zero.');
+    if (!(changes.amount > 0)) throw new RuleError('Enter an amount greater than zero.');
     next.template.amount = Math.sign(rec.template.amount) * changes.amount;
   }
   if (changes.frequency !== undefined && changes.frequency !== rec.frequency) {

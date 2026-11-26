@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.9.0 – 2026-11-27
+
+### Added
+- When a change can't be saved (storage full, storage blocked, or anything unexpected), a red bar says so instead of the change silently not appearing.
+- If the budget can't be opened at all, the app explains why instead of showing "Loading…" forever.
+
 ## 0.8.2 – 2026-11-27
 
 ### Fixed

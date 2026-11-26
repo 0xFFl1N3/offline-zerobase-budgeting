@@ -1,5 +1,6 @@
 import { parseMoney } from './money.ts';
 import type { BudgetState, Cents, Transaction } from './types.ts';
+import { RuleError } from './ruleError.ts';
 
 export type DateFormat = 'DMY' | 'MDY' | 'YMD';
 
@@ -248,7 +249,7 @@ export function findMatches(state: BudgetState, accountId: string, rows: ImportR
  * cleared. Payee, category and memo stay as you left them.
  */
 export function updateFromRow(t: Transaction, row: ImportRow): Transaction {
-  if (row.date === null) throw new Error(`Row ${row.line + 1}: ${row.problem}.`);
+  if (row.date === null) throw new RuleError(`Row ${row.line + 1}: ${row.problem}.`);
   const { importPending: _p, cleared: _c, ...rest } = t;
   return {
     ...rest,
@@ -285,8 +286,8 @@ export interface ImportChoice {
 /** The transactions to add. Booked rows are cleared (the bank has them), pending ones are not. Every outflow needs a category. */
 export function toTransactions(choices: ImportChoice[], accountId: string, newId: () => string): Transaction[] {
   return choices.map(({ row, payee, categoryId }) => {
-    if (row.problem !== null || row.date === null || row.amount === null) throw new Error(`Row ${row.line + 1}: ${row.problem}.`);
-    if (row.amount < 0 && categoryId === null) throw new Error(`Row ${row.line + 1} needs a category.`);
+    if (row.problem !== null || row.date === null || row.amount === null) throw new RuleError(`Row ${row.line + 1}: ${row.problem}.`);
+    if (row.amount < 0 && categoryId === null) throw new RuleError(`Row ${row.line + 1} needs a category.`);
     return {
       id: newId(),
       accountId,

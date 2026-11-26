@@ -10,6 +10,8 @@ import { activeSeriesUsing, bookNext, pauseSeries, recurringFrom, setRecurringPa
 import { toISODate } from '../engine/months.ts';
 import { reconcile, withCleared } from '../engine/reconcile.ts';
 import type { Account, AccountType, BudgetState, Cents, ClearedStatus, Frequency, Goal, Month, Transaction } from '../engine/types.ts';
+import { RuleError } from '../engine/ruleError.ts';
+import { classify, markReported, type Problem } from '../i18n/errors.ts';
 
 const emptyState = (): BudgetState => ({
   accounts: [],
@@ -34,6 +36,10 @@ export interface BudgetStore {
   lastBackupAt: string | null;
   /** The latest delete, until it is undone, dismissed or another change is made. */
   undo: UndoEntry | null;
+  /** A failed save or load, shown in the error bar until dismissed. */
+  problem: Problem | null;
+  reportProblem: (problem: Problem) => void;
+  dismissProblem: () => void;
   /** Restores the data from just before the latest delete. */
   undoDelete: () => Promise<void>;
   dismissUndo: () => void;
@@ -128,6 +134,35 @@ const newAccount = (name: string, type: AccountType, openingBalance: Cents, sort
   closed: false,
 });
 
+/**
+ * The one try/catch for saving: wraps every action so a storage or unexpected error is put in `problem`
+ * (shown by the error bar) and marked as reported. The error is thrown on, so a caller can still tell that
+ * it failed; rule errors are left to the caller to show (see useAction).
+ */
+function guardActions<T extends object>(actions: T, report: (problem: Problem) => void): T {
+  const handle = (error: unknown) => {
+    const problem = classify(error);
+    if (problem.kind !== 'rule') {
+      report(problem);
+      markReported(error);
+    }
+    return error;
+  };
+  const guarded: Record<string, unknown> = { ...(actions as Record<string, unknown>) };
+  for (const [key, value] of Object.entries(actions)) {
+    if (typeof value !== 'function' || key === 'reportProblem' || key === 'dismissProblem') continue;
+    guarded[key] = (...args: unknown[]) => {
+      try {
+        const result = (value as (...a: unknown[]) => unknown)(...args);
+        return result instanceof Promise ? result.catch((e: unknown) => Promise.reject(handle(e))) : result;
+      } catch (e) {
+        throw handle(e);
+      }
+    };
+  }
+  return guarded as T;
+}
+
 export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth()) {
   const store = create<BudgetStore>()((set, get) => {
     /** Runs a delete and keeps the data from before it for Undo. */
@@ -161,13 +196,16 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set({ state: next });
     };
 
-    return {
+    return guardActions({
     ready: false,
     state: emptyState(),
     currency: 'EUR',
     month: startMonth,
     lastBackupAt: null,
     undo: null,
+    problem: null,
+    reportProblem: (problem) => set({ problem }),
+    dismissProblem: () => set({ problem: null }),
 
     undoDelete: async () => {
       const entry = get().undo;
@@ -271,7 +309,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
 
     makeRecurring: async (transactionId, frequency, endDate) => {
       const t = get().state.transactions.find((x) => x.id === transactionId);
-      if (!t) throw new Error('Unknown transaction.');
+      if (!t) throw new RuleError('Unknown transaction.');
       const recurring = recurringFrom(t, frequency, endDate, crypto.randomUUID());
       await repo.saveRecurring(db, recurring);
       set((s) => ({ state: { ...s.state, recurring: [...s.state.recurring, recurring] } }));
@@ -279,7 +317,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
 
     confirmRecurring: async (id, amount) => {
       const rec = get().state.recurring.find((r) => r.id === id);
-      if (!rec) throw new Error('Unknown recurring transaction.');
+      if (!rec) throw new RuleError('Unknown recurring transaction.');
       const { transaction, recurring } = bookNext(rec, crypto.randomUUID(), amount);
       await repo.saveRecurringBooking(db, recurring, transaction);
       set((s) => ({
@@ -289,7 +327,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
 
     skipRecurring: async (id) => {
       const rec = get().state.recurring.find((r) => r.id === id);
-      if (!rec) throw new Error('Unknown recurring transaction.');
+      if (!rec) throw new RuleError('Unknown recurring transaction.');
       const next = skipNext(rec);
       await repo.saveRecurring(db, next);
       set((s) => ({ state: { ...s.state, recurring: s.state.recurring.map((r) => (r.id === id ? next : r)) } }));
@@ -297,7 +335,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
 
     editRecurring: async (id, changes) => {
       const rec = get().state.recurring.find((r) => r.id === id);
-      if (!rec) throw new Error('Unknown recurring transaction.');
+      if (!rec) throw new RuleError('Unknown recurring transaction.');
       const next = updateRecurring(rec, changes);
       await repo.saveRecurring(db, next);
       set((s) => ({ state: { ...s.state, recurring: s.state.recurring.map((r) => (r.id === id ? next : r)) } }));
@@ -305,7 +343,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
 
     pauseRecurring: async (id, paused) => {
       const rec = get().state.recurring.find((r) => r.id === id);
-      if (!rec) throw new Error('Unknown recurring transaction.');
+      if (!rec) throw new RuleError('Unknown recurring transaction.');
       const next = setRecurringPaused(rec, paused, toISODate());
       await repo.saveRecurring(db, next);
       set((s) => ({ state: { ...s.state, recurring: s.state.recurring.map((r) => (r.id === id ? next : r)) } }));
@@ -431,7 +469,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     },
 
     shiftMonth: (n) => set((s) => ({ month: addMonths(s.month, n) })),
-    };
+    }, (problem) => set({ problem }));
   });
   // Undo only covers the latest delete: any other change to the budget ends it, so it never throws away later work.
   store.subscribe((now, prev) => {

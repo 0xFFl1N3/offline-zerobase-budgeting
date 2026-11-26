@@ -1,5 +1,6 @@
 import { accountBalance, touchesCategory } from './budget.ts';
 import type { AccountType, BudgetState, Cents } from './types.ts';
+import { RuleError } from './ruleError.ts';
 
 /**
  * Removes categories together with their goals and assignments. A category that has transactions cannot be
@@ -9,7 +10,7 @@ import type { AccountType, BudgetState, Cents } from './types.ts';
 export function removeCategories(state: BudgetState, categoryIds: string[]): BudgetState {
   const gone = new Set(categoryIds);
   if (state.transactions.some((t) => touchesCategory(t, gone)) || state.recurring.some((r) => touchesCategory(r.template, gone))) {
-    throw new Error('A category with transactions cannot be deleted. Archive it instead.');
+    throw new RuleError('A category with transactions cannot be deleted. Archive it instead.');
   }
   return {
     ...state,
@@ -29,7 +30,7 @@ export function removeGroup(state: BudgetState, groupId: string): BudgetState {
 /** Archives or restores one category. Restoring a category also restores its group. */
 export function setCategoryArchived(state: BudgetState, categoryId: string, archived: boolean): BudgetState {
   const category = state.categories.find((c) => c.id === categoryId);
-  if (!category) throw new Error('Unknown category.');
+  if (!category) throw new RuleError('Unknown category.');
   return {
     ...state,
     categories: state.categories.map((c) => (c.id === categoryId ? { ...c, archived } : c)),
@@ -39,7 +40,7 @@ export function setCategoryArchived(state: BudgetState, categoryId: string, arch
 
 /** Archives or restores a group together with all of its categories. */
 export function setGroupArchived(state: BudgetState, groupId: string, archived: boolean): BudgetState {
-  if (!state.groups.some((g) => g.id === groupId)) throw new Error('Unknown group.');
+  if (!state.groups.some((g) => g.id === groupId)) throw new RuleError('Unknown group.');
   return {
     ...state,
     groups: state.groups.map((g) => (g.id === groupId ? { ...g, archived } : g)),
@@ -57,8 +58,8 @@ export function updateAccount(
   accountId: string,
   changes: { name?: string; type?: AccountType; openingBalance?: Cents },
 ): BudgetState {
-  if (!state.accounts.some((a) => a.id === accountId)) throw new Error('Unknown account.');
-  if (changes.name !== undefined && !changes.name.trim()) throw new Error('An account needs a name.');
+  if (!state.accounts.some((a) => a.id === accountId)) throw new RuleError('Unknown account.');
+  if (changes.name !== undefined && !changes.name.trim()) throw new RuleError('An account needs a name.');
   return {
     ...state,
     accounts: state.accounts.map((a) =>
@@ -76,17 +77,17 @@ export function updateAccount(
 
 /** Closes or reopens an account. Closing needs a zero balance, so Ready to Assign is not affected. */
 export function setAccountClosed(state: BudgetState, accountId: string, closed: boolean): BudgetState {
-  if (!state.accounts.some((a) => a.id === accountId)) throw new Error('Unknown account.');
+  if (!state.accounts.some((a) => a.id === accountId)) throw new RuleError('Unknown account.');
   if (closed && accountBalance(state, accountId) !== 0) {
-    throw new Error('Move the remaining balance to another account before closing this one.');
+    throw new RuleError('Move the remaining balance to another account before closing this one.');
   }
   return { ...state, accounts: state.accounts.map((a) => (a.id === accountId ? { ...a, closed } : a)) };
 }
 
 /** Deletes an account. Refused when it has transactions (including transfers); close it instead. */
 export function removeAccount(state: BudgetState, accountId: string): BudgetState {
-  if (!state.accounts.some((a) => a.id === accountId)) throw new Error('Unknown account.');
-  if (hasTransactions(state, accountId)) throw new Error('An account with transactions cannot be deleted. Close it instead.');
+  if (!state.accounts.some((a) => a.id === accountId)) throw new RuleError('Unknown account.');
+  if (hasTransactions(state, accountId)) throw new RuleError('An account with transactions cannot be deleted. Close it instead.');
   return { ...state, accounts: state.accounts.filter((a) => a.id !== accountId) };
 }
 
@@ -102,7 +103,7 @@ interface Ordered {
 function moveAmong<T extends Ordered>(items: T[], id: string, delta: -1 | 1, isSibling: (t: T) => boolean, isShown: (t: T) => boolean): T[] {
   const siblings = items.filter(isSibling).sort((a, b) => a.sortOrder - b.sortOrder);
   const from = siblings.findIndex((t) => t.id === id);
-  if (from < 0) throw new Error('Unknown item.');
+  if (from < 0) throw new RuleError('Unknown item.');
   let to = from + delta;
   while (siblings[to] && !isShown(siblings[to] as T)) to += delta;
   if (to < 0 || to >= siblings.length) return items;
@@ -128,7 +129,7 @@ export const moveGroup = (state: BudgetState, id: string, delta: -1 | 1): Budget
 /** Moves a category up or down within its group. */
 export function moveCategory(state: BudgetState, id: string, delta: -1 | 1): BudgetState {
   const category = state.categories.find((c) => c.id === id);
-  if (!category) throw new Error('Unknown category.');
+  if (!category) throw new RuleError('Unknown category.');
   return {
     ...state,
     categories: moveAmong(state.categories, id, delta, (c) => c.groupId === category.groupId, (c) => !c.archived),
@@ -140,7 +141,7 @@ function placeAmong<T extends Ordered>(items: T[], id: string, targetId: string,
   if (id === targetId) return items;
   const order = items.filter(isSibling).sort((a, b) => a.sortOrder - b.sortOrder);
   const moved = order.find((t) => t.id === id);
-  if (!moved || !order.some((t) => t.id === targetId)) throw new Error('Unknown item.');
+  if (!moved || !order.some((t) => t.id === targetId)) throw new RuleError('Unknown item.');
   const rest = order.filter((t) => t.id !== id);
   rest.splice(rest.findIndex((t) => t.id === targetId) + (place === 'after' ? 1 : 0), 0, moved);
   const rank = new Map(rest.map((t, i) => [t.id, i]));
@@ -163,6 +164,6 @@ export const moveGroupTo = (state: BudgetState, id: string, targetId: string, pl
 export function moveCategoryTo(state: BudgetState, id: string, targetId: string, place: 'before' | 'after'): BudgetState {
   const category = state.categories.find((c) => c.id === id);
   const target = state.categories.find((c) => c.id === targetId);
-  if (!category || !target || category.groupId !== target.groupId) throw new Error('Categories can only be reordered within their group.');
+  if (!category || !target || category.groupId !== target.groupId) throw new RuleError('Categories can only be reordered within their group.');
   return { ...state, categories: placeAmong(state.categories, id, targetId, place, (c) => c.groupId === category.groupId) };
 }

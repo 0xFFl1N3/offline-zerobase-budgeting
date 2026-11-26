@@ -1,5 +1,6 @@
 import type { BudgetState, Cents, Goal, GoalProgress, Month, Transaction, TransactionSplit } from './types.ts';
 import { addMonths, monthOf, monthsBetween } from './months.ts';
+import { RuleError } from './ruleError.ts';
 
 /** The category shares of a transaction: its splits, or the whole amount in its one category. Empty for transfers and income. */
 export function categoryParts(t: Pick<Transaction, 'transferAccountId' | 'splits' | 'categoryId' | 'amount'>): TransactionSplit[] {
@@ -17,7 +18,7 @@ export const touchesCategory = (t: Pick<Transaction, 'transferAccountId' | 'spli
 /** Balance of one account, counting transactions up to and including `upToMonth` (all if omitted). */
 export function accountBalance(state: BudgetState, accountId: string, upToMonth?: Month): Cents {
   const account = state.accounts.find((a) => a.id === accountId);
-  if (!account) throw new Error(`Unknown account: ${accountId}`);
+  if (!account) throw new RuleError(`Unknown account: ${accountId}`);
   let balance = account.openingBalance;
   for (const t of state.transactions) {
     if (upToMonth !== undefined && monthOf(t.date) > upToMonth) continue;
@@ -33,7 +34,7 @@ export function accountBalance(state: BudgetState, accountId: string, upToMonth?
  */
 export function runningBalances(state: BudgetState, accountId: string): Map<string, Cents> {
   const account = state.accounts.find((a) => a.id === accountId);
-  if (!account) throw new Error(`Unknown account: ${accountId}`);
+  if (!account) throw new RuleError(`Unknown account: ${accountId}`);
   const own = state.transactions
     .map((t, index) => ({ t, index }))
     .filter(({ t }) => t.accountId === accountId || t.transferAccountId === accountId)

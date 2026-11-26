@@ -502,4 +502,16 @@ export const de: Messages = {
   'changelog.new': 'Neu',
   'changelog.current': 'diese Version',
   'changelog.close': 'Schließen',
+
+  // Errors
+  'error.rule': '{detail}',
+  'error.storageFull': 'Speichern fehlgeschlagen: Der Speicher dieses Geräts ist voll. Gib Platz frei und versuche es erneut.',
+  'error.storageClosed': 'Speichern fehlgeschlagen: Die App wurde in einem anderen Tab aktualisiert oder geöffnet. Lade diese Seite neu.',
+  'error.storageBlocked': 'Dieser Browser erlaubt der App nicht, Daten zu speichern (zum Beispiel in einem privaten Fenster oder wenn Websitedaten blockiert sind).',
+  'error.storageFailed': 'Deine Änderung konnte nicht gespeichert werden. Lade die Seite neu und versuche es erneut.',
+  'error.unexpected': 'Etwas ist schiefgelaufen. Lade die Seite neu; passiert es wieder, exportiere sicherheitshalber eine Sicherung.',
+  'error.reload': 'Neu laden',
+  'error.close': 'Schließen',
+  'error.loadFailed': 'Dein Budget konnte nicht geöffnet werden.',
+  'error.details': 'Details: {detail}',
 };
