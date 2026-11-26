@@ -129,34 +129,38 @@ export function TransactionsView() {
     <section className="p-6">
       <form onSubmit={submit} className="rounded-lg bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold">{editingId ? 'Edit transaction' : 'Add transaction'}</h2>
-        <div className="mt-3 flex flex-wrap items-end gap-3">
-          <label className="text-xs font-medium text-slate-600">
+        <div className="mt-3 grid grid-cols-12 items-end gap-x-3 gap-y-4">
+          <label className="col-span-2 text-xs font-medium text-slate-600">
             Type
-            <select value={form.kind} onChange={(e) => {
-              update({ kind: e.target.value as TxKind, categoryId: null, transferAccountId: null });
-              setSplitRows(null);
-            }} className={`${field} mt-1 block`}>
+            <select
+              value={form.kind}
+              onChange={(e) => {
+                update({ kind: e.target.value as TxKind, categoryId: null, transferAccountId: null });
+                setSplitRows(null);
+              }}
+              className={`${field} mt-1 block w-full`}
+            >
               <option value="outflow">Outflow</option>
               <option value="inflow">Inflow</option>
               <option value="transfer">Transfer</option>
             </select>
           </label>
-          <label className="text-xs font-medium text-slate-600">
+          <label className="col-span-2 text-xs font-medium text-slate-600">
             Date
-            <input type="date" value={form.date} onChange={(e) => update({ date: e.target.value })} className={`${field} mt-1 block`} />
+            <input type="date" value={form.date} onChange={(e) => update({ date: e.target.value })} className={`${field} mt-1 block w-full`} />
           </label>
-          <label className="text-xs font-medium text-slate-600">
+          <label className="col-span-2 text-xs font-medium text-slate-600">
             {form.kind === 'transfer' ? 'From account' : 'Account'}
-            <select value={form.accountId} onChange={(e) => update({ accountId: e.target.value })} className={`${field} mt-1 block`}>
+            <select value={form.accountId} onChange={(e) => update({ accountId: e.target.value })} className={`${field} mt-1 block w-full`}>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
               ))}
             </select>
           </label>
           {form.kind === 'transfer' ? (
-            <label className="text-xs font-medium text-slate-600">
+            <label className="col-span-6 text-xs font-medium text-slate-600">
               To account
-              <select value={form.transferAccountId ?? ''} onChange={(e) => update({ transferAccountId: e.target.value || null })} className={`${field} mt-1 block`}>
+              <select value={form.transferAccountId ?? ''} onChange={(e) => update({ transferAccountId: e.target.value || null })} className={`${field} mt-1 block w-full`}>
                 <option value="">Choose…</option>
                 {accounts.filter((a) => a.id !== form.accountId).map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
@@ -165,57 +169,61 @@ export function TransactionsView() {
             </label>
           ) : (
             <>
-              <label className="text-xs font-medium text-slate-600">
+              <label className="col-span-3 text-xs font-medium text-slate-600">
                 Payee
-                <input value={form.payee} onChange={(e) => update({ payee: e.target.value })} placeholder="Who" className={`${field} mt-1 block`} />
+                <input value={form.payee} onChange={(e) => update({ payee: e.target.value })} placeholder="Who" className={`${field} mt-1 block w-full`} />
               </label>
-              <label className="text-xs font-medium text-slate-600">
-                Category
+              <div className="col-span-3 text-xs font-medium text-slate-600">
+                <div className="flex items-baseline justify-between">
+                  <label htmlFor="tx-category">Category</label>
+                  {form.kind === 'outflow' && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSplitRows(
+                          splitRows
+                            ? null
+                            : [
+                                { categoryId: form.categoryId ?? '', text: amountText },
+                                { categoryId: '', text: '' },
+                              ],
+                        )
+                      }
+                      className="font-normal text-sky-700 hover:underline"
+                    >
+                      {splitRows ? 'Single category' : 'Split…'}
+                    </button>
+                  )}
+                </div>
                 {splitRows ? (
-                  <span className={`${field} mt-1 block border-dashed text-slate-500`}>Split across categories</span>
+                  <span className={`${field} mt-1 block w-full border-dashed text-slate-500`}>Split across categories</span>
                 ) : (
-                <select value={form.categoryId ?? ''} onChange={(e) => update({ categoryId: e.target.value || null })} className={`${field} mt-1 block`}>
-                  <option value="">{form.kind === 'inflow' ? 'Income (Ready to Assign)' : 'Choose a category…'}</option>
-                  {categoryOptions(form.categoryId)}
-                </select>
+                  <select id="tx-category" value={form.categoryId ?? ''} onChange={(e) => update({ categoryId: e.target.value || null })} className={`${field} mt-1 block w-full`}>
+                    <option value="">{form.kind === 'inflow' ? 'Income (Ready to Assign)' : 'Choose a category…'}</option>
+                    {categoryOptions(form.categoryId)}
+                  </select>
                 )}
-              </label>
-              {form.kind === 'outflow' && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSplitRows(
-                      splitRows
-                        ? null
-                        : [
-                            { categoryId: form.categoryId ?? '', text: amountText },
-                            { categoryId: '', text: '' },
-                          ],
-                    )
-                  }
-                  className="pb-1.5 text-sm text-sky-700 hover:underline"
-                >
-                  {splitRows ? 'Single category' : 'Split…'}
-                </button>
-              )}
+              </div>
             </>
           )}
-          <label className="text-xs font-medium text-slate-600">
+          <label className="col-span-7 text-xs font-medium text-slate-600">
             Memo
-            <input value={form.memo} onChange={(e) => update({ memo: e.target.value })} placeholder="Optional" className={`${field} mt-1 block`} />
+            <input value={form.memo} onChange={(e) => update({ memo: e.target.value })} placeholder="Optional" className={`${field} mt-1 block w-full`} />
           </label>
-          <label className="text-xs font-medium text-slate-600">
+          <label className="col-span-3 text-xs font-medium text-slate-600">
             Amount
-            <input value={amountText} onChange={(e) => setAmountText(e.target.value)} inputMode="decimal" placeholder="0.00" className={`${field} mt-1 block w-28 text-right tabular-nums`} />
+            <input value={amountText} onChange={(e) => setAmountText(e.target.value)} inputMode="decimal" placeholder="0.00" className={`${field} mt-1 block w-full text-right tabular-nums`} />
           </label>
-          <button type="submit" className="rounded bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">
-            {editingId ? 'Save' : 'Add'}
-          </button>
-          {editingId && (
-            <button type="button" onClick={() => reset()} className="text-sm text-slate-600 hover:underline">
-              Cancel
+          <div className="col-span-2 flex items-center gap-3">
+            <button type="submit" className="flex-1 rounded bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">
+              {editingId ? 'Save' : 'Add'}
             </button>
-          )}
+            {editingId && (
+              <button type="button" onClick={() => reset()} className="text-sm text-slate-600 hover:underline">
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
         {splitRows && form.kind === 'outflow' && (
           <div className="mt-3 space-y-2 rounded border border-slate-200 bg-slate-50 p-3">
@@ -260,19 +268,19 @@ export function TransactionsView() {
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       </form>
 
-      <div className="mt-6 flex flex-wrap items-end gap-3">
-        <label className="text-xs font-medium text-slate-600">
+      <div className="mt-6 grid grid-cols-12 items-end gap-x-3 gap-y-3">
+        <label className="col-span-2 text-xs font-medium text-slate-600">
           Account
-          <select aria-label="Filter by account" value={filters.accountId} onChange={(e) => setFilter({ accountId: e.target.value })} className={`${field} mt-1 block`}>
+          <select aria-label="Filter by account" value={filters.accountId} onChange={(e) => setFilter({ accountId: e.target.value })} className={`${field} mt-1 block w-full`}>
             <option value="all">All accounts</option>
             {state.accounts.map((a) => (
               <option key={a.id} value={a.id}>{a.name}{a.closed ? ' (closed)' : ''}</option>
             ))}
           </select>
         </label>
-        <label className="text-xs font-medium text-slate-600">
+        <label className="col-span-3 text-xs font-medium text-slate-600">
           Category
-          <select aria-label="Filter by category" value={filters.category} onChange={(e) => setFilter({ category: e.target.value })} className={`${field} mt-1 block`}>
+          <select aria-label="Filter by category" value={filters.category} onChange={(e) => setFilter({ category: e.target.value })} className={`${field} mt-1 block w-full`}>
             <option value="all">All categories</option>
             <option value="income">Income</option>
             <option value="transfers">Transfers</option>
@@ -287,20 +295,20 @@ export function TransactionsView() {
             ))}
           </select>
         </label>
-        <label className="text-xs font-medium text-slate-600">
+        <label className="col-span-2 text-xs font-medium text-slate-600">
           From
-          <input type="date" aria-label="From date" value={filters.from} max={filters.to || undefined} onChange={(e) => setFilter({ from: e.target.value })} className={`${field} mt-1 block`} />
+          <input type="date" aria-label="From date" value={filters.from} max={filters.to || undefined} onChange={(e) => setFilter({ from: e.target.value })} className={`${field} mt-1 block w-full`} />
         </label>
-        <label className="text-xs font-medium text-slate-600">
+        <label className="col-span-2 text-xs font-medium text-slate-600">
           To
-          <input type="date" aria-label="To date" value={filters.to} min={filters.from || undefined} onChange={(e) => setFilter({ to: e.target.value })} className={`${field} mt-1 block`} />
+          <input type="date" aria-label="To date" value={filters.to} min={filters.from || undefined} onChange={(e) => setFilter({ to: e.target.value })} className={`${field} mt-1 block w-full`} />
         </label>
-        <label className="text-xs font-medium text-slate-600">
+        <label className="col-span-3 text-xs font-medium text-slate-600">
           Search
-          <input aria-label="Search" value={filters.search} onChange={(e) => setFilter({ search: e.target.value })} placeholder="Payee, memo or category" className={`${field} mt-1 block w-56`} />
+          <input aria-label="Search" value={filters.search} onChange={(e) => setFilter({ search: e.target.value })} placeholder="Payee, memo or category" className={`${field} mt-1 block w-full`} />
         </label>
         {hasActiveFilters(filters) && (
-          <button type="button" onClick={() => setFilters(NO_FILTERS)} className="pb-1.5 text-sm text-sky-700 hover:underline">
+          <button type="button" onClick={() => setFilters(NO_FILTERS)} className="col-span-12 justify-self-start text-sm text-sky-700 hover:underline">
             Clear filters
           </button>
         )}
