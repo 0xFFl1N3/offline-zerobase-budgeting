@@ -52,26 +52,26 @@ export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; setti
 export const saveAccount = (db: BudgetDB, a: Account) => db.accounts.put(a);
 export const saveGroup = (db: BudgetDB, g: CategoryGroup) => db.groups.put(g);
 export const saveCategory = (db: BudgetDB, c: Category) => db.categories.put(c);
-async function deleteCategoriesIn(db: BudgetDB, ids: string[]) {
+async function deleteCategoriesIn(db: BudgetDB, ids: string[], moveTo: string | null) {
   for (const id of ids) {
     await db.categories.delete(id);
     await db.goals.where('categoryId').equals(id).delete();
     await db.monthlyBudgets.filter((b) => b.categoryId === id).delete();
-    await db.transactions.where('categoryId').equals(id).modify({ categoryId: null });
+    await db.transactions.where('categoryId').equals(id).modify({ categoryId: moveTo });
   }
 }
 
-/** Deletes a category with its goal and assignments; its transactions become uncategorized. */
-export const deleteCategory = (db: BudgetDB, id: string) =>
+/** Deletes a category with its goal and assignments; its transactions move to `moveTo`. */
+export const deleteCategory = (db: BudgetDB, id: string, moveTo: string | null) =>
   db.transaction('rw', [db.categories, db.goals, db.monthlyBudgets, db.transactions], () =>
-    deleteCategoriesIn(db, [id]),
+    deleteCategoriesIn(db, [id], moveTo),
   );
 
 /** Deletes a group and all of its categories (see deleteCategory). */
-export const deleteGroup = (db: BudgetDB, groupId: string) =>
+export const deleteGroup = (db: BudgetDB, groupId: string, moveTo: string | null) =>
   db.transaction('rw', [db.groups, db.categories, db.goals, db.monthlyBudgets, db.transactions], async () => {
     const ids = (await db.categories.where('groupId').equals(groupId).primaryKeys()) as string[];
-    await deleteCategoriesIn(db, ids);
+    await deleteCategoriesIn(db, ids, moveTo);
     await db.groups.delete(groupId);
   });
 

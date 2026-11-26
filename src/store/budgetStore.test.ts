@@ -123,7 +123,7 @@ test('a category has one goal; saving replaces it and it survives reload', async
   assert.equal(store.getState().state.goals.length, 0);
 });
 
-test('rename and delete persist across a reload', async () => {
+test('rename and delete persist across a reload; spending moves to the chosen category', async () => {
   const { db, store } = fresh();
   await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
   await store.getState().addGroup('Living');
@@ -133,7 +133,10 @@ test('rename and delete persist across a reload', async () => {
   await store.getState().addCategory(living.id, 'Rent');
   await store.getState().addCategory(living.id, 'Power');
   await store.getState().addCategory(fun.id, 'Games');
-  const rent = store.getState().state.categories.find((c) => c.name === 'Rent')!;
+  const cat = (name: string) => store.getState().state.categories.find((c) => c.name === name)!;
+  const rent = cat('Rent');
+  const power = cat('Power');
+  const games = cat('Games');
   await store.getState().assign(rent.id, 90000);
   await store.getState().saveGoal({ id: 'g', categoryId: rent.id, type: 'monthly_amount', monthlyAmount: 90000 });
   await store.getState().saveTransaction({
@@ -145,20 +148,23 @@ test('rename and delete persist across a reload', async () => {
   await store.getState().renameCategory(rent.id, '   '); // ignored
   assert.equal(store.getState().state.groups[0]?.name, 'Home');
 
-  await store.getState().deleteCategory(rent.id);
+  await assert.rejects(store.getState().deleteCategory(rent.id, null), /moved to another category/);
+  assert.ok(cat('Rent & fees')); // nothing was deleted
+
+  await store.getState().deleteCategory(rent.id, power.id);
   let s = store.getState();
   assert.equal(s.state.categories.some((c) => c.id === rent.id), false);
   assert.equal(s.state.goals.length, 0);
-  assert.equal(s.state.transactions[0]?.categoryId, null);
-  assert.equal(readyToAssign(s.state, s.month), 40000); // everything is unassigned again
+  assert.equal(s.state.transactions[0]?.categoryId, power.id);
+  assert.equal(readyToAssign(s.state, s.month), 100000); // 40000 in accounts, Power now at -60000
 
-  await store.getState().deleteGroup(living.id);
+  await store.getState().deleteGroup(living.id, games.id);
   const again = createBudgetStore(db, '2026-01');
   await again.getState().load();
   s = again.getState();
   assert.deepEqual(s.state.groups.map((g) => g.name), ['Fun']);
   assert.deepEqual(s.state.categories.map((c) => c.name), ['Games']);
   assert.equal(s.state.monthlyBudgets.length, 0);
-  assert.equal(s.state.transactions[0]?.categoryId, null);
-  assert.equal(readyToAssign(s.state, s.month), 40000);
+  assert.equal(s.state.transactions[0]?.categoryId, games.id);
+  assert.equal(readyToAssign(s.state, s.month), 100000);
 });

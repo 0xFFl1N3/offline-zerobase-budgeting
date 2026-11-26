@@ -42,10 +42,10 @@ export interface BudgetStore {
   removeGoal: (categoryId: string) => Promise<void>;
   renameGroup: (id: string, name: string) => Promise<void>;
   renameCategory: (id: string, name: string) => Promise<void>;
-  /** Removes the category and its goal and assignments; its transactions become uncategorized. */
-  deleteCategory: (id: string) => Promise<void>;
+  /** Removes the category and its goal and assignments; its transactions move to `moveTo` (required if it has spending). */
+  deleteCategory: (id: string, moveTo: string | null) => Promise<void>;
   /** Removes the group and everything in it (see deleteCategory). */
-  deleteGroup: (id: string) => Promise<void>;
+  deleteGroup: (id: string, moveTo: string | null) => Promise<void>;
   /** Replaces all data with a validated backup. */
   importBackup: (backup: BackupFile) => Promise<void>;
   /** Records that a backup was just exported. */
@@ -158,14 +158,16 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set((s) => ({ state: { ...s.state, categories: s.state.categories.map((c) => (c.id === id ? updated : c)) } }));
     },
 
-    deleteCategory: async (id) => {
-      await repo.deleteCategory(db, id);
-      set((s) => ({ state: removeCategories(s.state, [id]) }));
+    deleteCategory: async (id, moveTo) => {
+      const next = removeCategories(get().state, [id], moveTo); // throws before touching the database if invalid
+      await repo.deleteCategory(db, id, moveTo);
+      set({ state: next });
     },
 
-    deleteGroup: async (id) => {
-      await repo.deleteGroup(db, id);
-      set((s) => ({ state: removeGroup(s.state, id) }));
+    deleteGroup: async (id, moveTo) => {
+      const next = removeGroup(get().state, id, moveTo);
+      await repo.deleteGroup(db, id, moveTo);
+      set({ state: next });
     },
 
     importBackup: async (backup) => {
