@@ -130,3 +130,24 @@ test('monthly_amount goal tracks this month\'s assignment', () => {
   assert.equal(p.neededThisMonth, 60000);
   assert.equal(goalProgress(s, s.goals[0]!, FEB).neededThisMonth, 90000);
 });
+
+test('spending from a dated savings goal puts it behind again', () => {
+  // The reported case: 1200 by 2027-06, viewed in 2026-11 (8 months left, 150/month).
+  const s = baseState();
+  s.goals.push({ id: 'goal', categoryId: 'rent', type: 'target_balance', targetAmount: 120000, targetDate: '2027-06' });
+  s.monthlyBudgets.push({ categoryId: 'rent', month: '2026-11', assigned: 15000 });
+  const goal = s.goals[0]!;
+  assert.equal(goalProgress(s, goal, '2026-11').neededThisMonth, 0); // 150 assigned = 150 needed
+
+  s.transactions.push(tx({ categoryId: 'rent', amount: -6000, date: '2026-11-10' })); // spend 60
+  const p = goalProgress(s, goal, '2026-11');
+  assert.equal(p.current, 9000); // 90 of 1200
+  assert.equal(p.neededThisMonth, 6000); // 150 - 90 = 60 more to be on pace
+});
+
+test('a refund into the category reduces what is still needed', () => {
+  const s = baseState();
+  s.goals.push({ id: 'goal', categoryId: 'rent', type: 'target_balance', targetAmount: 120000, targetDate: '2026-06' });
+  s.transactions.push(tx({ categoryId: 'rent', amount: 5000, date: '2026-01-10' }));
+  assert.equal(goalProgress(s, s.goals[0]!, JAN).neededThisMonth, 15000); // 20000 - 5000
+});

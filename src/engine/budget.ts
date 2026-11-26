@@ -79,7 +79,10 @@ function balanceGoalProgress(
     const monthsLeft = Math.max(1, monthsBetween(month, targetDate) + 1);
     const availableBefore = categoryAvailable(state, goal.categoryId, addMonths(month, -1));
     const monthly = Math.ceil(Math.max(0, target - availableBefore) / monthsLeft);
-    neededThisMonth = Math.max(0, monthly - categoryAssigned(state, goal.categoryId, month));
+    // This month's share, minus what already sits in the category from this month. Spending
+    // (negative activity) from the category therefore raises the amount still needed.
+    const addedThisMonth = categoryAssigned(state, goal.categoryId, month) + categoryActivity(state, goal.categoryId, month);
+    neededThisMonth = Math.max(0, monthly - addedThisMonth);
   }
   return { goalId: goal.id, target, current: available, percent: clampPercent(available, target), neededThisMonth };
 }
