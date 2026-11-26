@@ -1,3 +1,4 @@
+import { getLocale } from '../../engine/locale.ts';
 import type { Currency } from '../../engine/money.ts';
 
 export interface Scale {
@@ -23,13 +24,13 @@ export function niceScale(values: number[], tickCount = 4): Scale {
 
 /** Short axis label such as "€1.2K". */
 export function formatCompact(cents: number, currency: Currency): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency, notation: 'compact', minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(cents / 100);
+  return new Intl.NumberFormat(getLocale(), { style: 'currency', currency, notation: 'compact', minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(cents / 100);
 }
 
 /** "Jan", with the year added on January and on the first label so a long range stays readable. */
 export function monthTick(month: string, first: boolean): string {
   const [y, m] = month.split('-').map(Number) as [number, number];
-  const name = new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short' });
+  const name = new Date(y, m - 1, 1).toLocaleDateString(getLocale(), { month: 'short' });
   return first || m === 1 ? `${name} ’${String(y).slice(2)}` : name;
 }
 

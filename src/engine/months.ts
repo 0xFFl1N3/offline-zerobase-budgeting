@@ -1,3 +1,4 @@
+import { getLocale } from './locale.ts';
 import type { Month } from './types.ts';
 
 export const monthOf = (date: string): Month => date.slice(0, 7);
@@ -25,7 +26,7 @@ export function toISODate(d: Date = new Date()): string {
 /** 'YYYY-MM' as e.g. "November 2026" in the user's locale. */
 export function formatMonth(month: Month): string {
   const [y, m] = month.split('-').map(Number) as [number, number];
-  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  return new Date(y, m - 1, 1).toLocaleDateString(getLocale(), { month: 'long', year: 'numeric' });
 }
 
 /** "Jan – Nov 2026" for a range inside one year, or the single month's name when both ends are equal. */
@@ -33,7 +34,14 @@ export function formatMonthRange(from: Month, to: Month): string {
   if (from === to) return formatMonth(to);
   const [fy, fm] = from.split('-').map(Number) as [number, number];
   const [ty] = to.split('-').map(Number) as [number, number];
-  const short = new Date(fy, fm - 1, 1).toLocaleDateString(undefined, fy === ty ? { month: 'short' } : { month: 'short', year: 'numeric' });
-  const end = new Date(ty, Number(to.slice(5)) - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+  const short = new Date(fy, fm - 1, 1).toLocaleDateString(getLocale(), fy === ty ? { month: 'short' } : { month: 'short', year: 'numeric' });
+  const end = new Date(ty, Number(to.slice(5)) - 1, 1).toLocaleDateString(getLocale(), { month: 'short', year: 'numeric' });
   return `${short} – ${end}`;
+}
+
+/** A 'YYYY-MM-DD' date for display: as is in English, "26.11.2026" in German. */
+export function formatDate(date: string): string {
+  if (!getLocale().startsWith('de')) return date;
+  const [y, m, d] = date.split('-');
+  return `${d}.${m}.${y}`;
 }

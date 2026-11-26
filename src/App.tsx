@@ -11,15 +11,16 @@ import { formatMoney } from './engine/money.ts';
 import { dueItems } from './engine/recurring.ts';
 import { toISODate } from './engine/months.ts';
 import { useBudgetStore } from './store/budgetStore.ts';
+import { useLanguage, useT, type MessageKey } from './i18n/i18n.ts';
 import { APP_VERSION } from './version.ts';
 
 type Tab = 'budget' | 'transactions' | 'analytics' | 'settings';
 
-const TABS: { id: Tab; label: string; icon: () => ReactNode }[] = [
-  { id: 'budget', label: 'Budget', icon: BudgetIcon },
-  { id: 'transactions', label: 'Transactions', icon: TransactionsIcon },
-  { id: 'analytics', label: 'Analytics', icon: AnalyticsIcon },
-  { id: 'settings', label: 'Settings', icon: SettingsIcon },
+const TABS: { id: Tab; label: MessageKey; icon: () => ReactNode }[] = [
+  { id: 'budget', label: 'nav.budget', icon: BudgetIcon },
+  { id: 'transactions', label: 'nav.transactions', icon: TransactionsIcon },
+  { id: 'analytics', label: 'nav.analytics', icon: AnalyticsIcon },
+  { id: 'settings', label: 'nav.settings', icon: SettingsIcon },
 ];
 
 export default function App() {
@@ -28,7 +29,10 @@ export default function App() {
   const currency = useBudgetStore((s) => s.currency);
   const dueCount = useBudgetStore((s) => dueItems(s.state.recurring, toISODate()).length);
   const load = useBudgetStore((s) => s.load);
-  const [tab, setTab] = useState<Tab>('budget');
+  const t = useT();
+  // Changing the language redraws everything below, so amounts and dates pick up the new format too.
+  const language = useLanguage();
+  const [active, setActive] = useState<Tab>('budget');
   /** The accounts drawer on phones. */
   const [drawer, setDrawer] = useState(false);
 
@@ -50,15 +54,15 @@ export default function App() {
   }, [drawer]);
 
   const version = (
-    <div className="pointer-events-none fixed bottom-2 left-3 hidden select-none text-xs text-slate-600 md:block" aria-label={`Version ${APP_VERSION}`}>
+    <div className="pointer-events-none fixed bottom-2 left-3 hidden select-none text-xs text-slate-600 md:block" aria-label={t('app.version', { version: APP_VERSION })}>
       v{APP_VERSION}
     </div>
   );
 
-  if (!ready) return <main className="p-8 text-slate-500">Loading…</main>;
+  if (!ready) return <main className="p-8 text-slate-500">{t('app.loading')}</main>;
   if (state.accounts.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900">
+      <div key={language} className="min-h-screen bg-slate-50 text-slate-900">
         <Setup />
         <p className="pb-4 text-center text-xs text-slate-600 md:hidden">v{APP_VERSION}</p>
         {version}
@@ -67,15 +71,15 @@ export default function App() {
   }
 
   const badge = dueCount > 0 && (
-    <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-semibold leading-none text-white" title={`${dueCount} recurring transaction${dueCount === 1 ? '' : 's'} due`}>
+    <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-semibold leading-none text-white" title={t('nav.due', { count: dueCount })}>
       {dueCount}
     </span>
   );
   const total = state.accounts.filter((a) => !a.closed).reduce((sum, a) => sum + accountBalance(state, a.id), 0);
-  const current = TABS.find((t) => t.id === tab)!;
+  const current = TABS.find((tab) => tab.id === active)!;
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900">
+    <div key={language} className="flex min-h-screen bg-slate-50 text-slate-900">
       <div className="hidden md:flex">
         <AccountsSidebar />
       </div>
@@ -83,16 +87,16 @@ export default function App() {
       <div className="min-w-0 flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
         {/* Desktop: tabs along the top. */}
         <nav className="hidden gap-2 border-b border-slate-200 bg-white px-4 md:flex">
-          {TABS.map((t) => (
+          {TABS.map((tab) => (
             <button
-              key={t.id}
+              key={tab.id}
               type="button"
-              onClick={() => setTab(t.id)}
-              aria-current={tab === t.id ? 'page' : undefined}
-              className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium ${t.id === 'settings' ? 'ml-auto' : ''} ${tab === t.id ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
+              onClick={() => setActive(tab.id)}
+              aria-current={active === tab.id ? 'page' : undefined}
+              className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium ${tab.id === 'settings' ? 'ml-auto' : ''} ${active === tab.id ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
             >
-              {t.label}
-              {t.id === 'transactions' && badge}
+              {t(tab.label)}
+              {tab.id === 'transactions' && badge}
             </button>
           ))}
         </nav>
@@ -102,48 +106,48 @@ export default function App() {
           <button
             type="button"
             onClick={() => setDrawer(true)}
-            aria-label="Accounts"
+            aria-label={t('nav.accounts')}
             aria-expanded={drawer}
             className="flex items-center gap-2 rounded px-1.5 py-1 text-slate-700 hover:bg-slate-100"
           >
             <MenuIcon />
           </button>
-          <h1 className="text-base font-semibold">{current.label}</h1>
+          <h1 className="text-base font-semibold">{t(current.label)}</h1>
           <button type="button" onClick={() => setDrawer(true)} className="ml-auto text-right text-xs text-slate-500">
-            Accounts
+            {t('nav.accounts')}
             <span className="block text-sm font-medium tabular-nums text-slate-900">{formatMoney(total, currency)}</span>
           </button>
         </header>
 
         <div className="mx-auto max-w-6xl">
-          {tab === 'budget' ? <BudgetView /> : tab === 'transactions' ? <TransactionsView /> : tab === 'analytics' ? <AnalyticsView /> : <SettingsView />}
+          {active === 'budget' ? <BudgetView /> : active === 'transactions' ? <TransactionsView /> : active === 'analytics' ? <AnalyticsView /> : <SettingsView />}
         </div>
       </div>
 
       {/* Phone: tabs along the bottom, within thumb reach. */}
       <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
-        {TABS.map((t) => (
+        {TABS.map((tab) => (
           <button
-            key={t.id}
+            key={tab.id}
             type="button"
-            onClick={() => setTab(t.id)}
-            aria-current={tab === t.id ? 'page' : undefined}
-            className={`relative flex h-16 flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${tab === t.id ? 'text-sky-700' : 'text-slate-500'}`}
+            onClick={() => setActive(tab.id)}
+            aria-current={active === tab.id ? 'page' : undefined}
+            className={`relative flex h-16 flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${active === tab.id ? 'text-sky-700' : 'text-slate-500'}`}
           >
-            <t.icon />
-            {t.label}
-            {t.id === 'transactions' && dueCount > 0 && <span className="absolute top-1.5 left-1/2 ml-2">{badge}</span>}
+            <tab.icon />
+            {t(tab.label)}
+            {tab.id === 'transactions' && dueCount > 0 && <span className="absolute top-1.5 left-1/2 ml-2">{badge}</span>}
           </button>
         ))}
       </nav>
 
       {/* Phone: the accounts sidebar slides in from the left. */}
       {drawer && (
-        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label="Accounts">
-          <button type="button" aria-label="Close accounts" onClick={() => setDrawer(false)} className="absolute inset-0 h-full w-full bg-black/40" />
+        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label={t('nav.accounts')}>
+          <button type="button" aria-label={t('nav.closeAccounts')} onClick={() => setDrawer(false)} className="absolute inset-0 h-full w-full bg-black/40" />
           <div className="absolute inset-y-0 left-0 flex w-80 max-w-[85vw] flex-col overflow-y-auto bg-white shadow-xl">
             <div className="flex justify-end px-2 pt-2">
-              <button type="button" onClick={() => setDrawer(false)} aria-label="Close accounts" className="rounded p-1.5 text-slate-600 hover:bg-slate-100">
+              <button type="button" onClick={() => setDrawer(false)} aria-label={t('nav.closeAccounts')} className="rounded p-1.5 text-slate-600 hover:bg-slate-100">
                 <CloseIcon />
               </button>
             </div>

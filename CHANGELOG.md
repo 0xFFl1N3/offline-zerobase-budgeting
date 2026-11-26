@@ -2,6 +2,13 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.6.0 – 2026-11-26
+
+### Added
+- Language setting (English or German, or the same as the system) on the setup screen and in Settings.
+- Amounts and dates are written the way the chosen language writes them, e.g. 1.234,56 € in German.
+- German texts for the setup screen, the navigation and Settings; the other screens follow.
+
 ## 0.5.9 – 2026-11-26
 
 ### Changed

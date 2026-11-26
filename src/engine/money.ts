@@ -1,8 +1,10 @@
+import { getLocale } from './locale.ts';
 import type { Cents } from './types.ts';
 
 export type Currency = 'EUR' | 'USD';
 
-export function formatMoney(cents: Cents, currency: Currency = 'EUR', locale = 'en-US'): string {
+/** e.g. "€1,234.56" in English or "1.234,56 €" in German (see locale.ts). */
+export function formatMoney(cents: Cents, currency: Currency = 'EUR', locale = getLocale()): string {
   return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(cents / 100);
 }
 
