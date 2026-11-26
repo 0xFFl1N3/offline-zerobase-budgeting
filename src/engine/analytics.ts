@@ -29,6 +29,9 @@ export interface SpendingReport {
 /** Slices below this share of the total are combined into "Other" (when there are at least two). */
 export const OTHER_THRESHOLD = 0.03;
 
+/** The categorical palette has 8 hues; further slices are folded into "Other". */
+export const MAX_NAMED_SLICES = 8;
+
 const percentOf = (amount: Cents, total: Cents) => (total > 0 ? Math.round((amount / total) * 1000) / 10 : 0);
 
 /** Months in [from, to] that have at least one transaction or assignment. */
@@ -78,8 +81,11 @@ export function spendingReport(state: BudgetState, kind: ReportKind, month: Mont
   items = items.filter((i) => i.amount > 0).sort((a, b) => b.amount - a.amount || a.label.localeCompare(b.label));
   const total = items.reduce((t, i) => t + i.amount, 0);
 
-  const small = items.filter((i) => i.amount / total < OTHER_THRESHOLD);
-  const combine = small.length >= 2;
+  // Fold into "Other": slices under the threshold, and anything past the palette's 8 named slots.
+  const underThreshold = items.filter((i) => i.amount / total < OTHER_THRESHOLD);
+  const overCap = items.filter((i) => !underThreshold.includes(i)).slice(MAX_NAMED_SLICES);
+  const small = [...underThreshold, ...overCap];
+  const combine = small.length >= 2 || overCap.length >= 1; // a lone small slice keeps its own name
   const kept = combine ? items.filter((i) => !small.includes(i)) : items;
   const slices: Slice[] = kept.map((i) => ({ ...i, percent: percentOf(i.amount, total), isOther: false }));
   if (combine) {

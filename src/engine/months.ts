@@ -27,3 +27,13 @@ export function formatMonth(month: Month): string {
   const [y, m] = month.split('-').map(Number) as [number, number];
   return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
+
+/** "Jan – Nov 2026" for a range inside one year, or the single month's name when both ends are equal. */
+export function formatMonthRange(from: Month, to: Month): string {
+  if (from === to) return formatMonth(to);
+  const [fy, fm] = from.split('-').map(Number) as [number, number];
+  const [ty] = to.split('-').map(Number) as [number, number];
+  const short = new Date(fy, fm - 1, 1).toLocaleDateString(undefined, { month: 'short' });
+  const end = new Date(ty, Number(to.slice(5)) - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+  return `${short} – ${end}`;
+}

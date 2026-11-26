@@ -117,3 +117,16 @@ test('legacy uncategorized outflows are counted but not charted', () => {
   assert.equal(r.uncategorizedCount, 1);
   assert.equal(r.total, 1000);
 });
+
+test('at most 8 named slices; the rest fold into Other even when they are large', () => {
+  const categories = Array.from({ length: 10 }, (_, i) => ({ id: `c${i}`, groupId: 'g1', name: `Cat ${i}`, sortOrder: i, archived: false }));
+  // 10 categories of almost equal size: none is under 3%, but only 8 can be named.
+  const s = { ...base(categories.map((c, i) => tx('2026-03-01', c.id, -(10000 - i)))), categories };
+  const r = spendingReport(s, 'month', '2026-03', 'category');
+  assert.equal(r.slices.length, 9);
+  assert.equal(r.slices.filter((x) => !x.isOther).length, 8);
+  const other = r.slices.at(-1)!;
+  assert.equal(other.isOther, true);
+  assert.equal(other.amount, 9992 + 9991); // the two smallest
+  assert.equal(r.slices.reduce((t, x) => t + x.amount, 0), r.total);
+});
