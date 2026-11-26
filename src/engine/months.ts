@@ -16,3 +16,8 @@ export function monthsBetween(from: Month, to: Month): number {
   const [ty, tm] = to.split('-').map(Number) as [number, number];
   return (ty - fy) * 12 + (tm - fm);
 }
+
+/** Local calendar date as 'YYYY-MM-DD'. */
+export function toISODate(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}

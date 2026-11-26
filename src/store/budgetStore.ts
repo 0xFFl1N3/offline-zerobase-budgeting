@@ -3,7 +3,7 @@ import { createDb, type BudgetDB } from '../db/db.ts';
 import * as repo from '../db/repository.ts';
 import type { Currency } from '../engine/money.ts';
 import { addMonths } from '../engine/months.ts';
-import type { Account, AccountType, BudgetState, Cents, Month } from '../engine/types.ts';
+import type { Account, AccountType, BudgetState, Cents, Month, Transaction } from '../engine/types.ts';
 
 const emptyState = (): BudgetState => ({
   accounts: [],
@@ -30,6 +30,9 @@ export interface BudgetStore {
   addCategory: (groupId: string, name: string) => Promise<void>;
   /** Sets this month's Assigned amount for a category. */
   assign: (categoryId: string, assigned: Cents) => Promise<void>;
+  /** Adds a transaction, or replaces the one with the same id. */
+  saveTransaction: (t: Transaction) => Promise<void>;
+  removeTransaction: (id: string) => Promise<void>;
   shiftMonth: (n: number) => void;
 }
 
@@ -93,6 +96,18 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
         const monthlyBudgets = assigned === 0 ? others : [...others, { categoryId, month, assigned }];
         return { state: { ...s.state, monthlyBudgets } };
       });
+    },
+
+    saveTransaction: async (t) => {
+      await repo.saveTransaction(db, t);
+      set((s) => ({
+        state: { ...s.state, transactions: [...s.state.transactions.filter((x) => x.id !== t.id), t] },
+      }));
+    },
+
+    removeTransaction: async (id) => {
+      await repo.deleteTransaction(db, id);
+      set((s) => ({ state: { ...s.state, transactions: s.state.transactions.filter((x) => x.id !== id) } }));
     },
 
     shiftMonth: (n) => set((s) => ({ month: addMonths(s.month, n) })),

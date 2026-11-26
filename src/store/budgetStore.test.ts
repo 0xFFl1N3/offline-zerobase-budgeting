@@ -2,7 +2,8 @@ import 'fake-indexeddb/auto';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createDb } from '../db/db.ts';
-import { categoryAvailable, readyToAssign } from '../engine/budget.ts';
+import { accountBalance, categoryAvailable, readyToAssign } from '../engine/budget.ts';
+import type { Account } from '../engine/types.ts';
 import { createBudgetStore } from './budgetStore.ts';
 
 let n = 0;
@@ -67,4 +68,38 @@ test('blank names are ignored', async () => {
   const { store } = fresh();
   await store.getState().addGroup('   ');
   assert.equal(store.getState().state.groups.length, 0);
+});
+
+test('transactions move account and category balances, and can be edited and removed', async () => {
+  const { store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  await store.getState().addAccount('Savings', 'savings', 0);
+  await store.getState().addGroup('Living');
+  await store.getState().addCategory(store.getState().state.groups[0]!.id, 'Rent');
+  const [chk, sav] = store.getState().state.accounts as [Account, Account];
+  const rent = store.getState().state.categories[0]!;
+  await store.getState().assign(rent.id, 90000);
+
+  const base = { accountId: chk.id, date: '2026-01-05', payee: 'Landlord', memo: '', transferAccountId: null };
+  await store.getState().saveTransaction({ ...base, id: 't1', categoryId: rent.id, amount: -60000 });
+  let s = store.getState();
+  assert.equal(accountBalance(s.state, chk.id), 40000);
+  assert.equal(categoryAvailable(s.state, rent.id, s.month), 30000);
+  assert.equal(readyToAssign(s.state, s.month), 10000);
+
+  await store.getState().saveTransaction({ ...base, id: 't1', categoryId: rent.id, amount: -90000 }); // edit
+  s = store.getState();
+  assert.equal(s.state.transactions.length, 1);
+  assert.equal(categoryAvailable(s.state, rent.id, s.month), 0);
+
+  await store.getState().saveTransaction({ ...base, id: 't2', categoryId: null, amount: -10000, transferAccountId: sav.id });
+  s = store.getState();
+  assert.equal(accountBalance(s.state, sav.id), 10000);
+  assert.equal(readyToAssign(s.state, s.month), 10000);
+
+  await store.getState().removeTransaction('t1');
+  await store.getState().removeTransaction('t2');
+  s = store.getState();
+  assert.equal(readyToAssign(s.state, s.month), 10000);
+  assert.equal(accountBalance(s.state, chk.id), 100000);
 });
