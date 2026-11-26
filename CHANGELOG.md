@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.5.5 – 2026-11-26
+
+### Added
+- The app can be installed on a phone or computer from the browser (Add to Home Screen / Install app). Once opened, it also works without internet.
+- App icon.
+
 ## 0.5.4 – 2026-11-26
 
 ### Added

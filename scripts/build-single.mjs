@@ -13,6 +13,9 @@ const asset = (path) => readFileSync(join(dist, path.replace(/^\.?\//, '')), 'ut
 html = html.replace(/<script type="module" crossorigin src="([^"]+)"><\/script>/g, (_, src) =>
   `<script type="module">${asset(src).replace(/<\/script/gi, '<\\/script')}</script>`,
 );
+// Icons, manifest and offline cache belong to the hosted app; a file opened from disk can't load them.
+html = html.replace(/\s*<link rel="(?:icon|manifest|apple-touch-icon)"[^>]*>/g, '');
+
 // Inline the styles.
 html = html.replace(/<link rel="stylesheet" crossorigin href="([^"]+)">/g, (_, href) => `<style>${asset(href)}</style>`);
 
