@@ -160,9 +160,9 @@ export function TransactionsView() {
             </label>
           ) : (
             <>
-              <label className="text-xs font-medium text-slate-600">
+              <label className="min-w-0 flex-1 basis-24 text-xs font-medium text-slate-600">
                 Payee
-                <input value={form.payee} onChange={(e) => update({ payee: e.target.value })} placeholder="Who" className={`${field} mt-1 block`} />
+                <input value={form.payee} onChange={(e) => update({ payee: e.target.value })} placeholder="Who" className={`${field} mt-1 block w-full`} />
               </label>
               <div className="text-xs font-medium text-slate-600">
                 <div className="flex items-baseline justify-between gap-3">
@@ -197,14 +197,14 @@ export function TransactionsView() {
               </div>
             </>
           )}
-          <label className="text-xs font-medium text-slate-600">
+          <label className="min-w-0 flex-1 basis-24 text-xs font-medium text-slate-600">
             Memo
-            <input value={form.memo} onChange={(e) => update({ memo: e.target.value })} placeholder="Optional" className={`${field} mt-1 block`} />
+            <input value={form.memo} onChange={(e) => update({ memo: e.target.value })} placeholder="Optional" className={`${field} mt-1 block w-full`} />
           </label>
           {!editingId && (
             <label className="text-xs font-medium text-slate-600">
               Repeat
-              <select aria-label="Repeat" value={repeat} onChange={(e) => setRepeat(e.target.value as Frequency | '')} className={`${field} mt-1 block`}>
+              <select aria-label="Repeat" value={repeat} onChange={(e) => setRepeat(e.target.value as Frequency | '')} className={`${field} mt-1 block w-24`}>
                 <option value="">Once</option>
                 {FREQUENCIES.map((f) => (
                   <option key={f} value={f}>{FREQUENCY_LABELS[f]}</option>
@@ -214,7 +214,7 @@ export function TransactionsView() {
           )}
           <label className="text-xs font-medium text-slate-600">
             Amount
-            <input value={amountText} onChange={(e) => setAmountText(e.target.value)} inputMode="decimal" placeholder="0.00" className={`${field} mt-1 block w-28 text-right tabular-nums`} />
+            <input value={amountText} onChange={(e) => setAmountText(e.target.value)} inputMode="decimal" placeholder="0.00" className={`${field} mt-1 block w-24 text-right tabular-nums`} />
           </label>
           <button type="submit" className="rounded bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">
             {editingId ? 'Save' : 'Add'}
