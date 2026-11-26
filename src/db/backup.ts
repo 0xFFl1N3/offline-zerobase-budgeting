@@ -8,6 +8,7 @@ import type {
   Goal,
   MonthlyBudget,
   Transaction,
+  TransactionSplit,
 } from '../engine/types.ts';
 
 export const BACKUP_APP = 'budgeting-app';
@@ -91,6 +92,23 @@ function unique(ids: string[], what: string) {
   if (new Set(ids).size !== ids.length) throw new Error(`The file has duplicate ${what} ids.`);
 }
 
+/** Reads the optional `splits` of a transaction: two or more parts that add up to the transaction's amount. */
+function parseSplits(o: Obj): { splits?: TransactionSplit[] } {
+  if (o.splits === undefined) return {};
+  if (!Array.isArray(o.splits)) throw new Error('Transaction: "splits" must be a list.');
+  const splits = o.splits.map((item) => {
+    if (!isObj(item)) throw new Error('Transaction: a split is not a valid record.');
+    return { categoryId: str(item, 'categoryId', 'Split'), amount: int(item, 'amount', 'Split') };
+  });
+  const amount = int(o, 'amount', 'Transaction');
+  if (splits.length < 2) throw new Error('Transaction: a split needs at least two parts.');
+  if (splits.reduce((sum, s) => sum + s.amount, 0) !== amount) throw new Error('Transaction: the parts of a split must add up to its amount.');
+  if (optStr(o, 'categoryId', 'Transaction') !== null || optStr(o, 'transferAccountId', 'Transaction') !== null) {
+    throw new Error('Transaction: a split cannot also have a category or be a transfer.');
+  }
+  return { splits };
+}
+
 function parseData(raw: unknown): BudgetState {
   if (!isObj(raw)) throw new Error('The file has no data section.');
   const accounts: Account[] = list(raw, 'accounts').map((o, index) => {
@@ -119,6 +137,7 @@ function parseData(raw: unknown): BudgetState {
       payee: str(o, 'payee', 'Transaction'), categoryId: optStr(o, 'categoryId', 'Transaction'),
       memo: str(o, 'memo', 'Transaction'), amount: int(o, 'amount', 'Transaction'),
       transferAccountId: optStr(o, 'transferAccountId', 'Transaction'),
+      ...parseSplits(o),
     };
   });
 
@@ -138,6 +157,7 @@ function parseData(raw: unknown): BudgetState {
     if (!accountIds.has(t.accountId)) throw new Error('A transaction points to a missing account.');
     if (t.transferAccountId !== null && !accountIds.has(t.transferAccountId)) throw new Error('A transfer points to a missing account.');
     if (t.categoryId !== null && !categoryIds.has(t.categoryId)) throw new Error('A transaction points to a missing category.');
+    for (const part of t.splits ?? []) if (!categoryIds.has(part.categoryId)) throw new Error('A split points to a missing category.');
   }
   return { accounts, groups, categories, goals, monthlyBudgets, transactions };
 }

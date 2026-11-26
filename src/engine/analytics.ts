@@ -1,3 +1,4 @@
+import { categoryParts } from './budget.ts';
 import { monthOf } from './months.ts';
 import type { BudgetState, Cents, Month } from './types.ts';
 
@@ -54,11 +55,12 @@ export function spendingReport(state: BudgetState, kind: ReportKind, month: Mont
   for (const t of state.transactions) {
     const m = monthOf(t.date);
     if (m < fromMonth || m > month || t.transferAccountId !== null) continue;
-    if (t.categoryId === null) {
+    const parts = categoryParts(t);
+    if (parts.length === 0) {
       if (t.amount < 0) uncategorizedCount++;
       continue;
     }
-    spentByCategory.set(t.categoryId, (spentByCategory.get(t.categoryId) ?? 0) - t.amount);
+    for (const part of parts) spentByCategory.set(part.categoryId, (spentByCategory.get(part.categoryId) ?? 0) - part.amount);
   }
 
   const divisor = kind === 'monthly-average' ? monthsWithData(state, fromMonth, month).length : 1;

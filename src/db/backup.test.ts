@@ -84,3 +84,22 @@ test('importing replaces all data, persists, and keeps the backup timestamp', as
   assert.equal(settings.currency, 'USD');
   assert.equal(settings.lastBackupAt, stamp);
 });
+
+test('split transactions round-trip and are validated', () => {
+  const split = (mutate?: (t: any) => void) =>
+    text((o) => {
+      o.data.categories.push({ id: 'c2', groupId: 'g', name: 'Food', sortOrder: 1, archived: false });
+      const t = { id: 't3', accountId: 'a', date: '2026-01-07', payee: 'Shop', categoryId: null, memo: '', amount: -5000, transferAccountId: null,
+        splits: [{ categoryId: 'c', amount: -3000 }, { categoryId: 'c2', amount: -2000 }] };
+      mutate?.(t);
+      o.data.transactions.push(t);
+    });
+  const ok = parseBackup(split());
+  assert.ok(ok.ok);
+  assert.equal(ok.backup.data.transactions.find((t) => t.id === 't3')!.splits!.length, 2);
+  const err = (r: ReturnType<typeof parseBackup>) => (r.ok ? '' : r.error);
+  assert.match(err(parseBackup(split((t) => (t.splits[1].amount = -1)))), /add up/);
+  assert.match(err(parseBackup(split((t) => (t.splits = [t.splits[0]])))), /at least two/);
+  assert.match(err(parseBackup(split((t) => (t.splits[0].categoryId = 'nope')))), /missing category/);
+  assert.match(err(parseBackup(split((t) => (t.categoryId = 'c')))), /cannot also have a category/);
+});

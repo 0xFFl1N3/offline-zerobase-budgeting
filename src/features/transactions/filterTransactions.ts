@@ -1,3 +1,4 @@
+import { categoryParts } from '../../engine/budget.ts';
 import type { BudgetState, Transaction } from '../../engine/types.ts';
 
 /**
@@ -24,12 +25,14 @@ function matchesCategory(state: BudgetState, t: Transaction, filter: string): bo
   if (filter === 'all') return true;
   if (filter === 'transfers') return t.transferAccountId !== null;
   if (t.transferAccountId !== null) return false;
-  if (filter === 'income') return t.categoryId === null && t.amount > 0;
-  if (filter === 'uncategorised') return t.categoryId === null && t.amount <= 0;
-  if (filter.startsWith('cat:')) return t.categoryId === filter.slice(4);
+  const parts = categoryParts(t);
+  if (filter === 'income') return parts.length === 0 && t.amount > 0;
+  if (filter === 'uncategorised') return parts.length === 0 && t.amount <= 0;
+  // A split transaction matches when any of its parts does.
+  if (filter.startsWith('cat:')) return parts.some((p) => p.categoryId === filter.slice(4));
   if (filter.startsWith('group:')) {
-    const category = state.categories.find((c) => c.id === t.categoryId);
-    return category !== undefined && category.groupId === filter.slice(6);
+    const groupId = filter.slice(6);
+    return parts.some((p) => state.categories.find((c) => c.id === p.categoryId)?.groupId === groupId);
   }
   return true;
 }
@@ -37,7 +40,8 @@ function matchesCategory(state: BudgetState, t: Transaction, filter: string): bo
 /** The transactions that pass all filters, newest first (same day: last entered first). */
 export function filterTransactions(state: BudgetState, f: TxFilters): Transaction[] {
   const q = f.search.trim().toLowerCase();
-  const categoryName = (t: Transaction) => state.categories.find((c) => c.id === t.categoryId)?.name ?? '';
+  const categoryName = (t: Transaction) =>
+    categoryParts(t).map((p) => state.categories.find((c) => c.id === p.categoryId)?.name ?? '').join(' ');
   return state.transactions
     .map((t, index) => ({ t, index }))
     .filter(({ t }) => f.accountId === 'all' || t.accountId === f.accountId || t.transferAccountId === f.accountId)

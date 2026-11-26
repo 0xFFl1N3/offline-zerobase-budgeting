@@ -12,6 +12,8 @@ export interface TxForm {
   transferAccountId: string | null;
   memo: string;
   amount: Cents;
+  /** Outflow only: the parts of a split, amounts as positive magnitudes. null or absent = one category. */
+  splits?: { categoryId: string | null; amount: Cents }[] | null;
 }
 
 export type BuildResult = { ok: true; transaction: Transaction } | { ok: false; error: string };
@@ -35,6 +37,29 @@ export function buildTransaction(form: TxForm, id: string): BuildResult {
         memo: form.memo.trim(),
         amount: -form.amount,
         transferAccountId: form.transferAccountId,
+      },
+    };
+  }
+
+  if (form.kind === 'outflow' && form.splits) {
+    if (form.splits.length < 2) return { ok: false, error: 'A split needs at least two parts.' };
+    if (form.splits.some((s) => !s.categoryId)) return { ok: false, error: 'Pick a category for every part of the split.' };
+    if (form.splits.some((s) => !(s.amount > 0))) return { ok: false, error: 'Give every part an amount greater than zero.' };
+    if (form.splits.reduce((sum, s) => sum + s.amount, 0) !== form.amount) {
+      return { ok: false, error: 'The parts of the split must add up to the total amount.' };
+    }
+    return {
+      ok: true,
+      transaction: {
+        id,
+        accountId: form.accountId,
+        date: form.date,
+        payee: form.payee.trim(),
+        categoryId: null,
+        memo: form.memo.trim(),
+        amount: -form.amount,
+        transferAccountId: null,
+        splits: form.splits.map((s) => ({ categoryId: s.categoryId as string, amount: -s.amount })),
       },
     };
   }
@@ -66,5 +91,6 @@ export function toForm(t: Transaction): TxForm {
     transferAccountId: t.transferAccountId,
     memo: t.memo,
     amount: Math.abs(t.amount),
+    splits: t.splits ? t.splits.map((s) => ({ categoryId: s.categoryId, amount: Math.abs(s.amount) })) : null,
   };
 }

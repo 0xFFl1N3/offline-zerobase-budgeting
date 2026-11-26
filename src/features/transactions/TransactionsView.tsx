@@ -24,6 +24,10 @@ function categoryLabel(state: BudgetState, t: Transaction): string {
     const to = state.accounts.find((a) => a.id === t.transferAccountId)?.name ?? '?';
     return `Transfer: ${from} → ${to}`;
   }
+  if (t.splits && t.splits.length > 0) {
+    const names = [...new Set(t.splits.map((p) => state.categories.find((c) => c.id === p.categoryId)?.name ?? 'Unknown category'))];
+    return `Split: ${names.join(', ')}`;
+  }
   if (t.categoryId) {
     const category = state.categories.find((c) => c.id === t.categoryId);
     if (!category) return 'Unknown category';
@@ -44,12 +48,9 @@ export function TransactionsView() {
   const accounts = state.accounts.filter((a) => !a.closed);
 
   const [form, setForm] = useState<TxForm>(() => blankForm(accounts));
-  // When editing a transaction whose category was archived since, keep that category selectable.
-  const archivedSelection =
-    form.categoryId && archivedCategoryIds(state).has(form.categoryId)
-      ? state.categories.find((c) => c.id === form.categoryId)
-      : undefined;
   const [amountText, setAmountText] = useState('');
+  /** When set, the outflow is split: one row per part, with the amount as typed. */
+  const [splitRows, setSplitRows] = useState<{ categoryId: string; text: string }[] | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<TxFilters>(NO_FILTERS);
@@ -61,6 +62,7 @@ export function TransactionsView() {
   const reset = (keep?: TxForm) => {
     setForm({ ...blankForm(accounts, keep?.kind), date: keep?.date ?? toISODate(), accountId: keep?.accountId ?? accounts[0]?.id ?? '' });
     setAmountText('');
+    setSplitRows(null);
     setEditingId(null);
     setError(null);
   };
@@ -69,7 +71,13 @@ export function TransactionsView() {
     e.preventDefault();
     const parsed = parseMoney(amountText);
     if (parsed === null) return setError('Enter a valid amount, e.g. 12.50.');
-    const result = buildTransaction({ ...form, amount: Math.abs(parsed) }, editingId ?? crypto.randomUUID());
+    let splits: TxForm['splits'] = null;
+    if (form.kind === 'outflow' && splitRows) {
+      const amounts = splitRows.map((r) => parseMoney(r.text));
+      if (amounts.some((a) => a === null)) return setError('Enter a valid amount for every part of the split.');
+      splits = splitRows.map((r, i) => ({ categoryId: r.categoryId || null, amount: Math.abs(amounts[i] as number) }));
+    }
+    const result = buildTransaction({ ...form, amount: Math.abs(parsed), splits }, editingId ?? crypto.randomUUID());
     if (!result.ok) return setError(result.error);
     void saveTransaction(result.transaction);
     reset(form);
@@ -78,6 +86,7 @@ export function TransactionsView() {
   const startEdit = (t: Transaction) => {
     setForm(toForm(t));
     setAmountText((Math.abs(t.amount) / 100).toFixed(2));
+    setSplitRows(t.splits ? t.splits.map((p) => ({ categoryId: p.categoryId, text: (Math.abs(p.amount) / 100).toFixed(2) })) : null);
     setEditingId(t.id);
     setError(null);
   };
@@ -93,6 +102,27 @@ export function TransactionsView() {
     () => (filters.accountId === 'all' ? null : runningBalances(state, filters.accountId)),
     [state, filters.accountId],
   );
+  /** The category choices; an archived category that is already selected stays selectable. */
+  const categoryOptions = (selectedId: string | null) => {
+    const archivedSelected = selectedId && archivedCategoryIds(state).has(selectedId) ? state.categories.find((c) => c.id === selectedId) : undefined;
+    return (
+      <>
+        {archivedSelected && <option value={archivedSelected.id}>{archivedSelected.name} (archived)</option>}
+        {state.groups.filter((g) => !g.archived).map((g) => (
+          <optgroup key={g.id} label={g.name}>
+            {state.categories.filter((c) => c.groupId === g.id && !c.archived).map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </optgroup>
+        ))}
+      </>
+    );
+  };
+
+  const total = parseMoney(amountText);
+  const splitRemaining = splitRows && total !== null
+    ? Math.abs(total) - splitRows.reduce((sum, r) => sum + Math.abs(parseMoney(r.text) ?? 0), 0)
+    : null;
   const accountName = (id: string) => state.accounts.find((a) => a.id === id)?.name ?? '?';
 
   return (
@@ -102,7 +132,10 @@ export function TransactionsView() {
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <label className="text-xs font-medium text-slate-600">
             Type
-            <select value={form.kind} onChange={(e) => update({ kind: e.target.value as TxKind, categoryId: null, transferAccountId: null })} className={`${field} mt-1 block`}>
+            <select value={form.kind} onChange={(e) => {
+              update({ kind: e.target.value as TxKind, categoryId: null, transferAccountId: null });
+              setSplitRows(null);
+            }} className={`${field} mt-1 block`}>
               <option value="outflow">Outflow</option>
               <option value="inflow">Inflow</option>
               <option value="transfer">Transfer</option>
@@ -138,18 +171,33 @@ export function TransactionsView() {
               </label>
               <label className="text-xs font-medium text-slate-600">
                 Category
+                {splitRows ? (
+                  <span className={`${field} mt-1 block border-dashed text-slate-500`}>Split across categories</span>
+                ) : (
                 <select value={form.categoryId ?? ''} onChange={(e) => update({ categoryId: e.target.value || null })} className={`${field} mt-1 block`}>
                   <option value="">{form.kind === 'inflow' ? 'Income (Ready to Assign)' : 'Choose a category…'}</option>
-                  {archivedSelection && <option value={archivedSelection.id}>{archivedSelection.name} (archived)</option>}
-                  {state.groups.filter((g) => !g.archived).map((g) => (
-                    <optgroup key={g.id} label={g.name}>
-                      {state.categories.filter((c) => c.groupId === g.id && !c.archived).map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </optgroup>
-                  ))}
+                  {categoryOptions(form.categoryId)}
                 </select>
+                )}
               </label>
+              {form.kind === 'outflow' && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSplitRows(
+                      splitRows
+                        ? null
+                        : [
+                            { categoryId: form.categoryId ?? '', text: amountText },
+                            { categoryId: '', text: '' },
+                          ],
+                    )
+                  }
+                  className="pb-1.5 text-sm text-sky-700 hover:underline"
+                >
+                  {splitRows ? 'Single category' : 'Split…'}
+                </button>
+              )}
             </>
           )}
           <label className="text-xs font-medium text-slate-600">
@@ -169,6 +217,46 @@ export function TransactionsView() {
             </button>
           )}
         </div>
+        {splitRows && form.kind === 'outflow' && (
+          <div className="mt-3 space-y-2 rounded border border-slate-200 bg-slate-50 p-3">
+            {splitRows.map((row, i) => (
+              <div key={i} className="flex flex-wrap items-center gap-3">
+                <select
+                  aria-label={`Category for part ${i + 1}`}
+                  value={row.categoryId}
+                  onChange={(e) => setSplitRows(splitRows.map((r, j) => (j === i ? { ...r, categoryId: e.target.value } : r)))}
+                  className={field}
+                >
+                  <option value="">Choose a category…</option>
+                  {categoryOptions(row.categoryId)}
+                </select>
+                <input
+                  aria-label={`Amount for part ${i + 1}`}
+                  value={row.text}
+                  onChange={(e) => setSplitRows(splitRows.map((r, j) => (j === i ? { ...r, text: e.target.value } : r)))}
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  className={`${field} w-28 text-right tabular-nums`}
+                />
+                {splitRows.length > 2 && (
+                  <button type="button" aria-label={`Remove part ${i + 1}`} onClick={() => setSplitRows(splitRows.filter((_, j) => j !== i))} className="text-sm text-red-600 hover:underline">
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <button type="button" onClick={() => setSplitRows([...splitRows, { categoryId: '', text: splitRemaining && splitRemaining > 0 ? (splitRemaining / 100).toFixed(2) : '' }])} className="text-sky-700 hover:underline">
+                + Add part
+              </button>
+              {splitRemaining !== null && (
+                <span className={splitRemaining === 0 ? 'text-emerald-700' : 'text-amber-700'} role="status">
+                  {splitRemaining === 0 ? 'The parts add up to the total.' : splitRemaining > 0 ? `${formatMoney(splitRemaining, currency)} left to split` : `${formatMoney(-splitRemaining, currency)} too much`}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       </form>
 

@@ -54,9 +54,27 @@ test('an outflow must have a category, an inflow need not', () => {
 });
 
 test('toForm reverses buildTransaction', () => {
-  for (const f of [form(), form({ kind: 'inflow', categoryId: null }), form({ kind: 'transfer', transferAccountId: 'sav', categoryId: null, payee: 'Transfer' })]) {
+  for (const f of [form(), form({ kind: 'inflow', categoryId: null }), form({ kind: 'transfer', transferAccountId: 'sav', categoryId: null, payee: 'Transfer' }), form({ categoryId: null, splits: [{ categoryId: 'a', amount: 40000 }, { categoryId: 'b', amount: 50000 }] })]) {
     const r = buildTransaction(f, 'id');
     assert.ok(r.ok);
-    assert.deepEqual(toForm(r.transaction), { ...f, payee: f.payee.trim() });
+    assert.deepEqual(toForm(r.transaction), { ...f, payee: f.payee.trim(), splits: f.splits ?? null });
   }
+});
+
+test('a split outflow stores negative parts that add up to the total', () => {
+  const r = buildTransaction(form({ categoryId: null, amount: 5000, splits: [{ categoryId: 'food', amount: 3000 }, { categoryId: 'home', amount: 2000 }] }), 's1');
+  assert.ok(r.ok);
+  assert.equal(r.transaction.amount, -5000);
+  assert.equal(r.transaction.categoryId, null);
+  assert.deepEqual(r.transaction.splits, [{ categoryId: 'food', amount: -3000 }, { categoryId: 'home', amount: -2000 }]);
+  assert.deepEqual(toForm(r.transaction).splits, [{ categoryId: 'food', amount: 3000 }, { categoryId: 'home', amount: 2000 }]);
+});
+
+test('invalid splits are refused', () => {
+  const split = (splits: TxForm['splits']) => buildTransaction(form({ amount: 5000, splits }), 's');
+  const bad = (r: ReturnType<typeof split>, pattern: RegExp) => { assert.equal(r.ok, false); assert.match(!r.ok ? r.error : '', pattern); };
+  bad(split([{ categoryId: 'food', amount: 5000 }]), /at least two/);
+  bad(split([{ categoryId: 'food', amount: 3000 }, { categoryId: null, amount: 2000 }]), /category for every part/);
+  bad(split([{ categoryId: 'food', amount: 5000 }, { categoryId: 'home', amount: 0 }]), /greater than zero/);
+  bad(split([{ categoryId: 'food', amount: 3000 }, { categoryId: 'home', amount: 1000 }]), /add up/);
 });

@@ -48,6 +48,12 @@ export interface MonthlyBudget {
   assigned: Cents;
 }
 
+/** One category's share of a split transaction. Same sign as the transaction's amount (negative for an outflow). */
+export interface TransactionSplit {
+  categoryId: string;
+  amount: Cents;
+}
+
 export interface Transaction {
   id: string;
   accountId: string;
@@ -60,6 +66,11 @@ export interface Transaction {
   amount: Cents;
   /** Set for a transfer: money moves from accountId to this account. */
   transferAccountId: string | null;
+  /**
+   * An outflow spread over several categories: at least two parts whose amounts add up to `amount`.
+   * When set, `categoryId` is null.
+   */
+  splits?: TransactionSplit[];
 }
 
 export interface BudgetState {

@@ -1,8 +1,18 @@
-import type { BudgetState, Cents, Goal, GoalProgress, Month } from './types.ts';
+import type { BudgetState, Cents, Goal, GoalProgress, Month, Transaction, TransactionSplit } from './types.ts';
 import { addMonths, monthOf, monthsBetween } from './months.ts';
 
-const isCategorised = (t: { categoryId: string | null; transferAccountId: string | null }) =>
-  t.categoryId !== null && t.transferAccountId === null;
+/** The category shares of a transaction: its splits, or the whole amount in its one category. Empty for transfers and income. */
+export function categoryParts(t: Transaction): TransactionSplit[] {
+  if (t.transferAccountId !== null) return [];
+  if (t.splits && t.splits.length > 0) return t.splits;
+  return t.categoryId !== null ? [{ categoryId: t.categoryId, amount: t.amount }] : [];
+}
+
+/** True if any part of the transaction belongs to one of the categories. */
+export const touchesCategory = (t: Transaction, categoryIds: Iterable<string>): boolean => {
+  const ids = new Set(categoryIds);
+  return categoryParts(t).some((p) => ids.has(p.categoryId));
+};
 
 /** Balance of one account, counting transactions up to and including `upToMonth` (all if omitted). */
 export function accountBalance(state: BudgetState, accountId: string, upToMonth?: Month): Cents {
@@ -45,9 +55,12 @@ export function categoryAssigned(state: BudgetState, categoryId: string, month: 
 
 /** Sum of the category's transactions in one month (negative = spending). */
 export function categoryActivity(state: BudgetState, categoryId: string, month: Month): Cents {
-  return state.transactions
-    .filter((t) => isCategorised(t) && t.categoryId === categoryId && monthOf(t.date) === month)
-    .reduce((sum, t) => sum + t.amount, 0);
+  let total = 0;
+  for (const t of state.transactions) {
+    if (monthOf(t.date) !== month) continue;
+    for (const part of categoryParts(t)) if (part.categoryId === categoryId) total += part.amount;
+  }
+  return total;
 }
 
 /** Category balance at the end of `month`: everything assigned and spent up to then (unspent money rolls over). */
@@ -57,7 +70,8 @@ export function categoryAvailable(state: BudgetState, categoryId: string, month:
     if (b.categoryId === categoryId && b.month <= month) total += b.assigned;
   }
   for (const t of state.transactions) {
-    if (isCategorised(t) && t.categoryId === categoryId && monthOf(t.date) <= month) total += t.amount;
+    if (monthOf(t.date) > month) continue;
+    for (const part of categoryParts(t)) if (part.categoryId === categoryId) total += part.amount;
   }
   return total;
 }
@@ -83,7 +97,8 @@ export function readyToAssign(state: BudgetState, month: Month): Cents {
     if (b.month <= month && !archived.has(b.categoryId)) total -= b.assigned;
   }
   for (const t of state.transactions) {
-    if (isCategorised(t) && monthOf(t.date) <= month && !archived.has(t.categoryId as string)) total -= t.amount;
+    if (monthOf(t.date) > month) continue;
+    for (const part of categoryParts(t)) if (!archived.has(part.categoryId)) total -= part.amount;
   }
   return total;
 }

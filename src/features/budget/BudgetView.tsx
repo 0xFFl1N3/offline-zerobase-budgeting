@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { categoryActivity, categoryAssigned, categoryAvailable, readyToAssign } from '../../engine/budget.ts';
+import { touchesCategory, categoryActivity, categoryAssigned, categoryAvailable, readyToAssign } from '../../engine/budget.ts';
 import { autoAssignPlan } from '../../engine/autoassign.ts';
 import { formatMoney } from '../../engine/money.ts';
 import { formatMonth } from '../../engine/months.ts';
@@ -61,7 +61,7 @@ export function BudgetView() {
   const [autoMessage, setAutoMessage] = useState<{ month: string; text: string } | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
 
-  const hasTransactions = (ids: string[]) => state.transactions.some((t) => t.categoryId !== null && ids.includes(t.categoryId));
+  const hasTransactions = (ids: string[]) => state.transactions.some((t) => touchesCategory(t, ids));
   const fmt = (c: Cents) => formatMoney(c, currency);
 
   /**

@@ -65,3 +65,18 @@ test('search matches payee, memo and category name; filters combine', () => {
   assert.deepEqual(ids({ search: 'steam', accountId: 'a' }), []);
   assert.deepEqual(ids({ category: 'group:g1', from: '2026-02-01' }), ['t2']);
 });
+
+test('a split transaction matches the filters of each of its categories', () => {
+  const withSplit: BudgetState = {
+    ...state,
+    transactions: [tx('sp', { date: '2026-03-03', payee: 'Mall', amount: -1000, splits: [{ categoryId: 'rent', amount: -600 }, { categoryId: 'games', amount: -400 }] }), ...state.transactions],
+  };
+  const run = (f: Partial<typeof NO_FILTERS>) => filterTransactions(withSplit, { ...NO_FILTERS, ...f }).map((t) => t.id);
+  assert.deepEqual(run({ category: 'cat:games' }), ['sp', 't3']);
+  assert.deepEqual(run({ category: 'group:g2' }), ['sp', 't3']);
+  assert.deepEqual(run({ category: 'cat:power' }), ['t2']);
+  assert.equal(run({ category: 'uncategorised' }).includes('sp'), false);
+  assert.equal(run({ category: 'income' }).includes('sp'), false);
+  assert.deepEqual(run({ search: 'electricity' }), ['t2']);
+  assert.deepEqual(run({ search: 'games' }), ['sp', 't3']);
+});
