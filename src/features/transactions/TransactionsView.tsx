@@ -12,6 +12,7 @@ import { RecurringList } from '../recurring/RecurringList.tsx';
 import { categoryLabel } from './labels.ts';
 import { ClearedToggle } from './ClearedToggle.tsx';
 import { ReconcilePanel } from './ReconcilePanel.tsx';
+import { ImportPanel } from '../import/ImportPanel.tsx';
 import { filterTransactions, hasActiveFilters, NO_FILTERS, type TxFilters } from './filterTransactions.ts';
 import { buildTransaction, toForm, type TxForm, type TxKind } from './buildTransaction.ts';
 
@@ -49,6 +50,8 @@ export function TransactionsView() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<TxFilters>(NO_FILTERS);
+  const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
   const filterAccount = filters.accountId;
   const setFilter = (patch: Partial<TxFilters>) => setFilters((f) => ({ ...f, ...patch }));
 
@@ -128,7 +131,14 @@ export function TransactionsView() {
       <DueBanner />
 
       <form onSubmit={submit} className="rounded-lg bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold">{editingId ? 'Edit transaction' : 'Add transaction'}</h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold">{editingId ? 'Edit transaction' : 'Add transaction'}</h2>
+          {!importing && (
+            <button type="button" onClick={() => { setImporting(true); setImportMessage(null); }} className="text-sm text-sky-700 hover:underline">
+              Import from bank (CSV)…
+            </button>
+          )}
+        </div>
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <label className="text-xs font-medium text-slate-600">
             Type
@@ -272,6 +282,17 @@ export function TransactionsView() {
         )}
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       </form>
+
+      {importing && (
+        <ImportPanel
+          defaultAccountId={filterAccount === 'all' ? null : filterAccount}
+          onClose={(message) => {
+            setImporting(false);
+            setImportMessage(message ?? null);
+          }}
+        />
+      )}
+      {importMessage && <p className="mt-3 text-sm text-emerald-700" role="status">{importMessage}</p>}
 
       <RecurringList />
 

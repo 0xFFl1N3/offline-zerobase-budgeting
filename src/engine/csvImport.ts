@@ -1,0 +1,274 @@
+import { parseMoney } from './money.ts';
+import type { BudgetState, Cents, Transaction } from './types.ts';
+
+export type DateFormat = 'DMY' | 'MDY' | 'YMD';
+
+export const DATE_FORMAT_LABELS: Record<DateFormat, string> = {
+  DMY: 'Day.Month.Year (26.11.2026)',
+  MDY: 'Month/Day/Year (11/26/2026)',
+  YMD: 'Year-Month-Day (2026-11-26)',
+};
+
+/** Which column holds what. Column numbers count from 0; null = not in the file. */
+export interface ColumnMapping {
+  date: number;
+  /** One signed amount column (negative = money out)... */
+  amount: number | null;
+  /** ...or separate columns for money in and money out. */
+  inflow: number | null;
+  outflow: number | null;
+  /** Who was paid (used for outflows, and for inflows when `payer` is empty). */
+  payee: number | null;
+  /** Who paid you (used for inflows). */
+  payer: number | null;
+  memo: number | null;
+  /** Booked or pending; pending rows are imported as not cleared. */
+  status: number | null;
+  dateFormat: DateFormat;
+}
+
+export interface CsvTable {
+  header: string[];
+  rows: string[][];
+  /** A balance named above the table (e.g. "Kontostand vom 26.11.2026: 1.234,98 €"), to compare after importing. */
+  statedBalance: { amount: Cents; date: string | null } | null;
+}
+
+const DATE_LIKE = /^\d{1,4}[./-]\d{1,2}[./-]\d{1,4}$/;
+const isDateLike = (s: string) => DATE_LIKE.test(s.trim());
+
+/**
+ * Finds the transaction table in a bank export: the header is the first row followed by a row with a date,
+ * so account details and balances above it are skipped.
+ */
+export function findTable(cells: string[][]): CsvTable | null {
+  for (let i = 0; i < cells.length - 1; i++) {
+    const header = cells[i]!;
+    if (header.filter((c) => c !== '').length < 3 || header.some(isDateLike)) continue;
+    if (!cells[i + 1]!.some(isDateLike)) continue;
+    const rows = cells.slice(i + 1).filter((r) => r.some(isDateLike));
+    return { header, rows, statedBalance: findStatedBalance(cells.slice(0, i)) };
+  }
+  return null;
+}
+
+function findStatedBalance(preamble: string[][]): CsvTable['statedBalance'] {
+  for (const row of preamble) {
+    const label = row.find((c) => /kontostand|saldo|balance/i.test(c));
+    if (!label) continue;
+    const amount = row.filter((c) => c !== label).map((c) => parseMoney(c)).find((a) => a !== null);
+    if (amount === undefined || amount === null) continue;
+    const m = label.match(/(\d{1,2}\.\d{1,2}\.\d{2,4}|\d{4}-\d{2}-\d{2})/);
+    return { amount, date: m ? parseDate(m[1]!, m[1]!.includes('-') ? 'YMD' : 'DMY') : null };
+  }
+  return null;
+}
+
+const findColumn = (header: string[], patterns: RegExp[], taken: Set<number> = new Set()): number | null => {
+  for (const re of patterns) {
+    const i = header.findIndex((h, idx) => !taken.has(idx) && re.test(h.toLowerCase()));
+    if (i >= 0) return i;
+  }
+  return null;
+};
+
+/** A first guess of the mapping from the column names (German and English bank exports). */
+export function guessMapping(table: CsvTable): ColumnMapping {
+  const h = table.header;
+  const date = findColumn(h, [/buchungsdatum|buchungstag/, /^datum$|^date$/, /datum|date/]) ?? table.rows[0]!.findIndex(isDateLike);
+  let amount = findColumn(h, [/betrag|amount/]);
+  const inflow = amount === null ? findColumn(h, [/^haben|credit|inflow|gutschrift|eingang$/]) : null;
+  const outflow = amount === null ? findColumn(h, [/^soll|debit|outflow|lastschrift|ausgang$/]) : null;
+  if (amount === null && (inflow === null || outflow === null)) {
+    // No named amount column: take the first column where every value is money and not a date.
+    const i = h.findIndex((_, col) => col !== date && table.rows.every((r) => r[col] !== undefined && r[col] !== '' && !isDateLike(r[col]!) && parseMoney(r[col]!) !== null));
+    amount = i >= 0 ? i : null;
+  }
+  const payer = findColumn(h, [/zahlungspflichtig|auftraggeber|payer|absender/]);
+  const payee = findColumn(h, [/empf[äa]nger|payee|beg[üu]nstigt|recipient/, /name|gegenpartei|counterparty/], new Set(payer === null ? [] : [payer]));
+  return {
+    date,
+    amount: inflow !== null && outflow !== null ? null : amount,
+    inflow: inflow !== null && outflow !== null ? inflow : null,
+    outflow: inflow !== null && outflow !== null ? outflow : null,
+    payee,
+    payer,
+    memo: findColumn(h, [/verwendungszweck/, /memo|purpose|description|buchungstext|beschreibung/]),
+    status: findColumn(h, [/^status$/]),
+    dateFormat: detectDateFormat(table.rows.map((r) => r[date] ?? '')),
+  };
+}
+
+/** 'YYYY-MM-DD', or null if the text is not a real date in that format. Two-digit years mean 20xx. */
+export function parseDate(text: string, format: DateFormat): string | null {
+  const parts = text.trim().split(/[./-]/);
+  if (parts.length !== 3 || parts.some((p) => !/^\d+$/.test(p))) return null;
+  const [a, b, c] = parts.map(Number) as [number, number, number];
+  let [y, m, d] = format === 'YMD' ? [a, b, c] : format === 'DMY' ? [c, b, a] : [c, a, b];
+  if (y < 100) y += 2000;
+  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+  const real = new Date(Date.UTC(y, m - 1, d));
+  if (real.getUTCMonth() !== m - 1) return null; // e.g. 31 April
+  return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+/** The format that reads every date; dotted dates are day first, as German banks write them. */
+export function detectDateFormat(values: string[]): DateFormat {
+  const dates = values.map((v) => v.trim()).filter(isDateLike);
+  if (dates.length === 0) return 'DMY';
+  if (dates.every((v) => /^\d{4}/.test(v))) return 'YMD';
+  const fits = (f: DateFormat) => dates.every((v) => parseDate(v, f) !== null);
+  if (dates.some((v) => v.includes('.')) && fits('DMY')) return 'DMY';
+  if (!fits('DMY') && fits('MDY')) return 'MDY';
+  return 'DMY';
+}
+
+export interface ImportRow {
+  /** Position in the file's table, used as a key. */
+  line: number;
+  date: string | null;
+  payee: string;
+  memo: string;
+  amount: Cents | null;
+  pending: boolean;
+  /** The same for the same bank row in any later export, so re-importing a file finds what is already there. */
+  importId: string;
+  /** Why the row cannot be imported, if it can't. */
+  problem: string | null;
+}
+
+/** 53-bit FNV-style hash as base 36; short and stable, not for security. */
+function hash(text: string): string {
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+
+/**
+ * Tidies a payee taken from the bank: PayPal payments name the real shop in the purpose ("Ihr Einkauf bei Netflix.com"),
+ * so that name is used instead of PayPal's.
+ */
+export function cleanPayee(payee: string, memo: string): string {
+  if (/paypal/i.test(payee)) {
+    const shop = memo.match(/einkauf bei\s+(.+?)\s*$/i) ?? memo.match(/purchase (?:at|from)\s+(.+?)\s*$/i);
+    if (shop) return shop[1]!;
+  }
+  return payee.replace(/\s+/g, ' ').trim();
+}
+
+const cell = (row: string[], col: number | null) => (col === null ? '' : (row[col] ?? '').trim());
+
+export function readRows(table: CsvTable, mapping: ColumnMapping): ImportRow[] {
+  const seen = new Map<string, number>();
+  return table.rows.map((row, line) => {
+    const date = parseDate(cell(row, mapping.date), mapping.dateFormat);
+    let amount: Cents | null;
+    if (mapping.amount !== null) amount = parseMoney(cell(row, mapping.amount));
+    else {
+      const inText = cell(row, mapping.inflow);
+      const outText = cell(row, mapping.outflow);
+      const inAmount = inText === '' ? 0 : parseMoney(inText);
+      const outAmount = outText === '' ? 0 : parseMoney(outText);
+      amount = inAmount === null || outAmount === null ? null : Math.abs(inAmount) - Math.abs(outAmount);
+    }
+    const memo = cell(row, mapping.memo).replace(/\s+/g, ' ');
+    const payer = cell(row, mapping.payer);
+    const raw = amount !== null && amount > 0 && payer !== '' ? payer : cell(row, mapping.payee) || payer;
+    const key = hash(row.join('\u001f'));
+    const n = (seen.get(key) ?? 0) + 1; // identical rows in one file (two coffees on one day) stay apart
+    seen.set(key, n);
+    const problem = date === null ? 'No valid date' : amount === null ? 'No valid amount' : amount === 0 ? 'Amount is zero' : null;
+    return {
+      line,
+      date,
+      payee: cleanPayee(raw, memo),
+      memo,
+      amount,
+      pending: /vorgemerkt|pending|offen|ausstehend/i.test(cell(row, mapping.status)),
+      importId: `csv:${key}${n > 1 ? `#${n}` : ''}`,
+      problem,
+    };
+  });
+}
+
+export type MatchKind = 'imported' | 'likely';
+
+const daysApart = (a: string, b: string) => Math.abs(Date.parse(a) - Date.parse(b)) / 86400000;
+
+/**
+ * Rows already in the account: "imported" when an earlier import brought in the same bank row; "likely" when
+ * a transaction entered by hand has the same amount within three days (each one matches at most one row).
+ */
+export function findMatches(state: BudgetState, accountId: string, rows: ImportRow[]): Map<number, MatchKind> {
+  const result = new Map<number, MatchKind>();
+  const own = state.transactions.filter((t) => t.accountId === accountId || t.transferAccountId === accountId);
+  const importIds = new Set(own.map((t) => t.importId).filter((id) => id !== undefined));
+  const manual = own
+    .filter((t) => t.importId === undefined)
+    .map((t) => ({ date: t.date, amount: t.accountId === accountId ? t.amount : -t.amount, used: false }));
+  for (const row of rows) {
+    if (importIds.has(row.importId)) {
+      result.set(row.line, 'imported');
+      continue;
+    }
+    if (row.date === null || row.amount === null) continue;
+    const candidates = manual.filter((m) => !m.used && m.amount === row.amount && daysApart(m.date, row.date!) <= 3);
+    candidates.sort((a, b) => daysApart(a.date, row.date!) - daysApart(b.date, row.date!));
+    if (candidates[0]) {
+      candidates[0].used = true;
+      result.set(row.line, 'likely');
+    }
+  }
+  return result;
+}
+
+const payeeKey = (payee: string, amount: Cents) => `${amount < 0 ? '-' : '+'}${payee.trim().toLowerCase()}`;
+
+/** The category last used for each payee (outflows and refunds separately), from transactions with one category. */
+export function payeeMemory(state: BudgetState): Map<string, string> {
+  const archived = new Set(state.categories.filter((c) => c.archived).map((c) => c.id));
+  const latest = new Map<string, { date: string; categoryId: string }>();
+  for (const t of state.transactions) {
+    if (t.categoryId === null || t.transferAccountId !== null || t.splits || archived.has(t.categoryId) || t.payee.trim() === '') continue;
+    const key = payeeKey(t.payee, t.amount);
+    const prev = latest.get(key);
+    if (!prev || t.date >= prev.date) latest.set(key, { date: t.date, categoryId: t.categoryId });
+  }
+  return new Map([...latest].map(([k, v]) => [k, v.categoryId]));
+}
+
+export const suggestCategory = (memory: Map<string, string>, payee: string, amount: Cents): string | null =>
+  memory.get(payeeKey(payee, amount)) ?? null;
+
+export interface ImportChoice {
+  row: ImportRow;
+  payee: string;
+  categoryId: string | null;
+}
+
+/** The transactions to add. Booked rows are cleared (the bank has them), pending ones are not. Every outflow needs a category. */
+export function toTransactions(choices: ImportChoice[], accountId: string, newId: () => string): Transaction[] {
+  return choices.map(({ row, payee, categoryId }) => {
+    if (row.problem !== null || row.date === null || row.amount === null) throw new Error(`Row ${row.line + 1}: ${row.problem}.`);
+    if (row.amount < 0 && categoryId === null) throw new Error(`Row ${row.line + 1} needs a category.`);
+    return {
+      id: newId(),
+      accountId,
+      date: row.date,
+      payee: payee.trim(),
+      categoryId,
+      memo: row.memo,
+      amount: row.amount,
+      transferAccountId: null,
+      ...(row.pending ? {} : { cleared: 'cleared' as const }),
+      importId: row.importId,
+    };
+  });
+}

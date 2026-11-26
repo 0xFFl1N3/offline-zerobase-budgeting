@@ -53,12 +53,13 @@ export function accountBalances(state: BudgetState, accountId: string): AccountB
 
 /**
  * Keeps the cleared status through an edit, side by side: a side keeps it while it stays in the same account.
- * Moving a transaction to another account makes it uncleared there.
+ * Moving a transaction to another account makes it uncleared there. The import id (if any) is kept too.
  */
 export function keepCleared(original: Transaction | undefined, edited: Transaction): Transaction {
   const { cleared: _c, transferCleared: _tc, ...rest } = edited;
   const next: Transaction = rest;
   if (!original) return next;
+  if (original.importId !== undefined) next.importId = original.importId; // still the same bank row
   if (original.cleared && original.accountId === edited.accountId) next.cleared = original.cleared;
   if (original.transferCleared && edited.transferAccountId !== null && original.transferAccountId === edited.transferAccountId) {
     next.transferCleared = original.transferCleared;

@@ -148,3 +148,12 @@ test('cleared statuses and the last reconciliation date round-trip; old backups 
   assert.match(err(parseBackup(marked((o) => (o.data.transactions[0].transferCleared = 'cleared')))), /only a transfer/);
   assert.match(err(parseBackup(marked((o) => (o.data.accounts[0].lastReconciled = 'yesterday')))), /lastReconciled/);
 });
+
+test('import ids round-trip and old backups have none', () => {
+  const r = parseBackup(text((o) => (o.data.transactions[0].importId = 'csv:abc')));
+  assert.ok(r.ok);
+  assert.equal(r.backup.data.transactions[0]!.importId, 'csv:abc');
+  assert.equal(r.backup.data.transactions[1]!.importId, undefined);
+  const bad = parseBackup(text((o) => (o.data.transactions[0].importId = 5)));
+  assert.ok(!bad.ok);
+});

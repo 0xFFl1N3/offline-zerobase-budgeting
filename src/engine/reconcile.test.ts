@@ -85,3 +85,8 @@ test('an edit keeps the status per side while the account stays the same', () =>
   assert.equal(keepCleared(undefined, original).cleared, undefined);
   assert.ok(!('cleared' in keepCleared(undefined, original)));
 });
+
+test('an edit keeps the import id, so re-importing the file still recognises the row', () => {
+  const original = tx('a', -5000, { importId: 'csv:x', cleared: 'cleared' });
+  assert.equal(keepCleared(original, { ...original, importId: undefined, memo: 'changed' }).importId, 'csv:x');
+});

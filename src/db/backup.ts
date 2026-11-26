@@ -203,6 +203,7 @@ function parseData(raw: unknown): BudgetState {
       transferAccountId: optStr(o, 'transferAccountId', 'Transaction'),
       ...parseSplits(o),
       ...parseCleared(o),
+      ...(o.importId !== undefined && { importId: str(o, 'importId', 'Transaction') }),
     };
   });
 

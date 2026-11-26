@@ -106,6 +106,7 @@ export const saveRecurringBooking = (db: BudgetDB, r: RecurringTransaction, book
 export const saveGoal = (db: BudgetDB, g: Goal) => db.goals.put(g);
 export const deleteGoal = (db: BudgetDB, id: string) => db.goals.delete(id);
 export const saveTransaction = (db: BudgetDB, t: Transaction) => db.transactions.put(t);
+export const saveTransactions = (db: BudgetDB, ts: Transaction[]) => db.transactions.bulkPut(ts);
 export const deleteTransaction = (db: BudgetDB, id: string) => db.transactions.delete(id);
 
 /** Sets the Assigned amount for one category in one month. Zero removes the row. */

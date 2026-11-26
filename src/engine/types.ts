@@ -77,6 +77,8 @@ export interface Transaction {
   cleared?: ClearedStatus;
   /** The same for the receiving account of a transfer, which is reconciled separately. */
   transferCleared?: ClearedStatus;
+  /** Set on transactions imported from a bank file, so importing the same rows again can be recognised. */
+  importId?: string;
 }
 
 /** uncleared: not on the bank statement yet; cleared: ticked off; reconciled: locked in by a finished reconciliation. */
@@ -85,7 +87,7 @@ export type ClearedStatus = 'uncleared' | 'cleared' | 'reconciled';
 export type Frequency = 'weekly' | 'biweekly' | 'monthly' | 'yearly';
 
 /** The parts of a transaction that repeat: everything except its id and date. */
-export type TransactionTemplate = Omit<Transaction, 'id' | 'date' | 'cleared' | 'transferCleared'>;
+export type TransactionTemplate = Omit<Transaction, 'id' | 'date' | 'cleared' | 'transferCleared' | 'importId'>;
 
 /**
  * A transaction that repeats. Occurrence number n falls on `startDate` plus n periods; the first `handled`
