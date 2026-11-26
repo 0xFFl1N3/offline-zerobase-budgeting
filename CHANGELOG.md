@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.7.2 – 2026-11-26
+
+### Added
+- CSV import: after picking a category for a row, a link offers to use it for the other rows from the same payee that have no category yet. Rows you already set are left alone.
+
 ## 0.7.1 – 2026-11-26
 
 ### Added

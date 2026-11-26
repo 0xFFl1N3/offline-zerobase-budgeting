@@ -469,4 +469,7 @@ export const de: Messages = {
   'autoBackup.change': 'Ordner ändern…',
   'autoBackup.off': 'Ausschalten',
   'autoBackup.failed': 'Die Sicherungsdatei konnte nicht in diesen Ordner geschrieben werden.',
+
+  // Import
+  'import.useForOthers': { one: 'Auch für die andere Zeile von {payee}', other: 'Auch für die anderen {count} Zeilen von {payee}' },
 };

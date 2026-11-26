@@ -71,6 +71,8 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
   const [table, setTable] = useState<CsvTable | null>(null);
   const [mapping, setMapping] = useState<ColumnMapping | null>(null);
   const [overrides, setOverrides] = useState<Map<number, Choice>>(new Map());
+  // The row whose category was just picked by hand; it offers to fill the same payee's other rows.
+  const [picked, setPicked] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -87,6 +89,7 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
     setTable(found);
     setMapping(loadMapping(found));
     setOverrides(new Map());
+    setPicked(null);
   };
 
   const changeMapping = (patch: Partial<ColumnMapping>) => {
@@ -95,6 +98,7 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
     setMapping(next);
     saveMapping(table, next);
     setOverrides(new Map());
+    setPicked(null);
   };
 
   const rows = useMemo(() => (table && mapping ? readRows(table, mapping) : []), [table, mapping]);
@@ -114,6 +118,25 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
     const m = matches.get(row.line);
     return m?.kind === 'update' ? state.transactions.find((t) => t.id === m.transactionId) : undefined;
   };
+  /** Other new rows from the same payee, same direction, that have no category yet. */
+  const samePayeeWithout = (row: ImportRow): ImportRow[] => {
+    const payee = choiceFor(row).payee.trim().toLowerCase();
+    if (!payee || row.amount === null) return [];
+    return rows.filter((r) => {
+      if (r.line === row.line || r.problem !== null || r.amount === null || updateOf(r)) return false;
+      if (Math.sign(r.amount) !== Math.sign(row.amount!)) return false;
+      const c = choiceFor(r);
+      return c.categoryId === null && c.payee.trim().toLowerCase() === payee;
+    });
+  };
+  const fillOthers = (row: ImportRow) => {
+    const categoryId = choiceFor(row).categoryId;
+    const next = new Map(overrides);
+    for (const r of samePayeeWithout(row)) next.set(r.line, { ...choiceFor(r), categoryId });
+    setOverrides(next);
+    setPicked(null);
+  };
+
   const chosen = rows.filter((r) => r.problem === null && choiceFor(r).include);
   const chosenNew = chosen.filter((r) => !updateOf(r));
   const chosenUpdates = chosen.filter((r) => updateOf(r));
@@ -161,7 +184,10 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
     <select
       aria-label={t('import.categoryFor', { name: choice.payee || t('import.rowN', { n: row.line + 1 }) })}
       value={choice.categoryId ?? ''}
-      onChange={(e) => setChoice(row, { categoryId: e.target.value || null, include: true })}
+      onChange={(e) => {
+        setChoice(row, { categoryId: e.target.value || null, include: true });
+        setPicked(e.target.value ? row.line : null);
+      }}
       className={`rounded border px-2 py-1 text-sm w-full ${choice.include && row.amount! < 0 && choice.categoryId === null ? 'border-amber-300 bg-amber-50' : 'border-slate-300 bg-white'}`}
     >
       <option value="">{row.amount! > 0 ? t('tx.income') : t('tx.chooseCategory')}</option>
@@ -322,6 +348,11 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
                       <td className="max-w-64 truncate px-2 py-1.5 text-slate-500" title={row.memo}>{row.memo}</td>
                       <td className="px-2 py-1.5">
                         {row.problem === null && (updateOf(row) ? <span className="text-slate-500">{categoryLabel(state, updateOf(row)!)}</span> : categorySelect(row, choice))}
+                        {picked === row.line && choice.categoryId !== null && samePayeeWithout(row).length > 0 && (
+                          <button type="button" onClick={() => fillOthers(row)} className="mt-1 block text-left text-xs text-sky-700 hover:underline">
+                            {t('import.useForOthers', { count: samePayeeWithout(row).length, payee: choice.payee.trim() })}
+                          </button>
+                        )}
                       </td>
                       <td className={`px-2 py-1.5 text-right whitespace-nowrap tabular-nums ${row.amount !== null && row.amount > 0 && !off ? 'text-emerald-700' : ''}`}>
                         {row.amount === null ? '—' : fmt(row.amount)}

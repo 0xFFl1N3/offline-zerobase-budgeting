@@ -472,6 +472,9 @@ export const en = {
   'autoBackup.change': 'Change folder…',
   'autoBackup.off': 'Turn off',
   'autoBackup.failed': "Couldn't write the backup file into this folder.",
+
+  // Import
+  'import.useForOthers': { one: 'Use for the other row from {payee}', other: 'Use for the other {count} rows from {payee}' },
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;
