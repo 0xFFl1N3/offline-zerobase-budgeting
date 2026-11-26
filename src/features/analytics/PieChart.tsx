@@ -11,6 +11,8 @@ interface Props {
   colors: Map<string, string>;
   /** What the chart shows, for screen readers, e.g. "Spending this month". */
   label: string;
+  /** Called when a slice or its legend row is chosen (not for "Other"). */
+  onPick?: (slice: Slice) => void;
 }
 
 const CENTER = 100;
@@ -27,7 +29,7 @@ function slicePath(from: number, to: number): string {
   return `M ${CENTER} ${CENTER} L ${x0} ${y0} A ${RADIUS} ${RADIUS} 0 ${large} 1 ${x1} ${y1} Z`;
 }
 
-export function PieChart({ slices: raw, total, currency, colors, label }: Props) {
+export function PieChart({ slices: raw, total, currency, colors, label, onPick }: Props) {
   // The combined slice is named in the current language.
   const slices = raw.map((s) => (s.isOther ? { ...s, label: t('analytics.other') } : s));
   const [active, setActive] = useState<string | null>(null);
@@ -44,6 +46,10 @@ export function PieChart({ slices: raw, total, currency, colors, label }: Props)
 
   const describe = (s: Slice) => `${s.label}: ${fmt(s.amount)}, ${formatPercent(s.percent)}`;
   const activeSlice = slices.find((s) => s.id === active) ?? null;
+  const pickable = (s: Slice) => onPick !== undefined && !s.isOther;
+  const pick = (s: Slice) => {
+    if (pickable(s)) onPick!(s);
+  };
 
   return (
     <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start lg:flex-col lg:items-center">
@@ -61,13 +67,20 @@ export function PieChart({ slices: raw, total, currency, colors, label }: Props)
               strokeLinejoin="round"
               opacity={active === null || active === slice.id ? 1 : 0.45}
               tabIndex={0}
-              role="img"
-              aria-label={describe(slice)}
+              role={pickable(slice) ? 'button' : 'img'}
+              aria-label={pickable(slice) ? `${describe(slice)}. ${t('analytics.showTransactions', { name: slice.label })}` : describe(slice)}
+              onClick={() => pick(slice)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  pick(slice);
+                }
+              }}
               onMouseEnter={() => setActive(slice.id)}
               onMouseLeave={() => setActive(null)}
               onFocus={() => setActive(slice.id)}
               onBlur={() => setActive(null)}
-              className="cursor-pointer outline-none focus-visible:stroke-slate-900"
+              className={`${pickable(slice) ? 'cursor-pointer' : ''} outline-none focus-visible:stroke-slate-900`}
             >
               <title>{describe(slice)}</title>
             </path>
@@ -88,7 +101,20 @@ export function PieChart({ slices: raw, total, currency, colors, label }: Props)
               className={`flex items-center gap-2 rounded px-1 py-0.5 ${active === s.id ? 'bg-slate-100' : ''}`}
             >
               <span className="h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: colorOf(s) }} aria-hidden="true" />
-              <span className="min-w-0 flex-1 truncate">{s.label}</span>
+              {pickable(s) ? (
+                <button
+                  type="button"
+                  onClick={() => pick(s)}
+                  onFocus={() => setActive(s.id)}
+                  onBlur={() => setActive(null)}
+                  title={t('analytics.showTransactions', { name: s.label })}
+                  className="min-w-0 flex-1 truncate text-left hover:text-sky-700 hover:underline"
+                >
+                  {s.label}
+                </button>
+              ) : (
+                <span className="min-w-0 flex-1 truncate">{s.label}</span>
+              )}
               <span className="tabular-nums text-slate-700">{fmt(s.amount)}</span>
               <span className="w-14 text-right tabular-nums text-slate-500">{formatPercent(s.percent)}</span>
             </li>

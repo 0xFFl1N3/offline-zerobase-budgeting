@@ -484,6 +484,10 @@ export const en = {
   'analytics.ageNotYet': 'Shows once there are at least 10 payments.',
   'analytics.ageLabel': 'Age of money at the end of each month',
   'analytics.ageMonthAgo': '{days} a month ago',
+
+  // Analytics
+  'analytics.showTransactions': 'Show the transactions for {name}',
+  'analytics.clickHint': 'Select a slice or name to see its transactions.',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

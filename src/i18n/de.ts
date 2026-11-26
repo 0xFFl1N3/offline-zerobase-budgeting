@@ -481,4 +481,8 @@ export const de: Messages = {
   'analytics.ageNotYet': 'Wird angezeigt, sobald es mindestens 10 Ausgaben gibt.',
   'analytics.ageLabel': 'Alter des Geldes am Ende jedes Monats',
   'analytics.ageMonthAgo': 'vor einem Monat {days}',
+
+  // Analytics
+  'analytics.showTransactions': 'Buchungen für {name} anzeigen',
+  'analytics.clickHint': 'Wähle ein Segment oder einen Namen, um die Buchungen zu sehen.',
 };

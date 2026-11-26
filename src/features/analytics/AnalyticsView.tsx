@@ -3,6 +3,7 @@ import { spendingReport, type GroupBy, type ReportKind, type SpendingReport } fr
 import { formatMoney } from '../../engine/money.ts';
 import { formatMonth, formatMonthRange } from '../../engine/months.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
+import { monthsAsDates, useNavigation } from '../../store/navigation.ts';
 import { biggestCategory, incomeVsSpending, netWorth, reportMonths, spendingTrend, topPayees, type RangeKey, type TrendTarget } from '../../engine/reports.ts';
 import { t } from '../../i18n/i18n.ts';
 import { useIsDark } from '../../theme.ts';
@@ -57,6 +58,7 @@ export function AnalyticsView() {
     return id ? { kind: 'category', id } : null;
   }, [pickedTrend, state, months]);
   const payees = useMemo(() => topPayees(state, months), [state, months]);
+  const showTransactions = useNavigation((s) => s.showTransactions);
   const trendRows = useMemo(() => (trendTarget ? spendingTrend(state, months, trendTarget) : []), [state, months, trendTarget]);
 
   const toggle = (value: GroupBy, label: string) => (
@@ -83,6 +85,8 @@ export function AnalyticsView() {
           {toggle('group', t('analytics.byGroup'))}
         </div>
       </div>
+
+      <p className="mt-2 text-xs text-slate-500">{t('analytics.clickHint')}</p>
 
       {uncategorized > 0 && (
         <p className="mt-4 rounded bg-amber-50 p-3 text-sm text-amber-800">
@@ -111,6 +115,9 @@ export function AnalyticsView() {
                       currency={currency}
                       colors={colors}
                       label={t('analytics.pieLabel', { title, by: t(groupBy === 'group' ? 'analytics.byGroupLower' : 'analytics.byCategoryLower'), subtitle })}
+                      onPick={(slice) =>
+                        showTransactions({ category: `${groupBy === 'group' ? 'group' : 'cat'}:${slice.id}`, ...monthsAsDates(report.fromMonth, report.toMonth) })
+                      }
                     />
                   </div>
                 </>
@@ -132,7 +139,7 @@ export function AnalyticsView() {
         <IncomeSpendingChart rows={incomeRows} currency={currency} />
         <NetWorthChart rows={worthRows} currency={currency} />
         <TrendChart state={state} target={trendTarget} onTarget={setPickedTrend} rows={trendRows} currency={currency} />
-        <TopPayees data={payees} currency={currency} />
+        <TopPayees data={payees} currency={currency} onPick={(payee) => showTransactions({ search: payee, ...monthsAsDates(months[0]!, months.at(-1)!) })} />
         <AgeOfMoneyCard state={state} months={months} currency={currency} />
       </div>
     </section>

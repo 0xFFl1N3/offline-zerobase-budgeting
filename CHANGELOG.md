@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.7.4 – 2026-11-26
+
+### Added
+- Analytics: click a pie slice, a name in its list, or a top payee to open Transactions filtered to it for the same period.
+
 ## 0.7.3 – 2026-11-26
 
 ### Added

@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState, type FormEvent } from 'react';
+import { Fragment, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { archivedCategoryIds, runningBalances } from '../../engine/budget.ts';
 import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
 import { formatDate, toISODate } from '../../engine/months.ts';
@@ -15,6 +15,7 @@ import { ClearedToggle } from './ClearedToggle.tsx';
 import { ReconcilePanel } from './ReconcilePanel.tsx';
 import { ImportPanel } from '../import/ImportPanel.tsx';
 import { filterTransactions, hasActiveFilters, NO_FILTERS, type TxFilters } from './filterTransactions.ts';
+import { useNavigation } from '../../store/navigation.ts';
 import { buildTransaction, toForm, type TxForm, type TxKind } from './buildTransaction.ts';
 
 const blankForm = (accounts: Account[], kind: TxKind = 'outflow'): TxForm => ({
@@ -50,11 +51,15 @@ export function TransactionsView() {
   const [splitRows, setSplitRows] = useState<{ categoryId: string; text: string }[] | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<TxFilters>(NO_FILTERS);
+  // Another tab may have linked here with filters (e.g. a category from Analytics).
+  const [filters, setFilters] = useState<TxFilters>(() => useNavigation.getState().pendingFilters ?? NO_FILTERS);
+  useEffect(() => {
+    useNavigation.getState().takePendingFilters();
+  }, []);
   const [importing, setImporting] = useState(false);
   /** Phones: the add/edit form opens full-screen, filters fold away, and a tapped transaction shows its actions. */
   const [formOpen, setFormOpen] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(() => useNavigation.getState().pendingFilters !== null);
   const [openTx, setOpenTx] = useState<string | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const filterAccount = filters.accountId;

@@ -13,10 +13,10 @@ import { toISODate } from './engine/months.ts';
 import { useBudgetStore } from './store/budgetStore.ts';
 import { useLanguage, useT, type MessageKey } from './i18n/i18n.ts';
 import { requestPersistence } from './persistence.ts';
+import { useNavigation, type Tab } from './store/navigation.ts';
 import { useAutoBackup } from './features/backup/AutoBackupCard.tsx';
 import { APP_VERSION } from './version.ts';
 
-type Tab = 'budget' | 'transactions' | 'analytics' | 'settings';
 
 const TABS: { id: Tab; label: MessageKey; icon: () => ReactNode }[] = [
   { id: 'budget', label: 'nav.budget', icon: BudgetIcon },
@@ -34,7 +34,8 @@ export default function App() {
   const t = useT();
   // Changing the language redraws everything below, so amounts and dates pick up the new format too.
   const language = useLanguage();
-  const [active, setActive] = useState<Tab>('budget');
+  const active = useNavigation((s) => s.tab);
+  const setActive = useNavigation((s) => s.setTab);
   /** The accounts drawer on phones. */
   const [drawer, setDrawer] = useState(false);
 
