@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Currency } from '../../engine/money.ts';
 import type { MonthValue } from '../../engine/reports.ts';
-import { ChartFrame, ChartReadout, PAD, PLOT_W, yOf } from './ChartFrame.tsx';
+import { ChartFrame, ChartReadout, PAD, plotWidth, useChartWidth, yOf } from './ChartFrame.tsx';
 import { niceScale } from './scale.ts';
 
 interface Props {
@@ -16,14 +16,17 @@ interface Props {
 export function LineChart({ rows, currency, color, label, describe }: Props) {
   const [active, setActive] = useState<number | null>(null);
   const scale = niceScale(rows.map((r) => r.value));
-  const col = PLOT_W / rows.length;
+  const [box, width] = useChartWidth();
+  const col = plotWidth(width) / rows.length;
   const pts = rows.map((r, i) => [PAD.left + (i + 0.5) * col, yOf(r.value, scale)] as const);
   const d = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   const activePoint = active === null ? null : pts[active]!;
 
   return (
     <>
+      <div ref={box}>
       <ChartFrame
+        width={width}
         months={rows.map((r) => r.month)}
         scale={scale}
         currency={currency}
@@ -43,6 +46,7 @@ export function LineChart({ rows, currency, color, label, describe }: Props) {
           )}
         </g>
       </ChartFrame>
+      </div>
       <ChartReadout text={active === null ? null : describe(rows[active]!)} />
     </>
   );

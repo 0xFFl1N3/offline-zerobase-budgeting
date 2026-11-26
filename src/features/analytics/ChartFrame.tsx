@@ -1,17 +1,37 @@
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { Currency } from '../../engine/money.ts';
 import { formatCompact, labelEvery, monthTick, type Scale } from './scale.ts';
 
-/** Drawing area shared by the over-time charts, in viewBox units. */
-export const W = 640;
+/**
+ * Drawing area shared by the over-time charts. The width follows the space the chart gets (see useChartWidth),
+ * so one unit is one screen pixel and labels keep their size on a phone.
+ */
 export const H = 220;
 export const PAD = { left: 56, right: 8, top: 10, bottom: 26 };
-export const PLOT_W = W - PAD.left - PAD.right;
 export const PLOT_H = H - PAD.top - PAD.bottom;
+export const plotWidth = (width: number) => width - PAD.left - PAD.right;
+
+/** Measures the element the ref is put on; returns its width in pixels (640 until measured). */
+export function useChartWidth() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(640);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setWidth(Math.max(260, Math.round(el.getBoundingClientRect().width)));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, width] as const;
+}
 
 export const yOf = (value: number, scale: Scale) => PAD.top + PLOT_H - ((value - scale.min) / (scale.max - scale.min)) * PLOT_H;
 
 interface Props {
+  /** From useChartWidth. */
+  width: number;
   months: string[];
   scale: Scale;
   currency: Currency;
@@ -25,9 +45,10 @@ interface Props {
 }
 
 /** Axes, gridlines, month labels and one hover/focus column per month. The marks go in `children`. */
-export function ChartFrame({ months, scale, currency, label, active, onActive, describe, children }: Props) {
-  const col = PLOT_W / months.length;
-  const every = labelEvery(months.length);
+export function ChartFrame({ width, months, scale, currency, label, active, onActive, describe, children }: Props) {
+  const W = width;
+  const col = plotWidth(W) / months.length;
+  const every = labelEvery(months.length, plotWidth(W));
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="group" aria-label={label}>
       {scale.ticks.map((t) => (

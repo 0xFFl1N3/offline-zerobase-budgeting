@@ -33,5 +33,5 @@ export function monthTick(month: string, first: boolean): string {
   return first || m === 1 ? `${name} ’${String(y).slice(2)}` : name;
 }
 
-/** Label every n-th month so at most about 12 labels show. */
-export const labelEvery = (count: number) => Math.max(1, Math.ceil(count / 12));
+/** Label every n-th month so the labels fit: about 52 pixels each, and never more than 12. */
+export const labelEvery = (count: number, plotWidth = 576) => Math.max(1, Math.ceil(count / Math.min(12, Math.max(2, Math.floor(plotWidth / 52)))));

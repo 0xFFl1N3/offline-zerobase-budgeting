@@ -9,7 +9,7 @@ export function RangeSwitch({ value, onChange }: { value: RangeKey; onChange: (r
           type="button"
           onClick={() => onChange(r.key)}
           aria-pressed={value === r.key}
-          className={`px-3 py-1.5 text-sm ${value === r.key ? 'bg-sky-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-100'}`}
+          className={`whitespace-nowrap px-2 py-1.5 text-sm sm:px-3 ${value === r.key ? 'bg-sky-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-100'}`}
         >
           {r.label}
         </button>

@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.5.3 – 2026-11-26
+
+### Added
+- Analytics on phones: charts draw at the screen's width so their labels stay readable, and the top payees list fits.
+
 ## 0.5.2 – 2026-11-26
 
 ### Added

@@ -16,15 +16,14 @@ export function TopPayees({ data, currency }: { data: TopPayeesData; currency: C
         <>
           <ol className="mt-4 space-y-2 text-sm">
             {data.rows.map((r, i) => (
-              <li key={r.label} className="grid grid-cols-[1.5rem_minmax(0,9rem)_1fr_auto] items-center gap-x-3">
+              // Desktop: rank, name, bar, amount, share. Phones: rank, name and amount, with bar and share on a second line.
+              <li key={r.label} className="grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 md:grid-cols-[1.5rem_minmax(0,9rem)_1fr_auto_6.5rem]">
                 <span className="text-right text-xs text-slate-500 tabular-nums">{i + 1}</span>
                 <span className="truncate" title={r.label}>{r.label}</span>
-                <span className="h-3 rounded-r" style={{ width: `${Math.max(1, (r.amount / max) * 100)}%`, backgroundColor: SERIES_COLORS[1] }} aria-hidden="true" />
-                <span className="text-right tabular-nums">
-                  {fmt(r.amount)}{' '}
-                  <span className="inline-block w-24 text-xs text-slate-500">
-                    {pct(r.amount)}% · {r.count}×
-                  </span>
+                <span className="h-3 rounded-r max-md:order-4 max-md:col-start-2" style={{ width: `${Math.max(1, (r.amount / max) * 100)}%`, backgroundColor: SERIES_COLORS[1] }} aria-hidden="true" />
+                <span className="text-right tabular-nums max-md:order-3">{fmt(r.amount)}</span>
+                <span className="text-right text-xs text-slate-500 tabular-nums max-md:order-5 md:text-left">
+                  {pct(r.amount)}% · {r.count}×
                 </span>
               </li>
             ))}

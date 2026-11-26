@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { formatMoney, type Currency } from '../../engine/money.ts';
 import { formatMonth } from '../../engine/months.ts';
 import type { IncomeSpendingRow } from '../../engine/reports.ts';
-import { ChartFrame, ChartReadout, DataTable, Legend, PAD, PLOT_W, barPath, yOf } from './ChartFrame.tsx';
+import { ChartFrame, ChartReadout, DataTable, Legend, PAD, barPath, plotWidth, useChartWidth, yOf } from './ChartFrame.tsx';
 import { SERIES_COLORS } from './colors.ts';
 import { niceScale } from './scale.ts';
 
@@ -13,7 +13,8 @@ export function IncomeSpendingChart({ rows, currency }: { rows: IncomeSpendingRo
   const [active, setActive] = useState<number | null>(null);
   const fmt = (c: number) => formatMoney(c, currency);
   const scale = niceScale(rows.flatMap((r) => [r.income, r.spending]));
-  const col = PLOT_W / rows.length;
+  const [box, width] = useChartWidth();
+  const col = plotWidth(width) / rows.length;
   const group = Math.min(col * 0.7, 58);
   const bar = (group - 2) / 2; // 2px surface gap between the pair
   const base = yOf(0, scale);
@@ -38,8 +39,8 @@ export function IncomeSpendingChart({ rows, currency }: { rows: IncomeSpendingRo
           <dd className={`text-lg font-semibold tabular-nums ${totals.income - totals.spending < 0 ? 'text-red-600' : ''}`}>{fmt(totals.income - totals.spending)}</dd>
         </div>
       </dl>
-      <div className="mt-3">
-        <ChartFrame months={rows.map((r) => r.month)} scale={scale} currency={currency} label="Income and spending per month" active={active} onActive={setActive} describe={describe}>
+      <div ref={box} className="mt-3">
+        <ChartFrame width={width} months={rows.map((r) => r.month)} scale={scale} currency={currency} label="Income and spending per month" active={active} onActive={setActive} describe={describe}>
           {rows.map((r, i) => {
             const x = PAD.left + i * col + (col - group) / 2;
             return (
