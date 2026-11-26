@@ -63,17 +63,40 @@ export function categoryActivity(state: BudgetState, categoryId: string, month: 
   return total;
 }
 
-/** Category balance at the end of `month`: everything assigned and spent up to then (unspent money rolls over). */
-export function categoryAvailable(state: BudgetState, categoryId: string, month: Month): Cents {
-  let total = 0;
-  for (const b of state.monthlyBudgets) {
-    if (b.categoryId === categoryId && b.month <= month) total += b.assigned;
-  }
+/** Assigned plus activity per month, for each category in `ids` (or all), in one pass over the data. */
+function monthlyNet(state: BudgetState, ids?: Set<string>): Map<string, Map<Month, Cents>> {
+  const result = new Map<string, Map<Month, Cents>>();
+  const add = (categoryId: string, month: Month, amount: Cents) => {
+    if (ids && !ids.has(categoryId)) return;
+    let months = result.get(categoryId);
+    if (!months) result.set(categoryId, (months = new Map()));
+    months.set(month, (months.get(month) ?? 0) + amount);
+  };
+  for (const b of state.monthlyBudgets) add(b.categoryId, b.month, b.assigned);
   for (const t of state.transactions) {
-    if (monthOf(t.date) > month) continue;
-    for (const part of categoryParts(t)) if (part.categoryId === categoryId) total += part.amount;
+    const m = monthOf(t.date);
+    for (const part of categoryParts(t)) add(part.categoryId, m, part.amount);
   }
-  return total;
+  return result;
+}
+
+/**
+ * The balance at the end of `month`, YNAB style: money left over rolls into the next month, but an overspent
+ * (negative) balance does not. The category starts the next month at zero and the shortfall comes out of
+ * Ready to Assign instead (see readyToAssign).
+ */
+function availableFrom(net: Map<Month, Cents> | undefined, month: Month): Cents {
+  if (!net) return 0;
+  const months = [...net.keys()].filter((m) => m <= month).sort();
+  let available = 0;
+  for (const m of months) available = Math.max(0, available) + net.get(m)!;
+  const last = months.at(-1);
+  return last !== undefined && last < month ? Math.max(0, available) : available;
+}
+
+/** Category balance at the end of `month`. Unspent money rolls over; overspending is cleared at the next month. */
+export function categoryAvailable(state: BudgetState, categoryId: string, month: Month): Cents {
+  return availableFrom(monthlyNet(state, new Set([categoryId])).get(categoryId), month);
 }
 
 export const isOverspent = (state: BudgetState, categoryId: string, month: Month): boolean =>
@@ -88,18 +111,23 @@ export function archivedCategoryIds(state: BudgetState): Set<string> {
 /**
  * Ready to Assign = all account balances minus the balances of all active categories, as of the end of `month`.
  * Archived categories do not count, so their remaining balance (or shortfall) flows back to Ready to Assign.
+ * Because an overspent category starts the next month at zero, last month's overspending is taken from here.
  */
 export function readyToAssign(state: BudgetState, month: Month): Cents {
   const archived = archivedCategoryIds(state);
+  const active = new Set(state.categories.filter((c) => !archived.has(c.id)).map((c) => c.id));
   let total = 0;
   for (const a of state.accounts) total += accountBalance(state, a.id, month);
-  for (const b of state.monthlyBudgets) {
-    if (b.month <= month && !archived.has(b.categoryId)) total -= b.assigned;
-  }
-  for (const t of state.transactions) {
-    if (monthOf(t.date) > month) continue;
-    for (const part of categoryParts(t)) if (!archived.has(part.categoryId)) total -= part.amount;
-  }
+  for (const [, net] of monthlyNet(state, active)) total -= availableFrom(net, month);
+  return total;
+}
+
+/** How much active categories were overspent at the end of `month` (a negative amount, or 0). */
+export function overspentIn(state: BudgetState, month: Month): Cents {
+  const archived = archivedCategoryIds(state);
+  const active = new Set(state.categories.filter((c) => !archived.has(c.id)).map((c) => c.id));
+  let total = 0;
+  for (const [, net] of monthlyNet(state, active)) total += Math.min(0, availableFrom(net, month));
   return total;
 }
 

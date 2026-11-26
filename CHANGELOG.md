@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.6.6 – 2026-11-26
+
+### Changed
+- Overspending works like YNAB: an overspent category starts the next month at zero, and the shortfall comes out of that month's Ready to Assign. A note under Ready to Assign says how much was overspent the month before. Money left over in a category still rolls over as before.
+
 ## 0.6.5 – 2026-11-26
 
 ### Fixed

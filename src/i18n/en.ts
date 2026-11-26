@@ -446,6 +446,9 @@ export const en = {
   'budget.archivePauses': { one: 'The recurring transaction {names} that uses it will be paused.', other: 'The {count} recurring transactions that use it ({names}) will be paused.' },
   'recur.blockedAccount': "Can't be booked: its account is closed. Skip it, or edit or delete the series.",
   'recur.blockedCategory': "Can't be booked: its category is archived. Skip it, or restore the category.",
+
+  // Overspending
+  'budget.overspentLast': 'Includes {amount} overspent in {month}.',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

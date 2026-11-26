@@ -443,4 +443,7 @@ export const de: Messages = {
   'budget.archivePauses': { one: 'Die wiederkehrende Buchung {names}, die sie nutzt, wird pausiert.', other: 'Die {count} wiederkehrenden Buchungen, die sie nutzen ({names}), werden pausiert.' },
   'recur.blockedAccount': 'Kann nicht gebucht werden: Das Konto ist geschlossen. Überspringe sie oder bearbeite bzw. lösche die Serie.',
   'recur.blockedCategory': 'Kann nicht gebucht werden: Die Kategorie ist archiviert. Überspringe sie oder stelle die Kategorie wieder her.',
+
+  // Overspending
+  'budget.overspentLast': 'Darin sind {amount} enthalten, die im {month} überzogen wurden.',
 };

@@ -174,3 +174,34 @@ test('running balance follows date order and counts transfers on both sides', ()
   const b = runningBalances(state, 'b');
   assert.deepEqual([...b.entries()], [['move', 3000]]);
 });
+
+test('YNAB style: overspending is cleared at the next month and taken from that month\'s Ready to Assign', async () => {
+  const { overspentIn } = await import('./budget.ts');
+  const s = baseState(); // 1000.00 in the account
+  s.monthlyBudgets.push({ categoryId: 'power', month: JAN, assigned: 5000 });
+  s.transactions.push(tx({ categoryId: 'power', amount: -8000 }));
+  // January: the category shows the shortfall, Ready to Assign does not yet.
+  assert.equal(categoryAvailable(s, 'power', JAN), -3000);
+  assert.equal(readyToAssign(s, JAN), 95000);
+  assert.equal(overspentIn(s, JAN), -3000);
+  // February: the category starts at zero and the 30.00 comes out of Ready to Assign.
+  assert.equal(categoryAvailable(s, 'power', FEB), 0);
+  assert.equal(readyToAssign(s, FEB), 92000);
+  assert.equal(overspentIn(s, FEB), 0);
+  // Months without data in between, and far in the future, behave the same.
+  assert.equal(categoryAvailable(s, 'power', '2030-06'), 0);
+  assert.equal(readyToAssign(s, '2030-06'), 92000);
+});
+
+test('YNAB style: leftover money keeps rolling over, and a later shortfall only uses what is there', () => {
+  const s = baseState();
+  s.monthlyBudgets.push({ categoryId: 'rent', month: JAN, assigned: 10000 });
+  s.transactions.push(tx({ categoryId: 'rent', amount: -4000 }));
+  assert.equal(categoryAvailable(s, 'rent', FEB), 6000);
+  // In February 80.00 is spent against the 60.00 carried in: -20.00, cleared in March.
+  s.transactions.push(tx({ categoryId: 'rent', amount: -8000, date: `${FEB}-10` }));
+  assert.equal(categoryAvailable(s, 'rent', FEB), -2000);
+  assert.equal(readyToAssign(s, FEB), 90000);
+  assert.equal(categoryAvailable(s, 'rent', '2026-03'), 0);
+  assert.equal(readyToAssign(s, '2026-03'), 88000);
+});

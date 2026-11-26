@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react';
-import { touchesCategory, categoryActivity, categoryAssigned, categoryAvailable, readyToAssign } from '../../engine/budget.ts';
+import { touchesCategory, categoryActivity, categoryAssigned, categoryAvailable, overspentIn, readyToAssign } from '../../engine/budget.ts';
 import { autoAssignPlan } from '../../engine/autoassign.ts';
 import { activeSeriesUsing } from '../../engine/recurring.ts';
 import { formatMoney } from '../../engine/money.ts';
-import { formatMonth } from '../../engine/months.ts';
+import { addMonths, formatMonth } from '../../engine/months.ts';
 import type { Cents } from '../../engine/types.ts';
 import { InlineAdd } from '../../components/InlineAdd.tsx';
 import { MoveButtons, useReorder } from '../../components/reorder.tsx';
@@ -100,6 +100,8 @@ export function BudgetView() {
   const archivedCategories = state.categories.filter((c) => c.archived && !archivedGroups.some((g) => g.id === c.groupId));
   const archivedCount = archivedGroups.length + archivedCategories.length;
   const rta = readyToAssign(state, month);
+  // Last month's overspending was taken from Ready to Assign this month; say so, or the drop looks unexplained.
+  const overspentBefore = overspentIn(state, addMonths(month, -1));
   const plan = autoAssignPlan(state, month);
   const autoAssign = useBudgetStore((s) => s.autoAssign);
   const runAutoAssign = async () => {
@@ -137,6 +139,9 @@ export function BudgetView() {
         </div>
       </div>
 
+      {overspentBefore < 0 && (
+        <p className="mt-2 text-right text-xs text-red-700">{t('budget.overspentLast', { amount: fmt(overspentBefore), month: formatMonth(addMonths(month, -1)) })}</p>
+      )}
       {autoMessage?.month === month && <p className="mt-3 text-sm text-emerald-700" role="status">{autoMessage.text}</p>}
 
       <div className="mt-3 rounded-lg bg-white shadow-sm md:mt-6">
