@@ -34,14 +34,17 @@ function matchesCategory(state: BudgetState, t: Transaction, filter: string): bo
   return true;
 }
 
-/** The transactions that pass all filters, newest first. */
+/** The transactions that pass all filters, newest first (same day: last entered first). */
 export function filterTransactions(state: BudgetState, f: TxFilters): Transaction[] {
   const q = f.search.trim().toLowerCase();
   const categoryName = (t: Transaction) => state.categories.find((c) => c.id === t.categoryId)?.name ?? '';
   return state.transactions
-    .filter((t) => f.accountId === 'all' || t.accountId === f.accountId || t.transferAccountId === f.accountId)
-    .filter((t) => matchesCategory(state, t, f.category))
-    .filter((t) => (f.from === '' || t.date >= f.from) && (f.to === '' || t.date <= f.to))
-    .filter((t) => !q || [t.payee, t.memo, categoryName(t)].some((text) => text.toLowerCase().includes(q)))
-    .sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? 1 : -1));
+    .map((t, index) => ({ t, index }))
+    .filter(({ t }) => f.accountId === 'all' || t.accountId === f.accountId || t.transferAccountId === f.accountId)
+    .filter(({ t }) => matchesCategory(state, t, f.category))
+    .filter(({ t }) => (f.from === '' || t.date >= f.from) && (f.to === '' || t.date <= f.to))
+    .filter(({ t }) => !q || [t.payee, t.memo, categoryName(t)].some((text) => text.toLowerCase().includes(q)))
+    // Newest first; on the same day the one entered last comes first, matching runningBalances.
+    .sort((a, b) => (a.t.date === b.t.date ? b.index - a.index : a.t.date < b.t.date ? 1 : -1))
+    .map(({ t }) => t);
 }

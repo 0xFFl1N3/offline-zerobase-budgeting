@@ -17,6 +17,26 @@ export function accountBalance(state: BudgetState, accountId: string, upToMonth?
   return balance;
 }
 
+/**
+ * The balance of an account after each of its transactions (transfers count on both sides), keyed by transaction id.
+ * Transactions on the same day are taken in the order they were entered.
+ */
+export function runningBalances(state: BudgetState, accountId: string): Map<string, Cents> {
+  const account = state.accounts.find((a) => a.id === accountId);
+  if (!account) throw new Error(`Unknown account: ${accountId}`);
+  const own = state.transactions
+    .map((t, index) => ({ t, index }))
+    .filter(({ t }) => t.accountId === accountId || t.transferAccountId === accountId)
+    .sort((a, b) => (a.t.date === b.t.date ? a.index - b.index : a.t.date < b.t.date ? -1 : 1));
+  const result = new Map<string, Cents>();
+  let balance = account.openingBalance;
+  for (const { t } of own) {
+    balance += t.accountId === accountId ? t.amount : -t.amount;
+    result.set(t.id, balance);
+  }
+  return result;
+}
+
 export function categoryAssigned(state: BudgetState, categoryId: string, month: Month): Cents {
   return state.monthlyBudgets
     .filter((b) => b.categoryId === categoryId && b.month === month)

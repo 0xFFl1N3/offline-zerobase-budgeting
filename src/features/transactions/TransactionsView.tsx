@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { archivedCategoryIds } from '../../engine/budget.ts';
+import { archivedCategoryIds, runningBalances } from '../../engine/budget.ts';
 import { formatMoney, parseMoney } from '../../engine/money.ts';
 import { toISODate } from '../../engine/months.ts';
 import type { Account, BudgetState, Transaction } from '../../engine/types.ts';
@@ -88,6 +88,11 @@ export function TransactionsView() {
   const totalOut = shown.filter((t) => t.amount < 0).reduce((sum, t) => sum - t.amount, 0);
   const totalIn = shown.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
 
+  // With one account selected, show its balance after each transaction.
+  const balances = useMemo(
+    () => (filters.accountId === 'all' ? null : runningBalances(state, filters.accountId)),
+    [state, filters.accountId],
+  );
   const accountName = (id: string) => state.accounts.find((a) => a.id === id)?.name ?? '?';
 
   return (
@@ -234,13 +239,14 @@ export function TransactionsView() {
               <th className="px-4 py-2">Memo</th>
               <th className="px-4 py-2 text-right">Outflow</th>
               <th className="px-4 py-2 text-right">Inflow</th>
+              {balances && <th className="px-4 py-2 text-right">Balance</th>}
               <th className="px-4 py-2" />
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-slate-500">
+                <td colSpan={balances ? 9 : 8} className="px-4 py-6 text-slate-500">
                   {hasActiveFilters(filters) ? 'No transactions match these filters.' : 'No transactions yet.'}
                 </td>
               </tr>
@@ -258,6 +264,7 @@ export function TransactionsView() {
                   <td className="px-4 py-2 text-slate-600">{t.memo}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{amount < 0 ? formatMoney(-amount, currency) : ''}</td>
                   <td className="px-4 py-2 text-right tabular-nums text-emerald-700">{amount > 0 ? formatMoney(amount, currency) : ''}</td>
+                  {balances && <td className="px-4 py-2 text-right tabular-nums text-slate-600">{formatMoney(balances.get(t.id) ?? 0, currency)}</td>}
                   <td className="px-4 py-2 whitespace-nowrap text-right">
                     <button type="button" onClick={() => startEdit(t)} className="text-sky-700 hover:underline">Edit</button>
                     <button

@@ -8,6 +8,7 @@ import {
   goalProgress,
   isOverspent,
   readyToAssign,
+  runningBalances,
 } from './budget.ts';
 
 const JAN = '2026-01';
@@ -150,4 +151,24 @@ test('a refund into the category reduces what is still needed', () => {
   s.goals.push({ id: 'goal', categoryId: 'rent', type: 'target_balance', targetAmount: 120000, targetDate: '2026-06' });
   s.transactions.push(tx({ categoryId: 'rent', amount: 5000, date: '2026-01-10' }));
   assert.equal(goalProgress(s, s.goals[0]!, JAN).neededThisMonth, 15000); // 20000 - 5000
+});
+
+test('running balance follows date order and counts transfers on both sides', () => {
+  const state: BudgetState = {
+    accounts: [
+      { id: 'a', name: 'A', type: 'checking', openingBalance: 10000, sortOrder: 0, closed: false },
+      { id: 'b', name: 'B', type: 'savings', openingBalance: 0, sortOrder: 1, closed: false },
+    ],
+    groups: [], categories: [], goals: [], monthlyBudgets: [],
+    transactions: [
+      { id: 'late', accountId: 'a', date: '2026-01-09', payee: '', categoryId: null, memo: '', amount: -500, transferAccountId: null },
+      { id: 'early', accountId: 'a', date: '2026-01-02', payee: '', categoryId: null, memo: '', amount: 2000, transferAccountId: null },
+      { id: 'move', accountId: 'a', date: '2026-01-05', payee: '', categoryId: null, memo: '', amount: -3000, transferAccountId: 'b' },
+    ],
+  };
+  const a = runningBalances(state, 'a');
+  assert.deepEqual([a.get('early'), a.get('move'), a.get('late')], [12000, 9000, 8500]);
+  assert.equal(a.get('late'), accountBalance(state, 'a'));
+  const b = runningBalances(state, 'b');
+  assert.deepEqual([...b.entries()], [['move', 3000]]);
 });
