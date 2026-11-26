@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.4.11 – 2026-11-26
+
+### Changed
+- Shorter README description.
+
 ## 0.4.10 – 2026-11-26
 
 ### Changed

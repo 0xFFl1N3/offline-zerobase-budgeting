@@ -1,6 +1,6 @@
 # Budgeting App
 
-A local-first, zero-based (envelope) budgeting web app (React + TypeScript + Vite). See the design document for scope.
+A local-first, zero-based (envelope) budgeting web app (React + TypeScript + Vite).
 
 ## Commands
 
