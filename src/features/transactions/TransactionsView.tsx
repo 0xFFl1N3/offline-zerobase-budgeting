@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState, type FormEvent } from 'react';
 import { archivedCategoryIds, runningBalances } from '../../engine/budget.ts';
 import { formatMoney, parseMoney } from '../../engine/money.ts';
 import { toISODate } from '../../engine/months.ts';
+import { clearedStatus, isReconciled, keepCleared } from '../../engine/reconcile.ts';
 import { FREQUENCIES, FREQUENCY_LABELS } from '../../engine/recurring.ts';
 import type { Account, Frequency, Transaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
@@ -9,6 +10,8 @@ import { DueBanner } from '../recurring/DueBanner.tsx';
 import { MakeRecurringForm } from '../recurring/MakeRecurringForm.tsx';
 import { RecurringList } from '../recurring/RecurringList.tsx';
 import { categoryLabel } from './labels.ts';
+import { ClearedToggle } from './ClearedToggle.tsx';
+import { ReconcilePanel } from './ReconcilePanel.tsx';
 import { filterTransactions, hasActiveFilters, NO_FILTERS, type TxFilters } from './filterTransactions.ts';
 import { buildTransaction, toForm, type TxForm, type TxKind } from './buildTransaction.ts';
 
@@ -31,6 +34,7 @@ export function TransactionsView() {
   const saveTransaction = useBudgetStore((s) => s.saveTransaction);
   const startRecurringSeries = useBudgetStore((s) => s.startRecurringSeries);
   const removeTransaction = useBudgetStore((s) => s.removeTransaction);
+  const setCleared = useBudgetStore((s) => s.setCleared);
 
   const accounts = state.accounts.filter((a) => !a.closed);
 
@@ -72,11 +76,12 @@ export function TransactionsView() {
     const result = buildTransaction({ ...form, amount: Math.abs(parsed), splits }, editingId ?? crypto.randomUUID());
     if (!result.ok) return setError(result.error);
     if (repeat && !editingId) void startRecurringSeries(result.transaction, repeat, null);
-    else void saveTransaction(result.transaction);
+    else void saveTransaction(keepCleared(state.transactions.find((t) => t.id === editingId), result.transaction));
     reset(form);
   };
 
   const startEdit = (t: Transaction) => {
+    if (isReconciled(t) && !window.confirm('This transaction is reconciled. Edit it anyway? Changing the amount or date will make the account differ from the reconciled statement.')) return;
     setForm(toForm(t));
     setAmountText((Math.abs(t.amount) / 100).toFixed(2));
     setSplitRows(t.splits ? t.splits.map((p) => ({ categoryId: p.categoryId, text: (Math.abs(p.amount) / 100).toFixed(2) })) : null);
@@ -325,11 +330,17 @@ export function TransactionsView() {
           </>
         )}
       </p>
+      {filterAccount !== 'all' ? (
+        <ReconcilePanel key={filterAccount} accountId={filterAccount} />
+      ) : (
+        <p className="mt-1 text-xs text-slate-500">Pick one account above to see its cleared balance and reconcile it.</p>
+      )}
 
       <div className="mt-2 overflow-x-auto rounded-lg bg-white shadow-sm">
         <table className="w-full text-sm">
           <thead className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <tr>
+              <th className="w-8 py-2 pl-4"><span className="sr-only">Cleared</span></th>
               <th className="px-4 py-2">Date</th>
               <th className="px-4 py-2">Account</th>
               <th className="px-4 py-2">Payee</th>
@@ -344,7 +355,7 @@ export function TransactionsView() {
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={balances ? 9 : 8} className="px-4 py-6 text-slate-500">
+                <td colSpan={balances ? 10 : 9} className="px-4 py-6 text-slate-500">
                   {hasActiveFilters(filters) ? 'No transactions match these filters.' : 'No transactions yet.'}
                 </td>
               </tr>
@@ -353,9 +364,18 @@ export function TransactionsView() {
               // For the destination account of a transfer, show the money as an inflow.
               const mirrored = filterAccount !== 'all' && t.transferAccountId === filterAccount && t.accountId !== filterAccount;
               const amount = mirrored ? -t.amount : t.amount;
+              // The status shown is the selected account's side; with all accounts, the sending side.
+              const side = mirrored ? filterAccount : t.accountId;
+              const status = clearedStatus(t, side);
+              const toggle = () => {
+                if (status === 'reconciled') {
+                  if (window.confirm('This transaction is reconciled. Unlock it and mark it as cleared?')) void setCleared(t.id, side, 'cleared');
+                } else void setCleared(t.id, side, status === 'cleared' ? 'uncleared' : 'cleared');
+              };
               return (
                 <Fragment key={t.id}>
                 <tr className="border-b border-slate-100 last:border-b-0">
+                  <td className="py-2 pl-4"><ClearedToggle status={status} onToggle={toggle} /></td>
                   <td className="px-4 py-2 whitespace-nowrap">{t.date}</td>
                   <td className="px-4 py-2">{accountName(t.accountId)}</td>
                   <td className="px-4 py-2">{t.payee}</td>
@@ -370,7 +390,8 @@ export function TransactionsView() {
                     <button
                       type="button"
                       onClick={() => {
-                        if (window.confirm('Delete this transaction?')) void removeTransaction(t.id);
+                        const question = isReconciled(t) ? 'This transaction is reconciled. Delete it anyway? The account will no longer match the reconciled statement.' : 'Delete this transaction?';
+                        if (window.confirm(question)) void removeTransaction(t.id);
                       }}
                       className="ml-3 text-red-600 hover:underline"
                     >
@@ -380,7 +401,7 @@ export function TransactionsView() {
                 </tr>
                 {repeatingId === t.id && (
                   <tr className="border-b border-slate-100">
-                    <td colSpan={balances ? 9 : 8} className="p-0">
+                    <td colSpan={balances ? 10 : 9} className="p-0">
                       <MakeRecurringForm transaction={t} onDone={() => setRepeatingId(null)} />
                     </td>
                   </tr>

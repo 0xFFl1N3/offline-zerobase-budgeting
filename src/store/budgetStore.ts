@@ -8,7 +8,8 @@ import { autoAssignPlan, planAssignments } from '../engine/autoassign.ts';
 import { addMonths } from '../engine/months.ts';
 import { bookNext, recurringFrom, setRecurringPaused, skipNext, startRecurring, updateRecurring, type RecurringChanges } from '../engine/recurring.ts';
 import { toISODate } from '../engine/months.ts';
-import type { Account, AccountType, BudgetState, Cents, Frequency, Goal, Month, Transaction } from '../engine/types.ts';
+import { reconcile, withCleared } from '../engine/reconcile.ts';
+import type { Account, AccountType, BudgetState, Cents, ClearedStatus, Frequency, Goal, Month, Transaction } from '../engine/types.ts';
 
 const emptyState = (): BudgetState => ({
   accounts: [],
@@ -71,6 +72,10 @@ export interface BudgetStore {
   /** Adds a transaction, or replaces the one with the same id. */
   saveTransaction: (t: Transaction) => Promise<void>;
   removeTransaction: (id: string) => Promise<void>;
+  /** Sets the cleared status of one account's side of a transaction. */
+  setCleared: (transactionId: string, accountId: string, status: ClearedStatus) => Promise<void>;
+  /** Finishes reconciling an account against a statement balance; adds an adjustment if they differ. */
+  reconcileAccount: (accountId: string, statementBalance: Cents, adjustmentCategoryId: string | null) => Promise<void>;
   /** Sets the category's goal, replacing any existing one (one goal per category). */
   saveGoal: (goal: Goal) => Promise<void>;
   removeGoal: (categoryId: string) => Promise<void>;
@@ -273,6 +278,24 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set((s) => ({
         state: { ...s.state, transactions: [...s.state.transactions.filter((x) => x.id !== t.id), t] },
       }));
+    },
+
+    setCleared: async (transactionId, accountId, status) => {
+      const t = get().state.transactions.find((x) => x.id === transactionId);
+      if (!t) return;
+      const next = withCleared(t, accountId, status);
+      await repo.saveTransaction(db, next);
+      set((s) => ({ state: { ...s.state, transactions: s.state.transactions.map((x) => (x.id === next.id ? next : x)) } }));
+    },
+
+    reconcileAccount: async (accountId, statementBalance, adjustmentCategoryId) => {
+      const result = reconcile(get().state, accountId, statementBalance, {
+        today: toISODate(),
+        adjustmentId: crypto.randomUUID(),
+        categoryId: adjustmentCategoryId,
+      });
+      await repo.saveReconciliation(db, result.account, result.changed);
+      set({ state: result.state });
     },
 
     removeTransaction: async (id) => {

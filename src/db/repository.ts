@@ -56,6 +56,13 @@ export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; setti
 }
 
 export const saveAccount = (db: BudgetDB, a: Account) => db.accounts.put(a);
+
+/** Stores a finished reconciliation: the account's date and every changed or added transaction, together. */
+export const saveReconciliation = (db: BudgetDB, account: Account, transactions: Transaction[]) =>
+  db.transaction('rw', [db.accounts, db.transactions], async () => {
+    await db.accounts.put(account);
+    await db.transactions.bulkPut(transactions);
+  });
 export const deleteAccount = (db: BudgetDB, id: string) => db.accounts.delete(id);
 export const saveGroup = (db: BudgetDB, g: CategoryGroup) => db.groups.put(g);
 export const saveCategory = (db: BudgetDB, c: Category) => db.categories.put(c);

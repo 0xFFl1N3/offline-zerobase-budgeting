@@ -126,3 +126,25 @@ test('recurring series round-trip, old backups without them load, and bad ones a
   assert.match(err(parseBackup(withRec((r) => (r.template.accountId = 'nope')))), /missing account/);
   assert.match(err(parseBackup(withRec((r) => (r.template.categoryId = 'nope')))), /missing category/);
 });
+
+test('cleared statuses and the last reconciliation date round-trip; old backups have none; bad values are rejected', () => {
+  const marked = (mutate?: (o: any) => void) =>
+    text((o) => {
+      o.data.accounts[0].lastReconciled = '2026-01-31';
+      o.data.transactions[0].cleared = 'reconciled';
+      o.data.transactions[1].cleared = 'cleared';
+      o.data.transactions[1].transferCleared = 'uncleared';
+      mutate?.(o);
+    });
+  const ok = parseBackup(marked());
+  assert.ok(ok.ok);
+  assert.equal(ok.backup.data.accounts[0]!.lastReconciled, '2026-01-31');
+  assert.deepEqual(ok.backup.data.transactions.map((t) => [t.cleared, t.transferCleared]), [['reconciled', undefined], ['cleared', 'uncleared']]);
+  const old = parseBackup(text());
+  assert.ok(old.ok && !('cleared' in old.backup.data.transactions[0]!) && !('lastReconciled' in old.backup.data.accounts[0]!));
+
+  const err = (r: ReturnType<typeof parseBackup>) => (r.ok ? '' : r.error);
+  assert.match(err(parseBackup(marked((o) => (o.data.transactions[0].cleared = 'maybe')))), /unknown cleared status/);
+  assert.match(err(parseBackup(marked((o) => (o.data.transactions[0].transferCleared = 'cleared')))), /only a transfer/);
+  assert.match(err(parseBackup(marked((o) => (o.data.accounts[0].lastReconciled = 'yesterday')))), /lastReconciled/);
+});

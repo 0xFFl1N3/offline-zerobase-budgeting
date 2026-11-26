@@ -1,5 +1,6 @@
 import type { Currency } from '../engine/money.ts';
 import type {
+  ClearedStatus,
   Account,
   AccountType,
   BudgetState,
@@ -114,6 +115,23 @@ function parseSplits(o: Obj): { splits?: TransactionSplit[] } {
 const FREQUENCIES: Frequency[] = ['weekly', 'biweekly', 'monthly', 'yearly'];
 
 /** Backups made before recurring transactions existed have no "recurring" list: that means none. */
+const CLEARED: ClearedStatus[] = ['uncleared', 'cleared', 'reconciled'];
+
+/** Cleared status of each side; backups made before reconciling existed have none (uncleared). */
+function parseCleared(o: Obj): { cleared?: ClearedStatus; transferCleared?: ClearedStatus } {
+  const result: { cleared?: ClearedStatus; transferCleared?: ClearedStatus } = {};
+  for (const key of ['cleared', 'transferCleared'] as const) {
+    if (o[key] === undefined) continue;
+    const value = str(o, key, 'Transaction') as ClearedStatus;
+    if (!CLEARED.includes(value)) throw new Error(`Transaction: unknown ${key} status "${value}".`);
+    result[key] = value;
+  }
+  if (result.transferCleared !== undefined && optStr(o, 'transferAccountId', 'Transaction') === null) {
+    throw new Error('Transaction: only a transfer has a status for the receiving account.');
+  }
+  return result;
+}
+
 function parseRecurring(raw: Obj): RecurringTransaction[] {
   if (raw.recurring === undefined) return [];
   return list(raw, 'recurring').map((o) => {
@@ -147,12 +165,19 @@ function parseRecurring(raw: Obj): RecurringTransaction[] {
   });
 }
 
+function parseLastReconciled(o: Obj): { lastReconciled?: string } {
+  if (o.lastReconciled === undefined) return {};
+  const date = str(o, 'lastReconciled', 'Account');
+  if (!DATE.test(date)) throw new Error('Account: "lastReconciled" must look like 2026-06-15.');
+  return { lastReconciled: date };
+}
+
 function parseData(raw: unknown): BudgetState {
   if (!isObj(raw)) throw new Error('The file has no data section.');
   const accounts: Account[] = list(raw, 'accounts').map((o, index) => {
     const type = str(o, 'type', 'Account') as AccountType;
     if (!ACCOUNT_TYPES.includes(type)) throw new Error(`Account: unknown type "${type}".`);
-    return { id: str(o, 'id', 'Account'), name: str(o, 'name', 'Account'), type, openingBalance: int(o, 'openingBalance', 'Account'), sortOrder: o.sortOrder === undefined ? index : int(o, 'sortOrder', 'Account'), closed: bool(o, 'closed', 'Account') };
+    return { id: str(o, 'id', 'Account'), name: str(o, 'name', 'Account'), type, openingBalance: int(o, 'openingBalance', 'Account'), sortOrder: o.sortOrder === undefined ? index : int(o, 'sortOrder', 'Account'), closed: bool(o, 'closed', 'Account'), ...parseLastReconciled(o) };
   });
   const groups: CategoryGroup[] = list(raw, 'groups').map((o) => ({
     id: str(o, 'id', 'Group'), name: str(o, 'name', 'Group'), sortOrder: int(o, 'sortOrder', 'Group'), archived: bool(o, 'archived', 'Group'),
@@ -177,6 +202,7 @@ function parseData(raw: unknown): BudgetState {
       memo: str(o, 'memo', 'Transaction'), amount: int(o, 'amount', 'Transaction'),
       transferAccountId: optStr(o, 'transferAccountId', 'Transaction'),
       ...parseSplits(o),
+      ...parseCleared(o),
     };
   });
 

@@ -11,6 +11,8 @@ export interface Account {
   openingBalance: Cents;
   sortOrder: number;
   closed: boolean;
+  /** Date ('YYYY-MM-DD') of the last finished reconciliation, if any. */
+  lastReconciled?: string;
 }
 
 export interface CategoryGroup {
@@ -71,12 +73,19 @@ export interface Transaction {
    * When set, `categoryId` is null.
    */
   splits?: TransactionSplit[];
+  /** Whether the bank has this transaction (for accountId). Missing = uncleared. */
+  cleared?: ClearedStatus;
+  /** The same for the receiving account of a transfer, which is reconciled separately. */
+  transferCleared?: ClearedStatus;
 }
+
+/** uncleared: not on the bank statement yet; cleared: ticked off; reconciled: locked in by a finished reconciliation. */
+export type ClearedStatus = 'uncleared' | 'cleared' | 'reconciled';
 
 export type Frequency = 'weekly' | 'biweekly' | 'monthly' | 'yearly';
 
 /** The parts of a transaction that repeat: everything except its id and date. */
-export type TransactionTemplate = Omit<Transaction, 'id' | 'date'>;
+export type TransactionTemplate = Omit<Transaction, 'id' | 'date' | 'cleared' | 'transferCleared'>;
 
 /**
  * A transaction that repeats. Occurrence number n falls on `startDate` plus n periods; the first `handled`

@@ -307,3 +307,30 @@ test('recurring series persist: start, confirm, skip, edit, pause and delete', a
   assert.equal(again.getState().state.recurring.length, 1);
   assert.equal(again.getState().state.transactions.length, 2); // booked transactions stay
 });
+
+test('clearing and reconciling persist across a reload', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  await store.getState().addGroup('Living');
+  await store.getState().addCategory(store.getState().state.groups[0]!.id, 'Food');
+  const chk = store.getState().state.accounts[0]!;
+  const food = store.getState().state.categories[0]!;
+  const base = { accountId: chk.id, date: '2026-01-05', payee: 'Shop', memo: '', transferAccountId: null, categoryId: food.id };
+  await store.getState().saveTransaction({ ...base, id: 't1', amount: -2000 });
+  await store.getState().saveTransaction({ ...base, id: 't2', amount: -3000 });
+  await store.getState().setCleared('t1', chk.id, 'cleared');
+
+  // The bank shows 97,000 but only 98,000 is cleared: a 1,000 adjustment in Food closes the gap.
+  await store.getState().reconcileAccount(chk.id, 97000, food.id);
+
+  const reloaded = createBudgetStore(db, '2026-01');
+  await reloaded.getState().load();
+  const s = reloaded.getState().state;
+  assert.equal(s.transactions.find((t) => t.id === 't1')!.cleared, 'reconciled');
+  assert.equal(s.transactions.find((t) => t.id === 't2')!.cleared, undefined);
+  const adj = s.transactions.find((t) => t.payee === 'Reconciliation adjustment')!;
+  assert.equal(adj.amount, -1000);
+  assert.equal(adj.categoryId, food.id);
+  assert.equal(adj.cleared, 'reconciled');
+  assert.match(s.accounts[0]!.lastReconciled!, /^\d{4}-\d{2}-\d{2}$/);
+});
