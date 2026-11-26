@@ -297,7 +297,14 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     autoAssign: async () => {
       const { state, month } = get();
       const assignments = planAssignments(state, autoAssignPlan(state, month), month);
-      for (const a of assignments) await get().assign(a.categoryId, a.assigned);
+      if (assignments.length === 0) return 0;
+      await repo.setAssignedMany(db, month, assignments);
+      const changed = new Set(assignments.map((a) => a.categoryId));
+      set((s) => {
+        const others = s.state.monthlyBudgets.filter((b) => !(b.month === month && changed.has(b.categoryId)));
+        const added = assignments.filter((a) => a.assigned !== 0).map((a) => ({ categoryId: a.categoryId, month, assigned: a.assigned }));
+        return { state: { ...s.state, monthlyBudgets: [...others, ...added] } };
+      });
       return assignments.length;
     },
 
@@ -398,8 +405,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
 
     saveGoal: async (goal) => {
       const replaced = get().state.goals.filter((g) => g.categoryId === goal.categoryId && g.id !== goal.id);
-      for (const g of replaced) await repo.deleteGoal(db, g.id);
-      await repo.saveGoal(db, goal);
+      await repo.replaceGoal(db, goal, replaced.map((g) => g.id));
       set((s) => ({
         state: { ...s.state, goals: [...s.state.goals.filter((g) => g.categoryId !== goal.categoryId), goal] },
       }));
@@ -407,7 +413,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
 
     removeGoal: (categoryId) =>
       undoable('goal', async () => {
-        for (const g of get().state.goals.filter((g) => g.categoryId === categoryId)) await repo.deleteGoal(db, g.id);
+        await repo.deleteGoals(db, get().state.goals.filter((g) => g.categoryId === categoryId).map((g) => g.id));
         const s = get().state;
         return { ...s, goals: s.goals.filter((g) => g.categoryId !== categoryId) };
       }),

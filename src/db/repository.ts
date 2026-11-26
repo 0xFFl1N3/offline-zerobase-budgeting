@@ -114,6 +114,16 @@ export const saveRecurringBooking = (db: BudgetDB, r: RecurringTransaction, book
 
 export const saveGoal = (db: BudgetDB, g: Goal) => db.goals.put(g);
 export const deleteGoal = (db: BudgetDB, id: string) => db.goals.delete(id);
+
+/** Saves a goal and removes the ones it replaces, all or nothing. */
+export const replaceGoal = (db: BudgetDB, g: Goal, replacedIds: string[]) =>
+  db.transaction('rw', db.goals, async () => {
+    await db.goals.bulkDelete(replacedIds);
+    await db.goals.put(g);
+  });
+
+/** Removes goals, all or nothing. */
+export const deleteGoals = (db: BudgetDB, ids: string[]) => db.goals.bulkDelete(ids);
 export const saveTransaction = (db: BudgetDB, t: Transaction) => db.transactions.put(t);
 export const saveTransactions = (db: BudgetDB, ts: Transaction[]) => db.transactions.bulkPut(ts);
 export const deleteTransaction = (db: BudgetDB, id: string) => db.transactions.delete(id);
@@ -123,6 +133,12 @@ export async function setAssigned(db: BudgetDB, categoryId: string, month: Month
   if (assigned === 0) await db.monthlyBudgets.delete([categoryId, month]);
   else await db.monthlyBudgets.put({ categoryId, month, assigned });
 }
+
+/** Sets several Assigned amounts for one month, all or nothing. */
+export const setAssignedMany = (db: BudgetDB, month: Month, list: { categoryId: string; assigned: Cents }[]) =>
+  db.transaction('rw', db.monthlyBudgets, async () => {
+    for (const { categoryId, assigned } of list) await setAssigned(db, categoryId, month, assigned);
+  });
 
 export async function saveSettings(db: BudgetDB, s: Settings) {
   await db.settings.put({ key: 'currency', value: s.currency });

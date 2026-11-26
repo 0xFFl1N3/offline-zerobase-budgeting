@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.9.2 – 2026-11-27
+
+### Fixed
+- Filling the budget automatically, saving a goal and removing a goal are now saved all at once or not at all, so a failure can't leave half a change behind.
+
 ## 0.9.1 – 2026-11-27
 
 ### Changed

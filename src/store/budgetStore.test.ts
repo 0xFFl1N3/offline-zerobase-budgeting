@@ -419,3 +419,25 @@ test('any other change ends the chance to undo', async () => {
   await store.getState().undoDelete(); // nothing to undo
   assert.deepEqual(store.getState().state.groups.map((g) => g.name).sort(), ['Living', 'Travel']);
 });
+
+test('filling the budget automatically saves all or nothing', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  await store.getState().addGroup('Living');
+  const groupId = store.getState().state.groups[0]!.id;
+  await store.getState().addCategory(groupId, 'Rent');
+  await store.getState().addCategory(groupId, 'Food');
+  for (const c of store.getState().state.categories) {
+    await store.getState().saveGoal({ id: `g-${c.id}`, categoryId: c.id, type: 'monthly_amount', monthlyAmount: 1000 });
+  }
+  // The second write fails: the first must not stay saved either.
+  const put = db.monthlyBudgets.put.bind(db.monthlyBudgets);
+  let calls = 0;
+  db.monthlyBudgets.put = ((...args: Parameters<typeof put>) => (++calls === 2 ? Promise.reject(Object.assign(new Error('full'), { name: 'QuotaExceededError' })) : put(...args))) as typeof put;
+  await assert.rejects(store.getState().autoAssign());
+  db.monthlyBudgets.put = put;
+  assert.equal(await db.monthlyBudgets.count(), 0);
+  assert.equal(store.getState().state.monthlyBudgets.length, 0);
+  assert.equal(await store.getState().autoAssign(), 2);
+  assert.equal(await db.monthlyBudgets.count(), 2);
+});
