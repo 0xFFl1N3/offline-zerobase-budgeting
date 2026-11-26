@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { incomeVsSpending, reportMonths } from './reports.ts';
+import { incomeVsSpending, netWorth, reportMonths } from './reports.ts';
 import type { BudgetState, Transaction } from './types.ts';
 
 let n = 0;
@@ -65,5 +65,20 @@ test('income is uncategorised inflow, spending is net categorised outflow, trans
   assert.deepEqual(incomeVsSpending(s, ['2026-01', '2026-02']), [
     { month: '2026-01', income: 300000, spending: 105000, net: 195000 },
     { month: '2026-02', income: 0, spending: 10000, net: -10000 },
+  ]);
+});
+
+test('net worth is opening balances plus everything up to each month end; transfers cancel out', () => {
+  const s = state([
+    tx('2025-11-15', null, 10000), // before the range: carried in
+    tx('2026-01-05', 'rent', -90000),
+    tx('2026-01-06', null, -30000, { transferAccountId: 'b' }),
+    tx('2026-03-01', null, 200000),
+    tx('2026-05-01', null, 1), // after the range
+  ]);
+  assert.deepEqual(netWorth(s, ['2026-01', '2026-02', '2026-03']), [
+    { month: '2026-01', value: 150000 + 10000 - 90000 },
+    { month: '2026-02', value: 70000 },
+    { month: '2026-03', value: 270000 },
   ]);
 });

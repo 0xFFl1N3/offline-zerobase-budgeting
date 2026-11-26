@@ -63,3 +63,28 @@ export function incomeVsSpending(state: BudgetState, months: Month[]): IncomeSpe
   for (const row of rows) row.net = row.income - row.spending;
   return rows;
 }
+
+export interface MonthValue {
+  month: Month;
+  value: Cents;
+}
+
+/**
+ * Net worth at the end of each month: the sum of all account balances (closed accounts included, they are at zero).
+ * Opening balances count from the start, and transfers between accounts cancel out.
+ */
+export function netWorth(state: BudgetState, months: Month[]): MonthValue[] {
+  if (months.length === 0) return [];
+  let running = state.accounts.reduce((t, a) => t + a.openingBalance, 0);
+  const byMonth = new Map<Month, Cents>();
+  for (const t of state.transactions) {
+    if (t.transferAccountId !== null) continue;
+    const m = monthOf(t.date);
+    if (m < months[0]!) running += t.amount;
+    else byMonth.set(m, (byMonth.get(m) ?? 0) + t.amount);
+  }
+  return months.map((month) => {
+    running += byMonth.get(month) ?? 0;
+    return { month, value: running };
+  });
+}

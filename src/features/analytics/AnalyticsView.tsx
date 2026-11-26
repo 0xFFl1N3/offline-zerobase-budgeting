@@ -3,10 +3,11 @@ import { spendingReport, type GroupBy, type ReportKind, type SpendingReport } fr
 import { formatMoney } from '../../engine/money.ts';
 import { formatMonth, formatMonthRange } from '../../engine/months.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
-import { incomeVsSpending, reportMonths, type RangeKey } from '../../engine/reports.ts';
+import { incomeVsSpending, netWorth, reportMonths, type RangeKey } from '../../engine/reports.ts';
 import { useIsDark } from '../../theme.ts';
 import { buildColorMap } from './colors.ts';
 import { IncomeSpendingChart } from './IncomeSpendingChart.tsx';
+import { NetWorthChart } from './NetWorthChart.tsx';
 import { PieChart } from './PieChart.tsx';
 import { RangeSwitch } from './RangeSwitch.tsx';
 
@@ -43,6 +44,7 @@ export function AnalyticsView() {
   const [range, setRange] = useState<RangeKey>('12');
   const months = useMemo(() => reportMonths(state, range, month), [state, range, month]);
   const incomeRows = useMemo(() => incomeVsSpending(state, months), [state, months]);
+  const worthRows = useMemo(() => netWorth(state, months), [state, months]);
 
   const toggle = (value: GroupBy, label: string) => (
     <button
@@ -116,6 +118,7 @@ export function AnalyticsView() {
 
       <div className="mt-4 grid gap-6 lg:grid-cols-2">
         <IncomeSpendingChart rows={incomeRows} currency={currency} />
+        <NetWorthChart rows={worthRows} currency={currency} />
       </div>
     </section>
   );
