@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.5.8 – 2026-11-26
+
+### Changed
+- Sync between devices is no longer planned. Data stays on each device; use Export and Import to move it.
+
 ## 0.5.7 – 2026-11-26
 
 ### Fixed
