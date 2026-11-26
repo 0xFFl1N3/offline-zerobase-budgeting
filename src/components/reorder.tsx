@@ -65,3 +65,21 @@ export function useReorder(
 
   return { rowProps, handle };
 }
+
+/**
+ * Up and down buttons for touch screens, where dragging is not available. Shown in place of the
+ * amounts while a list is in "Reorder" mode.
+ */
+export function MoveButtons({ label, first, last, onStep }: { label: string; first: boolean; last: boolean; onStep: (delta: -1 | 1) => void }) {
+  const button = 'flex h-9 w-9 items-center justify-center rounded border border-slate-300 bg-white text-slate-700 disabled:opacity-30';
+  return (
+    <span className="flex shrink-0 gap-1">
+      <button type="button" aria-label={`Move ${label} up`} disabled={first} onClick={() => onStep(-1)} className={button}>
+        ↑
+      </button>
+      <button type="button" aria-label={`Move ${label} down`} disabled={last} onClick={() => onStep(1)} className={button}>
+        ↓
+      </button>
+    </span>
+  );
+}

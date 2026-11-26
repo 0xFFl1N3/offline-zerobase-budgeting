@@ -3,7 +3,7 @@ import { accountBalance } from '../../engine/budget.ts';
 import { formatMoney, parseMoney } from '../../engine/money.ts';
 import type { Account, AccountType } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
-import { useReorder } from '../../components/reorder.tsx';
+import { MoveButtons, useReorder } from '../../components/reorder.tsx';
 import { BackupPanel } from '../backup/BackupPanel.tsx';
 
 function AddAccountForm({ onDone }: { onDone: () => void }) {
@@ -137,16 +137,34 @@ export function AccountsSidebar({ className = 'w-64 border-r border-slate-200' }
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [showClosed, setShowClosed] = useState(false);
+  /** Touch screens: up/down buttons instead of balances (the button only shows on phones). */
+  const [reordering, setReordering] = useState(false);
   const accounts = state.accounts.filter((a) => !a.closed);
   const closed = state.accounts.filter((a) => a.closed);
   const total = accounts.reduce((sum, a) => sum + accountBalance(state, a.id), 0);
 
   return (
     <aside className={`shrink-0 bg-white p-4 ${className}`}>
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Accounts</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Accounts</h2>
+        {accounts.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setReordering((v) => !v)}
+            className={`rounded px-2 py-1 text-xs md:hidden ${reordering ? 'bg-sky-600 text-white' : 'text-sky-700'}`}
+          >
+            {reordering ? 'Done' : 'Reorder'}
+          </button>
+        )}
+      </div>
       <ul className="mt-3 space-y-1">
-        {accounts.map((a) =>
-          editing === a.id ? (
+        {accounts.map((a, i) =>
+          reordering ? (
+            <li key={a.id} className="flex items-center gap-2 text-sm">
+              <span className="min-w-0 flex-1 truncate">{a.name}</span>
+              <MoveButtons label={a.name} first={i === 0} last={i === accounts.length - 1} onStep={(d) => void moveAccount(a.id, d)} />
+            </li>
+          ) : editing === a.id ? (
             <li key={a.id}>
               <EditAccountForm account={a} onDone={() => setEditing(null)} />
             </li>

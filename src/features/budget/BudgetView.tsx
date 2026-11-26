@@ -5,7 +5,7 @@ import { formatMoney } from '../../engine/money.ts';
 import { formatMonth } from '../../engine/months.ts';
 import type { Cents } from '../../engine/types.ts';
 import { InlineAdd } from '../../components/InlineAdd.tsx';
-import { useReorder } from '../../components/reorder.tsx';
+import { MoveButtons, useReorder } from '../../components/reorder.tsx';
 import { MoneyField } from '../../components/MoneyField.tsx';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { GoalEditor } from './GoalEditor.tsx';
@@ -64,6 +64,8 @@ export function BudgetView() {
   /** On phones: the group or category whose details and actions are open. */
   const [open, setOpen] = useState<string | null>(null);
   const toggle = (id: string) => setOpen((o) => (o === id ? null : id));
+  /** On phones: up/down buttons instead of amounts, since dragging needs a mouse. */
+  const [reordering, setReordering] = useState(false);
 
   const hasTransactions = (ids: string[]) =>
     state.transactions.some((t) => touchesCategory(t, ids)) || state.recurring.some((r) => touchesCategory(r.template, ids));
@@ -137,9 +139,19 @@ export function BudgetView() {
       {autoMessage?.month === month && <p className="mt-3 text-sm text-emerald-700" role="status">{autoMessage.text}</p>}
 
       <div className="mt-3 rounded-lg bg-white shadow-sm md:mt-6">
-        <div className="flex justify-between border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 md:hidden">
+        <div className="flex items-center gap-3 border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 md:hidden">
           <span>Category</span>
-          <span>Available</span>
+          <button
+            type="button"
+            onClick={() => {
+              setReordering((v) => !v);
+              setOpen(null);
+            }}
+            className={`ml-auto rounded px-2 py-1 normal-case tracking-normal ${reordering ? 'bg-sky-600 text-white' : 'text-sky-700'}`}
+          >
+            {reordering ? 'Done' : 'Reorder'}
+          </button>
+          {!reordering && <span>Available</span>}
         </div>
         <div className={`${COLUMNS} border-b border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500`}>
           <span>Category</span>
@@ -154,12 +166,13 @@ export function BudgetView() {
           </p>
         )}
 
-        {groups.map((group) => {
+        {groups.map((group, groupIndex) => {
           const cats = state.categories.filter((c) => c.groupId === group.id && !c.archived);
           const sum = (f: (id: string) => Cents) => cats.reduce((t, c) => t + f(c.id), 0);
           return (
             <div key={group.id} className="border-b border-slate-100 last:border-b-0">
               <MobileGroupRow
+                move={reordering ? <MoveButtons label={group.name} first={groupIndex === 0} last={groupIndex === groups.length - 1} onStep={(d) => void moveGroup(group.id, d)} /> : null}
                 name={group.name}
                 available={sum((id) => categoryAvailable(state, id, month))}
                 fmt={fmt}
@@ -207,12 +220,13 @@ export function BudgetView() {
                 <span className="px-2 text-right tabular-nums">{formatMoney(sum((id) => categoryActivity(state, id, month)), currency)}</span>
                 <span className="px-2 text-right tabular-nums">{formatMoney(sum((id) => categoryAvailable(state, id, month)), currency)}</span>
               </div>
-              {cats.map((cat) => {
+              {cats.map((cat, catIndex) => {
                 const available = categoryAvailable(state, cat.id, month);
                 const goal = state.goals.find((g) => g.categoryId === cat.id);
                 return (
                   <div key={cat.id}>
                   <MobileCategoryRow
+                    move={reordering ? <MoveButtons label={cat.name} first={catIndex === 0} last={catIndex === cats.length - 1} onStep={(d) => void moveCategory(cat.id, d)} /> : null}
                     name={cat.name}
                     available={available}
                     activity={categoryActivity(state, cat.id, month)}
@@ -325,6 +339,8 @@ const rowButton = 'flex w-full items-center gap-3 text-left';
 const actionLink = 'rounded px-2 py-1.5 text-sm text-sky-700 hover:bg-sky-50';
 
 interface RowActions {
+  /** Up/down buttons while reordering; the row then shows only its name and these. */
+  move: ReactNode;
   open: boolean;
   onToggle: () => void;
   renaming: boolean;
@@ -359,7 +375,12 @@ function MobileGroupRow({ name, available, fmt, ...a }: RowActions & { name: str
   return (
     <div className="bg-slate-50 md:hidden">
       <div className="px-3 py-2.5 text-sm font-semibold">
-        {a.renaming ? (
+        {a.move ? (
+          <span className={rowButton}>
+            <span className="min-w-0 flex-1 truncate">{name}</span>
+            {a.move}
+          </span>
+        ) : a.renaming ? (
           <RenameInput name={name} onRename={a.onRename} onCancelRename={a.onCancelRename} />
         ) : (
           <button type="button" onClick={a.onToggle} aria-expanded={a.open} className={rowButton}>
@@ -368,7 +389,7 @@ function MobileGroupRow({ name, available, fmt, ...a }: RowActions & { name: str
           </button>
         )}
       </div>
-      {a.open && !a.renaming && (
+      {a.open && !a.renaming && !a.move && (
         <div className="flex gap-2 px-1 pb-2">
           <button type="button" onClick={a.onStartRename} className={actionLink}>Rename</button>
           <button type="button" onClick={a.onAction} className="rounded px-2 py-1.5 text-sm text-red-600 hover:bg-red-50">{a.actionLabel} group</button>
@@ -396,7 +417,12 @@ function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt,
   return (
     <div className={`border-t border-slate-100 md:hidden ${a.open ? 'bg-slate-50' : ''}`}>
       <div className="px-3 py-2.5 text-sm">
-        {a.renaming ? (
+        {a.move ? (
+          <span className={rowButton}>
+            <span className="min-w-0 flex-1 truncate pl-3">{name}</span>
+            {a.move}
+          </span>
+        ) : a.renaming ? (
           <RenameInput name={name} onRename={a.onRename} onCancelRename={a.onCancelRename} />
         ) : (
           <button type="button" onClick={a.onToggle} aria-expanded={a.open} className={rowButton}>
@@ -408,7 +434,7 @@ function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt,
           </button>
         )}
       </div>
-      {a.open && !a.renaming && (
+      {a.open && !a.renaming && !a.move && (
         <div className="px-3 pb-3">
           <div className="flex items-center gap-3 text-sm">
             <label className="flex items-center gap-2">

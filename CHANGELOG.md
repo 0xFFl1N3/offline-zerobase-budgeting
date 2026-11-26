@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.5.4 – 2026-11-26
+
+### Added
+- Reordering on phones: a Reorder button on the Budget tab and in the accounts menu shows up and down buttons, since dragging needs a mouse.
+
 ## 0.5.3 – 2026-11-26
 
 ### Added
