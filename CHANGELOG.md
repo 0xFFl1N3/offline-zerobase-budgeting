@@ -2,6 +2,13 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.9.1 – 2026-11-27
+
+### Changed
+- Forms keep what you typed when a change can't be saved, so you can just try again.
+- A storage error is no longer shown twice (in the red bar and next to the form).
+- The red bar goes away by itself once saving works again.
+
 ## 0.9.0 – 2026-11-27
 
 ### Added

@@ -11,6 +11,7 @@ import { MoneyField } from '../../components/MoneyField.tsx';
 import { t } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { GoalEditor } from './GoalEditor.tsx';
+import { useAction } from '../errors/useAction.ts';
 import { NameCell } from './NameCell.tsx';
 import { GoalProgress } from './GoalProgress.tsx';
 
@@ -44,6 +45,7 @@ export function BudgetView() {
   const assign = useBudgetStore((s) => s.assign);
   const addGroup = useBudgetStore((s) => s.addGroup);
   const addCategory = useBudgetStore((s) => s.addCategory);
+  const { run } = useAction();
 
   const renameGroup = useBudgetStore((s) => s.renameGroup);
   const renameCategory = useBudgetStore((s) => s.renameCategory);
@@ -298,14 +300,14 @@ export function BudgetView() {
                 );
               })}
               <div className="px-3 py-2 md:px-8">
-                <InlineAdd label={t('budget.addCategory')} placeholder={t('budget.categoryName')} onAdd={(name) => void addCategory(group.id, name)} />
+                <InlineAdd label={t('budget.addCategory')} placeholder={t('budget.categoryName')} onAdd={(name) => run(() => addCategory(group.id, name))} />
               </div>
             </div>
           );
         })}
 
         <div className="border-t border-slate-200 px-3 py-3 md:px-4">
-          <InlineAdd label={t('budget.addGroup')} placeholder={t('budget.groupName')} onAdd={(name) => void addGroup(name)} />
+          <InlineAdd label={t('budget.addGroup')} placeholder={t('budget.groupName')} onAdd={(name) => run(() => addGroup(name))} />
         </div>
 
         {archivedCount > 0 && (

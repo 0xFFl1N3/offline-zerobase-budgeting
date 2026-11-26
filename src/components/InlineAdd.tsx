@@ -3,7 +3,8 @@ import { useState } from 'react';
 interface Props {
   label: string;
   placeholder: string;
-  onAdd: (name: string) => void;
+  /** May return a promise of whether it worked; the field stays open with the name if not. */
+  onAdd: (name: string) => void | Promise<boolean>;
 }
 
 /** A "+ label" button that turns into a one-line name input. */
@@ -33,8 +34,9 @@ export function InlineAdd({ label, placeholder, onAdd }: Props) {
       onBlur={close}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && name.trim()) {
-          onAdd(name);
-          close();
+          void Promise.resolve(onAdd(name)).then((ok) => {
+            if (ok !== false) close();
+          });
         }
         if (e.key === 'Escape') close();
       }}

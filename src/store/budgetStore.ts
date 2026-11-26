@@ -137,9 +137,10 @@ const newAccount = (name: string, type: AccountType, openingBalance: Cents, sort
 /**
  * The one try/catch for saving: wraps every action so a storage or unexpected error is put in `problem`
  * (shown by the error bar) and marked as reported. The error is thrown on, so a caller can still tell that
- * it failed; rule errors are left to the caller to show (see useAction).
+ * it failed; rule errors are left to the caller to show (see useAction). A later action that works clears a
+ * storage problem.
  */
-function guardActions<T extends object>(actions: T, report: (problem: Problem) => void): T {
+function guardActions<T extends object>(actions: T, report: (problem: Problem) => void, saved: () => void): T {
   const handle = (error: unknown) => {
     const problem = classify(error);
     if (problem.kind !== 'rule') {
@@ -154,7 +155,8 @@ function guardActions<T extends object>(actions: T, report: (problem: Problem) =
     guarded[key] = (...args: unknown[]) => {
       try {
         const result = (value as (...a: unknown[]) => unknown)(...args);
-        return result instanceof Promise ? result.catch((e: unknown) => Promise.reject(handle(e))) : result;
+        // A save that works again means a storage problem shown earlier is over.
+        return result instanceof Promise ? result.then((v) => (saved(), v), (e: unknown) => Promise.reject(handle(e))) : result;
       } catch (e) {
         throw handle(e);
       }
@@ -469,7 +471,9 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     },
 
     shiftMonth: (n) => set((s) => ({ month: addMonths(s.month, n) })),
-    }, (problem) => set({ problem }));
+    }, (problem) => set({ problem }), () => {
+      if (get().problem?.kind === 'storage') set({ problem: null });
+    });
   });
   // Undo only covers the latest delete: any other change to the budget ends it, so it never throws away later work.
   store.subscribe((now, prev) => {

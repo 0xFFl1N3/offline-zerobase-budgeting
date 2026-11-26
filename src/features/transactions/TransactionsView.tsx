@@ -17,6 +17,7 @@ import { ImportPanel } from '../import/ImportPanel.tsx';
 import { filterTransactions, hasActiveFilters, NO_FILTERS, type TxFilters } from './filterTransactions.ts';
 import { useNavigation } from '../../store/navigation.ts';
 import { buildTransaction, toForm, type TxForm, type TxKind } from './buildTransaction.ts';
+import { useAction } from '../errors/useAction.ts';
 
 const blankForm = (accounts: Account[], kind: TxKind = 'outflow'): TxForm => ({
   kind,
@@ -50,7 +51,7 @@ export function TransactionsView() {
   /** When set, the outflow is split: one row per part, with the amount as typed. */
   const [splitRows, setSplitRows] = useState<{ categoryId: string; text: string }[] | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { run, error, setError } = useAction();
   // Another tab may have linked here with filters (e.g. a category from Analytics).
   const [filters, setFilters] = useState<TxFilters>(() => useNavigation.getState().pendingFilters ?? NO_FILTERS);
   useEffect(() => {
@@ -89,9 +90,12 @@ export function TransactionsView() {
     }
     const result = buildTransaction({ ...form, amount: Math.abs(parsed), splits }, editingId ?? crypto.randomUUID());
     if (!result.ok) return setError(result.error);
-    if (repeat && !editingId) void startRecurringSeries(result.transaction, repeat, null);
-    else void saveTransaction(keepCleared(state.transactions.find((t) => t.id === editingId), result.transaction));
-    reset(form);
+    const save =
+      repeat && !editingId
+        ? () => startRecurringSeries(result.transaction, repeat, null)
+        : () => saveTransaction(keepCleared(state.transactions.find((t) => t.id === editingId), result.transaction));
+    // Clear the form only once it is saved, so nothing has to be typed again if saving fails.
+    void run(save).then((ok) => ok && reset(form));
   };
 
   const startEdit = (t: Transaction) => {

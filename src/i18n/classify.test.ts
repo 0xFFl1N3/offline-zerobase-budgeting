@@ -31,3 +31,14 @@ test('a failed save shows in the store and still fails for the caller; rule erro
   store.getState().dismissProblem();
   assert.equal(store.getState().problem, null);
 });
+
+test('a save that works again clears an earlier storage problem', async () => {
+  const store = createBudgetStore(createDb('classify-clear'), '2026-01');
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 1000, currency: 'EUR' });
+  store.getState().reportProblem({ kind: 'storage', message: 'error.storageFull', detail: '', reload: false });
+  await store.getState().addGroup('Living');
+  assert.equal(store.getState().problem, null);
+  store.getState().reportProblem({ kind: 'unexpected', message: 'error.unexpected', detail: '', reload: true });
+  await store.getState().addGroup('Fun');
+  assert.equal(store.getState().problem?.kind, 'unexpected', 'other problems stay until closed');
+});

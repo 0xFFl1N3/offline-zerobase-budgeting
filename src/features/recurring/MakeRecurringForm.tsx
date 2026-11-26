@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { formatDate } from '../../engine/months.ts';
 import { FREQUENCIES } from '../../engine/recurring.ts';
 import { t } from '../../i18n/i18n.ts';
-import { errorText } from '../../i18n/errors.ts';
+import { useAction } from '../errors/useAction.ts';
 import type { Frequency, Transaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 
@@ -11,16 +11,11 @@ export function MakeRecurringForm({ transaction, onDone }: { transaction: Transa
   const makeRecurring = useBudgetStore((s) => s.makeRecurring);
   const [frequency, setFrequency] = useState<Frequency>('monthly');
   const [endDate, setEndDate] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const { run, error } = useAction();
   const field = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-sm';
 
   const submit = async () => {
-    try {
-      await makeRecurring(transaction.id, frequency, endDate || null);
-      onDone();
-    } catch (e) {
-      setError(errorText(e));
-    }
+    if (await run(() => makeRecurring(transaction.id, frequency, endDate || null))) onDone();
   };
 
   return (

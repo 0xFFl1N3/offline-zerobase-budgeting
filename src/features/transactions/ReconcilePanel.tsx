@@ -4,6 +4,7 @@ import { accountBalances } from '../../engine/reconcile.ts';
 import { formatDate } from '../../engine/months.ts';
 import { t } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
+import { useAction } from '../errors/useAction.ts';
 
 const field = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-sm';
 
@@ -17,7 +18,7 @@ export function ReconcilePanel({ accountId }: { accountId: string }) {
   const [open, setOpen] = useState(false);
   const [statementText, setStatementText] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const { run, error, setError } = useAction();
   const [done, setDone] = useState<string | null>(null);
 
   const account = state.accounts.find((a) => a.id === accountId);
@@ -38,7 +39,8 @@ export function ReconcilePanel({ accountId }: { accountId: string }) {
     if (statement === null || difference === null) return setError(t('rec.errorStatement'));
     if (difference < 0 && !categoryId) return setError(t('rec.errorCategory'));
     const locked = balances.clearedCount;
-    void reconcileAccount(accountId, statement, difference === 0 ? null : categoryId || null).then(() => {
+    void run(() => reconcileAccount(accountId, statement, difference === 0 ? null : categoryId || null)).then((ok) => {
+      if (!ok) return;
       setDone(
         t('rec.doneBase', { name: account.name, amount: fmt(statement) }) +
           (locked > 0 ? t('rec.doneLocked', { count: locked }) : '') +

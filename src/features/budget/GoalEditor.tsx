@@ -4,6 +4,7 @@ import type { Category, Goal, GoalType } from '../../engine/types.ts';
 import { t, type MessageKey } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { buildGoal, goalToForm } from './buildGoal.ts';
+import { useAction } from '../errors/useAction.ts';
 
 const TYPE_LABELS: Record<GoalType, MessageKey> = {
   target_balance: 'goal.typeTarget',
@@ -24,7 +25,7 @@ export function GoalEditor({ category, goal, onClose }: Props) {
   const [type, setType] = useState<GoalType>(initial.type);
   const [amountText, setAmountText] = useState(initial.amount ? toAmountInput(initial.amount) : '');
   const [targetDate, setTargetDate] = useState(initial.targetDate);
-  const [error, setError] = useState<string | null>(null);
+  const { run, error, setError } = useAction();
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -32,8 +33,8 @@ export function GoalEditor({ category, goal, onClose }: Props) {
     if (amount === null) return setError(t('goal.errorAmount'));
     const result = buildGoal({ type, amount, targetDate }, category.id, goal?.id ?? crypto.randomUUID());
     if (!result.ok) return setError(t(result.error));
-    void saveGoal(result.goal);
-    onClose();
+    const next = result.goal;
+    void run(() => saveGoal(next)).then((ok) => ok && onClose());
   };
 
   const field = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-sm';

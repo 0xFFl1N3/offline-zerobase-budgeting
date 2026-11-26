@@ -3,7 +3,7 @@ import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
 import { formatDate } from '../../engine/months.ts';
 import { FREQUENCIES, nextDate } from '../../engine/recurring.ts';
 import { t as tr } from '../../i18n/i18n.ts';
-import { errorText } from '../../i18n/errors.ts';
+import { useAction } from '../errors/useAction.ts';
 import type { Frequency, RecurringTransaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { categoryLabel } from '../transactions/labels.ts';
@@ -18,17 +18,12 @@ function EditForm({ rec, onDone }: { rec: RecurringTransaction; onDone: () => vo
   const [amount, setAmount] = useState(toAmountInput(Math.abs(rec.template.amount)));
   const [frequency, setFrequency] = useState<Frequency>(rec.frequency);
   const [endDate, setEndDate] = useState(rec.endDate ?? '');
-  const [error, setError] = useState<string | null>(null);
+  const { run, error, setError } = useAction();
 
   const save = async () => {
     const cents = parseMoney(amount);
     if (!isSplit && (cents === null || cents === 0)) return setError(tr('recur.errorAmount'));
-    try {
-      await editRecurring(rec.id, { payee, memo, frequency, endDate: endDate || null, ...(!isSplit && { amount: Math.abs(cents as number) }) });
-      onDone();
-    } catch (e) {
-      setError(errorText(e));
-    }
+    if (await run(() => editRecurring(rec.id, { payee, memo, frequency, endDate: endDate || null, ...(!isSplit && { amount: Math.abs(cents as number) }) }))) onDone();
   };
 
   return (

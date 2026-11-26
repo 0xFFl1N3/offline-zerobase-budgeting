@@ -6,7 +6,7 @@ import { useBudgetStore } from '../../store/budgetStore.ts';
 import { MoveButtons, useReorder } from '../../components/reorder.tsx';
 import { BackupPanel } from '../backup/BackupPanel.tsx';
 import { t } from '../../i18n/i18n.ts';
-import { errorText } from '../../i18n/errors.ts';
+import { useAction } from '../errors/useAction.ts';
 import { activeSeriesUsing } from '../../engine/recurring.ts';
 
 function AddAccountForm({ onDone }: { onDone: () => void }) {
@@ -14,13 +14,13 @@ function AddAccountForm({ onDone }: { onDone: () => void }) {
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('savings');
   const [balance, setBalance] = useState('');
+  const { run } = useAction();
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const opening = balance.trim() === '' ? 0 : parseMoney(balance);
     if (!name.trim() || opening === null) return;
-    void addAccount(name, type, opening);
-    onDone();
+    void run(() => addAccount(name, type, opening)).then((ok) => ok && onDone());
   };
 
   const field = 'w-full rounded border border-slate-300 px-2 py-1 text-sm';
@@ -50,7 +50,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
   const [name, setName] = useState(account.name);
   const [type, setType] = useState<AccountType>(account.type);
   const [opening, setOpening] = useState(toAmountInput(account.openingBalance));
-  const [error, setError] = useState<string | null>(null);
+  const { run: runAction, error, setError } = useAction();
 
   const used =
     state.transactions.some((t) => t.accountId === account.id || t.transferAccountId === account.id) ||
@@ -58,12 +58,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
   const balance = accountBalance(state, account.id);
 
   const run = async (fn: () => Promise<void>) => {
-    try {
-      await fn();
-      onDone();
-    } catch (e) {
-      setError(errorText(e));
-    }
+    if (await runAction(fn)) onDone();
   };
 
   const submit = (e: FormEvent) => {

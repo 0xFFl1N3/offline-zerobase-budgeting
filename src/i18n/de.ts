@@ -347,7 +347,6 @@ export const de: Messages = {
   'import.updated': { one: '{count} vorgemerkte aktualisiert', other: '{count} vorgemerkte aktualisiert' },
   'import.and': ' und ',
   'import.doneIn': '{parts} in {name}.',
-  'import.failed': 'Der Import ist fehlgeschlagen.',
   'import.none': '(keine)',
   'import.column': 'Spalte {n}',
   'import.categoryFor': 'Kategorie für {name}',

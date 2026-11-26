@@ -19,6 +19,7 @@ import { accountBalances } from '../../engine/reconcile.ts';
 import { categoryLabel } from '../transactions/labels.ts';
 import { formatDate } from '../../engine/months.ts';
 import { errorText } from '../../i18n/errors.ts';
+import { useAction } from '../errors/useAction.ts';
 import { t } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 
@@ -73,7 +74,7 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
   const [overrides, setOverrides] = useState<Map<number, Choice>>(new Map());
   // The row whose category was just picked by hand; it offers to fill the same payee's other rows.
   const [picked, setPicked] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { run, error, setError } = useAction();
 
   const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -144,8 +145,9 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
   // Updated pending payments are already in the balance.
   const chosenTotal = chosenNew.reduce((t, r) => t + r.amount!, 0);
 
-  const runImport = () => {
-    try {
+  const runImport = async () => {
+    let message = '';
+    const ok = await run(async () => {
       const added = toTransactions(
         chosenNew.map((row) => ({ row, payee: choiceFor(row).payee, categoryId: choiceFor(row).categoryId })),
         accountId,
@@ -158,10 +160,10 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
         updated.length > 0 ? t('import.updated', { count: updated.length }) : '',
       ].filter(Boolean).join(t('import.and'));
       const sentence = parts.charAt(0).toUpperCase() + parts.slice(1);
-      void importTransactions([...added, ...updated]).then(() => onClose(t('import.doneIn', { parts: sentence, name })));
-    } catch (e) {
-      setError(e instanceof Error ? errorText(e) : t('import.failed'));
-    }
+      await importTransactions([...added, ...updated]);
+      message = t('import.doneIn', { parts: sentence, name });
+    });
+    if (ok) onClose(message);
   };
 
   const columnSelect = (label: string, value: number | null, onChange: (v: number | null) => void, optional = true) => (

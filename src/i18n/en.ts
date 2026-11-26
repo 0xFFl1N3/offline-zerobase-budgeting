@@ -350,7 +350,6 @@ export const en = {
   'import.updated': { one: 'updated {count} pending one', other: 'updated {count} pending ones' },
   'import.and': ' and ',
   'import.doneIn': '{parts} in {name}.',
-  'import.failed': 'The import failed.',
   'import.none': '(none)',
   'import.column': 'Column {n}',
   'import.categoryFor': 'Category for {name}',
