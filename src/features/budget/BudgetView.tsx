@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { categoryActivity, categoryAssigned, categoryAvailable, readyToAssign } from '../../engine/budget.ts';
+import { autoAssignPlan } from '../../engine/autoassign.ts';
 import { formatMoney } from '../../engine/money.ts';
 import { formatMonth } from '../../engine/months.ts';
 import type { Cents } from '../../engine/types.ts';
@@ -57,6 +58,7 @@ export function BudgetView() {
   const restoreGroup = useBudgetStore((s) => s.restoreGroup);
   const [showArchived, setShowArchived] = useState(false);
   const [editingGoal, setEditingGoal] = useState<string | null>(null);
+  const [autoMessage, setAutoMessage] = useState<{ month: string; text: string } | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
 
   const hasTransactions = (ids: string[]) => state.transactions.some((t) => t.categoryId !== null && ids.includes(t.categoryId));
@@ -90,6 +92,13 @@ export function BudgetView() {
   const archivedCategories = state.categories.filter((c) => c.archived && !archivedGroups.some((g) => g.id === c.groupId));
   const archivedCount = archivedGroups.length + archivedCategories.length;
   const rta = readyToAssign(state, month);
+  const plan = autoAssignPlan(state, month);
+  const autoAssign = useBudgetStore((s) => s.autoAssign);
+  const runAutoAssign = async () => {
+    if (plan.readyAfter < 0 && !window.confirm(`Funding every goal needs ${fmt(plan.total)}, which is ${fmt(-plan.readyAfter)} more than you have left to assign. Ready to Assign will go negative. Continue?`)) return;
+    const n = await autoAssign();
+    setAutoMessage({ month, text: `Assigned ${fmt(plan.total)} to ${n} categor${n === 1 ? 'y' : 'ies'}.` });
+  };
   const groups = state.groups.filter((g) => !g.archived);
 
   return (
@@ -104,8 +113,21 @@ export function BudgetView() {
             ›
           </button>
         </div>
-        <ReadyToAssignPill amount={rta} currency={currency} />
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void runAutoAssign()}
+            disabled={plan.steps.length === 0}
+            title={plan.steps.length === 0 ? 'Every goal is already funded this month' : `Adds ${fmt(plan.total)} to ${plan.steps.length} categories so their goals are met`}
+            className="rounded border border-sky-600 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 disabled:cursor-default disabled:border-slate-300 disabled:text-slate-400 disabled:hover:bg-transparent"
+          >
+            Auto-assign{plan.total > 0 && <span className="ml-1 tabular-nums">{fmt(plan.total)}</span>}
+          </button>
+          <ReadyToAssignPill amount={rta} currency={currency} />
+        </div>
       </div>
+
+      {autoMessage?.month === month && <p className="mt-3 text-sm text-emerald-700" role="status">{autoMessage.text}</p>}
 
       <div className="mt-6 rounded-lg bg-white shadow-sm">
         <div className={`${COLUMNS} border-b border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500`}>

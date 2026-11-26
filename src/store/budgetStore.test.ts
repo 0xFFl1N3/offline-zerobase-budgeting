@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createDb } from '../db/db.ts';
 import { accountBalance, categoryAvailable, readyToAssign } from '../engine/budget.ts';
-import type { Account } from '../engine/types.ts';
+import type { Account, Category } from '../engine/types.ts';
 import { createBudgetStore } from './budgetStore.ts';
 
 let n = 0;
@@ -248,4 +248,25 @@ test('currency change and clearing all data persist across a reload', async () =
   assert.equal(reloaded.getState().state.groups.length, 0);
   assert.equal(reloaded.getState().currency, 'USD');
   assert.equal(reloaded.getState().lastBackupAt, null);
+});
+
+test('auto-assign funds goals once and persists', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 200000, currency: 'EUR' });
+  await store.getState().addGroup('Living');
+  const group = store.getState().state.groups[0]!;
+  await store.getState().addCategory(group.id, 'Rent');
+  await store.getState().addCategory(group.id, 'Fun');
+  const [rent, fun] = store.getState().state.categories as unknown as [Category, Category];
+  await store.getState().saveGoal({ id: 'g1', categoryId: rent.id, type: 'monthly_amount', monthlyAmount: 90000 });
+  await store.getState().saveGoal({ id: 'g2', categoryId: fun.id, type: 'target_balance', targetAmount: 3000 });
+
+  assert.equal(await store.getState().autoAssign(), 2);
+  assert.equal(await store.getState().autoAssign(), 0);
+  const s = store.getState();
+  assert.equal(readyToAssign(s.state, s.month), 200000 - 93000);
+
+  const reloaded = createBudgetStore(db, '2026-01');
+  await reloaded.getState().load();
+  assert.equal(categoryAvailable(reloaded.getState().state, rent.id, '2026-01'), 90000);
 });

@@ -4,6 +4,7 @@ import type { BackupFile } from '../db/backup.ts';
 import * as repo from '../db/repository.ts';
 import type { Currency } from '../engine/money.ts';
 import { moveAccount, moveAccountTo, moveCategory, moveCategoryTo, moveGroup, moveGroupTo, removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from '../engine/edit.ts';
+import { autoAssignPlan, planAssignments } from '../engine/autoassign.ts';
 import { addMonths } from '../engine/months.ts';
 import type { Account, AccountType, BudgetState, Cents, Goal, Month, Transaction } from '../engine/types.ts';
 
@@ -48,6 +49,8 @@ export interface BudgetStore {
   addCategory: (groupId: string, name: string) => Promise<void>;
   /** Sets this month's Assigned amount for a category. */
   assign: (categoryId: string, assigned: Cents) => Promise<void>;
+  /** Adds to each category what its goal still needs this month. Returns how many categories were funded. */
+  autoAssign: () => Promise<number>;
   /** Adds a transaction, or replaces the one with the same id. */
   saveTransaction: (t: Transaction) => Promise<void>;
   removeTransaction: (id: string) => Promise<void>;
@@ -184,6 +187,13 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
         const monthlyBudgets = assigned === 0 ? others : [...others, { categoryId, month, assigned }];
         return { state: { ...s.state, monthlyBudgets } };
       });
+    },
+
+    autoAssign: async () => {
+      const { state, month } = get();
+      const assignments = planAssignments(state, autoAssignPlan(state, month), month);
+      for (const a of assignments) await get().assign(a.categoryId, a.assigned);
+      return assignments.length;
     },
 
     saveTransaction: async (t) => {
