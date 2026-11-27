@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Dialog } from '../../components/Dialog.tsx';
 import { accountBalance } from '../../engine/budget.ts';
-import { nextPaymentMonth, owedHistory, payoffForecast, plannedPayment, type PayoffForecast } from '../../engine/debt.ts';
+import { debtChange, nextPaymentMonth, owedHistory, payoffForecast, plannedPayment, type PayoffForecast } from '../../engine/debt.ts';
+import { useAction } from '../errors/useAction.ts';
 import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
 import { formatMonth, toISODate } from '../../engine/months.ts';
 import { t } from '../../i18n/i18n.ts';
@@ -25,6 +26,12 @@ export function DebtDialog({ debtId, onClose }: { debtId: string; onClose: () =>
   const planned = debt ? plannedPayment(state, debt) : null;
   const [monthlyText, setMonthlyText] = useState(planned ? toAmountInput(planned) : '');
   const [extraText, setExtraText] = useState('');
+  const [raiseText, setRaiseText] = useState('');
+  const [raiseMemo, setRaiseMemo] = useState('');
+  const [correctText, setCorrectText] = useState('');
+  const saveTransaction = useBudgetStore((s) => s.saveTransaction);
+  const raise = useAction();
+  const correct = useAction();
   if (!debt) return null;
 
   const today = toISODate();
@@ -37,6 +44,25 @@ export function DebtDialog({ debtId, onClose }: { debtId: string; onClose: () =>
   const sooner = plan && tried ? plan.payments - tried.payments : 0;
   const history = owedHistory(state, debt, today.slice(0, 7));
   const field = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-right text-sm tabular-nums';
+  const button = 'rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50';
+
+  const owe = () => {
+    const amount = parseMoney(raiseText);
+    if (amount === null || amount <= 0) return raise.setError(t('debt.errorAmount'));
+    const tx = debtChange(debt.id, amount, today, t('debt.raisePayee'), raiseMemo.trim(), crypto.randomUUID());
+    void raise.run(() => saveTransaction(tx)).then((ok) => {
+      if (!ok) return;
+      setRaiseText('');
+      setRaiseMemo('');
+    });
+  };
+  const correctTo = () => {
+    const actual = parseMoney(correctText);
+    if (actual === null || actual < 0) return correct.setError(t('debt.errorOwedAmount'));
+    if (actual === owed) return setCorrectText('');
+    const tx = debtChange(debt.id, actual - owed, today, t('debt.correctPayee'), '', crypto.randomUUID());
+    void correct.run(() => saveTransaction(tx)).then((ok) => ok && setCorrectText(''));
+  };
 
   return (
     <Dialog title={debt.name} onClose={onClose} wide>
@@ -69,6 +95,37 @@ export function DebtDialog({ debtId, onClose }: { debtId: string; onClose: () =>
           </p>
         </section>
       )}
+
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <section className="rounded-lg border border-slate-200 p-4">
+          <h3 className="text-sm font-semibold">{t('debt.raiseTitle')}</h3>
+          <p className="mt-1 text-xs text-slate-500">{t('debt.raiseHint')}</p>
+          <div className="mt-2 flex flex-wrap items-end gap-2">
+            <label className="text-xs font-medium text-slate-600">
+              {t('debt.raiseAmount')}
+              <input value={raiseText} onChange={(e) => setRaiseText(e.target.value)} inputMode="decimal" className={`${field} mt-1 block w-24`} />
+            </label>
+            <label className="min-w-32 flex-1 text-xs font-medium text-slate-600">
+              {t('debt.raiseMemo')}
+              <input value={raiseMemo} onChange={(e) => setRaiseMemo(e.target.value)} className={`${field} mt-1 block w-full text-left`} />
+            </label>
+            <button type="button" onClick={owe} className={button}>{t('debt.raiseButton')}</button>
+          </div>
+          {raise.error && <p className="mt-2 text-xs text-red-600">{raise.error}</p>}
+        </section>
+        <section className="rounded-lg border border-slate-200 p-4">
+          <h3 className="text-sm font-semibold">{t('debt.correctTitle')}</h3>
+          <p className="mt-1 text-xs text-slate-500">{t('debt.correctHint')}</p>
+          <div className="mt-2 flex flex-wrap items-end gap-2">
+            <label className="text-xs font-medium text-slate-600">
+              {t('debt.correctAmount')}
+              <input value={correctText} onChange={(e) => setCorrectText(e.target.value)} inputMode="decimal" placeholder={toAmountInput(Math.max(0, owed))} className={`${field} mt-1 block w-28`} />
+            </label>
+            <button type="button" onClick={correctTo} className={button}>{t('debt.correctButton')}</button>
+          </div>
+          {correct.error && <p className="mt-2 text-xs text-red-600">{correct.error}</p>}
+        </section>
+      </div>
 
       {history.length > 1 && (
         <section className="mt-5">

@@ -131,3 +131,15 @@ test('payoff forecast: whole payments, then a smaller last one; extra payments s
   assert.equal(nextPaymentMonth(s, tv, '2026-04-02'), '2026-04');
   assert.deepEqual(owedHistory(s, tv, '2026-04'), [{ month: '2026-03', value: 62000 }, { month: '2026-04', value: 62000 }]);
 });
+
+test('owing more and corrections stay inside the debt; overpayment is measured against what is owed', async () => {
+  const { debtChange, overpayment, checkDebtRules } = await import('./debt.ts');
+  const more = debtChange('tv', 3000, '2026-03-12', 'Added to debt', 'Cable', 'm1');
+  const s = state([payment('p1', '2026-03-10', 200), more]);
+  assert.doesNotThrow(() => checkDebtRules(s, more));
+  assert.equal(accountBalance(s, 'tv'), -65000, '820 − 200 + 30');
+  assert.equal(readyToAssign(s, '2026-03'), readyToAssign(state([payment('p1', '2026-03-10', 200)]), '2026-03'), 'owing more does not touch the budget');
+  assert.equal(overpayment(s, 'tv', -60000), 0);
+  assert.equal(overpayment(s, 'tv', -70000), 5000);
+  assert.equal(overpayment(s, 'tv', -70000, 'p1'), 0, 'editing p1: its old amount does not count');
+});

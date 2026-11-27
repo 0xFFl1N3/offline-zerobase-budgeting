@@ -567,4 +567,21 @@ export const de: Messages = {
   'debt.leftShort': '{amount} offen · abbezahlt {month}',
   'debt.leftNoPlan': '{amount} offen',
   'debt.planLink': 'Tilgungsplan…',
+
+  // Debts
+  'debt.raiseTitle': 'Mehr schulden',
+  'debt.raiseHint': 'Ein weiterer Kauf über dieselbe Finanzierung, eine Gebühr oder andere Kosten.',
+  'debt.raiseAmount': 'Betrag',
+  'debt.raiseMemo': 'Wofür (optional)',
+  'debt.raiseButton': 'Zur Schuld hinzufügen',
+  'debt.raisePayee': 'Zur Schuld hinzugefügt',
+  'debt.correctTitle': 'Betrag korrigieren',
+  'debt.correctHint': 'Wenn der Gläubiger einen anderen offenen Betrag nennt, trag ihn hier ein. 0 für eine erlassene oder beglichene Schuld.',
+  'debt.correctAmount': 'Tatsächlich offen',
+  'debt.correctButton': 'Korrigieren',
+  'debt.correctPayee': 'Korrektur des Betrags',
+  'debt.errorAmount': 'Gib einen Betrag über null ein.',
+  'debt.errorOwedAmount': 'Gib den offenen Betrag ein (0 oder mehr).',
+  'debt.overpayConfirm': 'Damit zahlst du {amount} mehr, als bei {name} noch offen ist. Trotzdem speichern?',
+  'debt.saved': 'Gespeichert.',
 };

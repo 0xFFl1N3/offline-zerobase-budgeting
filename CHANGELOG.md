@@ -2,6 +2,13 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.10.4 – 2026-11-27
+
+### Added
+- In a debt's payoff plan: "Owe more" adds to what is owed (another purchase on the same financing, a fee), and "Correct the balance" sets it to what the lender says. Neither touches the budget.
+- Paying more than is still owed asks before saving.
+- A debt at zero shows "Paid off" in the accounts list, the Budget and its payoff plan. Close or archive it yourself when you like.
+
 ## 0.10.3 – 2026-11-27
 
 ### Added

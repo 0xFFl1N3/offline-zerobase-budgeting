@@ -18,6 +18,7 @@ import { filterTransactions, hasActiveFilters, NO_FILTERS, type TxFilters } from
 import { useNavigation } from '../../store/navigation.ts';
 import { buildTransaction, toForm, type TxForm, type TxKind } from './buildTransaction.ts';
 import { useAction } from '../errors/useAction.ts';
+import { overpayment } from '../../engine/debt.ts';
 
 const blankForm = (accounts: Account[], kind: TxKind = 'outflow'): TxForm => ({
   kind,
@@ -105,6 +106,12 @@ export function TransactionsView() {
     }
     const result = buildTransaction({ ...form, payment: isPayment, amount: Math.abs(parsed), splits }, editingId ?? crypto.randomUUID());
     if (!result.ok) return setError(result.error);
+    // Paying more than is owed is allowed (there can be a reason), but should not happen by mistake.
+    if (isPayment && form.transferAccountId) {
+      const over = overpayment(state, form.transferAccountId, result.transaction.amount, editingId ?? undefined);
+      const name = state.accounts.find((a) => a.id === form.transferAccountId)?.name ?? '';
+      if (over > 0 && !window.confirm(tr('debt.overpayConfirm', { amount: formatMoney(over, currency), name }))) return;
+    }
     const save =
       repeat && !editingId
         ? () => startRecurringSeries(result.transaction, repeat, null)

@@ -83,3 +83,19 @@ export function owedHistory(state: BudgetState, debt: Account, toMonth: Month): 
   for (let m = first; m <= toMonth; m = addMonths(m, 1)) rows.push({ month: m, value: -accountBalance(state, debt.id, m) });
   return rows;
 }
+
+/**
+ * The transaction that changes what is owed without a payment: more owed (another purchase on the same financing,
+ * a fee) or a correction to the lender's figure. It stays inside the debt account, so it has no category.
+ * `change` is the change in what is owed: positive = owe more.
+ */
+export function debtChange(debtId: string, change: Cents, date: string, payee: string, memo: string, id: string): Transaction {
+  return { id, accountId: debtId, date, payee, categoryId: null, memo, amount: -change, transferAccountId: null };
+}
+
+/** How much a payment to a debt would pay beyond what is owed (0 if it does not). `ignoreId` leaves out a payment being edited. */
+export function overpayment(state: BudgetState, debtId: string, payment: Cents, ignoreId?: string): Cents {
+  const others = ignoreId ? { ...state, transactions: state.transactions.filter((t) => t.id !== ignoreId) } : state;
+  const owed = -accountBalance(others, debtId);
+  return Math.max(0, Math.abs(payment) - Math.max(0, owed));
+}

@@ -220,7 +220,11 @@ export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg
               {a.name}
             </button>
             {dnd.handle(a.id, a.name, 'accounts')}
-            <span className="ml-auto tabular-nums">{formatMoney(accountBalance(state, a.id), currency)}</span>
+            {a.type === 'debt' && accountBalance(state, a.id) >= 0 ? (
+              <span className="ml-auto text-emerald-700">{t('debt.paidOff')}</span>
+            ) : (
+              <span className="ml-auto tabular-nums">{formatMoney(accountBalance(state, a.id), currency)}</span>
+            )}
           </li>
         ),
       )}

@@ -570,6 +570,23 @@ export const en = {
   'debt.leftShort': '{amount} left · paid off {month}',
   'debt.leftNoPlan': '{amount} left',
   'debt.planLink': 'Payoff plan…',
+
+  // Debts
+  'debt.raiseTitle': 'Owe more',
+  'debt.raiseHint': 'Another purchase on the same financing, a fee or other costs.',
+  'debt.raiseAmount': 'Amount',
+  'debt.raiseMemo': 'What for (optional)',
+  'debt.raiseButton': 'Add to debt',
+  'debt.raisePayee': 'Added to debt',
+  'debt.correctTitle': 'Correct the balance',
+  'debt.correctHint': 'If the lender says a different amount is owed, enter it here. Enter 0 for a debt that was forgiven or settled.',
+  'debt.correctAmount': 'Actually owed',
+  'debt.correctButton': 'Correct',
+  'debt.correctPayee': 'Balance correction',
+  'debt.errorAmount': 'Enter an amount greater than zero.',
+  'debt.errorOwedAmount': 'Enter the amount owed (0 or more).',
+  'debt.overpayConfirm': 'This pays {amount} more than is still owed on {name}. Save it anyway?',
+  'debt.saved': 'Saved.',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;
