@@ -32,7 +32,7 @@ export function GoalProgress({ state, goal, month, currency }: Props) {
       ? t('goal.monthlyProgress', amounts)
       : p.dueMonth
         ? t('goal.progressBy', { ...amounts, month: formatMonth(p.dueMonth) }) + (goal.repeatMonths ? ` · ${t(`goal.repeats${goal.repeatMonths}`)}` : '')
-        : t('goal.progress', amounts);
+        : t('goal.keepProgress', amounts);
   const status =
     p.neededThisMonth > 0 ? t('goal.assignMore', { amount: fmt(p.neededThisMonth) }) : p.percent >= 100 ? t('goal.funded') : t('goal.onTrack');
   const funded = p.neededThisMonth === 0;

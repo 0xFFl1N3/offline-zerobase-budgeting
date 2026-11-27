@@ -237,7 +237,9 @@ export function dueMonth(goal: Goal, month: Month): Month | undefined {
 }
 
 /**
- * "Save up to an amount". Without a date: what is missing from the balance now (it refills after spending). With a
+ * Without a date, "Always keep an amount ready": the category should start each month holding the amount. What counts
+ * is last month's balance plus what was assigned this month, so spending this month does not ask for more until the
+ * next month (then the spent part is topped up again). With a
  * date: in the due month the category has to hold the amount. Until then what is missing is spread over the months
  * left, and spending from the category before the due month has to be made up. In the due month, what counts is
  * whether the money was there before that month's spending took it (the bill). After the due month a one-time goal
@@ -252,10 +254,12 @@ function balanceGoalProgress(state: BudgetState, goal: Goal, target: Cents, mont
     ...(due ? { dueMonth: due } : {}),
     ...(pastDue ? { pastDue: true as const } : {}),
   });
-  if (due === undefined) return progress(available, target - available);
-
   /** What the category holds at the start of a month: last month's balance, overspending cleared. */
   const startOf = (m: Month) => Math.max(0, categoryAvailable(state, id, addMonths(m, -1)));
+  if (due === undefined) {
+    const ready = startOf(month) + categoryAssigned(state, id, month);
+    return progress(ready, target - ready);
+  }
   /** What the category held in its due month before that month's spending. */
   const fundedIn = (m: Month) => startOf(m) + categoryAssigned(state, id, m);
 

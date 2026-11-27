@@ -2,6 +2,14 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.5 – 2026-11-27
+
+### Added
+- A third kind of goal, "Always keep an amount ready": the category should start each month holding the amount. Last month's leftover plus this month's assignments count, so spending during the month doesn't ask for more until the next month, which then asks for what was spent. Progress reads "250 € of 300 € ready this month".
+
+### Changed
+- Goals without a month are now this new kind; before, spending during a month raised what that same month asked for. Goals with a month are called "Save up by a month", and the month is no longer optional there.
+
 ## 0.19.4 – 2026-11-27
 
 ### Changed

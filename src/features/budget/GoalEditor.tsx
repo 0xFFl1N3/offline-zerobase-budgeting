@@ -1,18 +1,24 @@
 import { useState } from 'react';
 import { toAmountInput } from '../../engine/money.ts';
 import { parseAmountInput } from '../../engine/amountInput.ts';
-import { REPEAT_MONTHS, type Category, type Goal, type GoalType, type RepeatMonths } from '../../engine/types.ts';
+import { REPEAT_MONTHS, type Category, type Goal, type RepeatMonths } from '../../engine/types.ts';
 import { t, type MessageKey } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
-import { buildGoal, goalToForm } from './buildGoal.ts';
+import { buildGoal, goalToForm, GOAL_KINDS, type GoalKind } from './buildGoal.ts';
 import { useAction } from '../errors/useAction.ts';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 import { Form } from '../../components/Form.tsx';
 import { SumHint } from '../../components/SumHint.tsx';
 
-const TYPE_LABELS: Record<GoalType, MessageKey> = {
-  target_balance: 'goal.typeTarget',
-  monthly_amount: 'goal.typeMonthly',
+const KIND_LABELS: Record<GoalKind, MessageKey> = {
+  keep: 'goal.typeKeep',
+  save_by: 'goal.typeSaveBy',
+  monthly: 'goal.typeMonthly',
+};
+const AMOUNT_LABELS: Record<GoalKind, MessageKey> = {
+  keep: 'goal.keepAmount',
+  save_by: 'goal.target',
+  monthly: 'goal.perMonth',
 };
 
 interface Props {
@@ -28,8 +34,8 @@ export function GoalEditor({ category, goal, onClose, fresh = false }: Props) {
   const removeGoal = useBudgetStore((s) => s.removeGoal);
 
   // A fresh goal after a past due date keeps the amount and asks for a new month.
-  const initial = goal ? { ...goalToForm(goal), ...(fresh ? { targetDate: '', repeatMonths: null } : {}) } : { type: 'target_balance' as GoalType, amount: 0, targetDate: '', repeatMonths: null };
-  const [type, setType] = useState<GoalType>(initial.type);
+  const initial = goal ? { ...goalToForm(goal), ...(fresh ? { targetDate: '', repeatMonths: null } : {}) } : { type: 'keep' as GoalKind, amount: 0, targetDate: '', repeatMonths: null };
+  const [type, setType] = useState<GoalKind>(initial.type);
   const [amountText, setAmountText] = useState(initial.amount ? toAmountInput(initial.amount) : '');
   const [targetDate, setTargetDate] = useState(initial.targetDate);
   const [repeatMonths, setRepeatMonths] = useState<RepeatMonths | null>(initial.repeatMonths ?? null);
@@ -51,14 +57,14 @@ export function GoalEditor({ category, goal, onClose, fresh = false }: Props) {
       <span className="w-full text-sm font-medium">{t('goal.for', { name: category.name })}</span>
       <label className={label}>
         {t('goal.type')}
-        <select value={type} onChange={(e) => setType(e.target.value as GoalType)} className={`${field} mt-1 block`}>
-          {(Object.keys(TYPE_LABELS) as GoalType[]).map((type) => (
-            <option key={type} value={type}>{t(TYPE_LABELS[type])}</option>
+        <select value={type} onChange={(e) => setType(e.target.value as GoalKind)} className={`${field} mt-1 block`}>
+          {GOAL_KINDS.map((kind) => (
+            <option key={kind} value={kind}>{t(KIND_LABELS[kind])}</option>
           ))}
         </select>
       </label>
       <label className={`relative ${label}`}>
-        {type === 'monthly_amount' ? t('goal.perMonth') : t('goal.target')}
+        {t(AMOUNT_LABELS[type])}
         <input {...NO_AUTOFILL}
           autoFocus
           value={amountText}
@@ -69,13 +75,13 @@ export function GoalEditor({ category, goal, onClose, fresh = false }: Props) {
         />
         <SumHint text={amountText} />
       </label>
-      {type !== 'monthly_amount' && (
+      {type === 'save_by' && (
         <label className={label}>
           {t('goal.byMonth')}
           <input {...NO_AUTOFILL} type="month" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className={`${field} mt-1 block`} />
         </label>
       )}
-      {type !== 'monthly_amount' && targetDate !== '' && (
+      {type === 'save_by' && (
         <label className={label}>
           {t('goal.repeat')}
           <select
@@ -90,6 +96,7 @@ export function GoalEditor({ category, goal, onClose, fresh = false }: Props) {
           </select>
         </label>
       )}
+      {type === 'keep' && <p className="w-full text-xs text-slate-500">{t('goal.keepHint')}</p>}
       <button type="submit" className="rounded bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">{t('goal.save')}</button>
       {goal && (
         <button

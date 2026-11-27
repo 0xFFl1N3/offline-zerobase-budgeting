@@ -82,9 +82,28 @@ test('a one-time goal met in its due month asks for nothing afterwards; one that
   assert.equal(need(caughtUp, '2027-04'), 0);
 });
 
-test('a goal without a date still refills after spending', () => {
-  const s = budget(goal({ targetDate: undefined }), { extra: [['2026-01', 48000]], bills: [bill('2026-02-03', 10000)] });
-  assert.equal(need(s, '2026-02'), 10000);
+// "Always keep an amount ready": groceries, 300 € at the start of every month.
+const keep = goal({ targetDate: undefined, targetAmount: 30000 });
+
+test('keep ready: spending this month does not ask for more until next month, which tops it up', () => {
+  const s = budget(keep, { extra: [['2026-01', 30000]], bills: [bill('2026-01-10', 25000)] });
+  const jan = goalProgress(s, keep, '2026-01');
+  assert.deepEqual([jan.current, jan.neededThisMonth], [30000, 0], 'January was filled; its spending is not asked for again in January');
+  const feb = goalProgress(s, keep, '2026-02');
+  assert.deepEqual([feb.current, feb.neededThisMonth], [5000, 25000], '50 € left over, so 250 € tops it up to 300 €');
+});
+
+test('keep ready: what is assigned this month counts, and more than the amount is fine', () => {
+  const s = budget(keep, { extra: [['2026-01', 30000], ['2026-02', 10000]], bills: [bill('2026-01-10', 25000)] });
+  assert.equal(need(s, '2026-02'), 15000);
+  const full = budget(keep, { extra: [['2026-01', 40000]] });
+  assert.deepEqual([goalProgress(full, keep, '2026-02').neededThisMonth, goalProgress(full, keep, '2026-02').percent], [0, 100]);
+});
+
+test('keep ready: overspending last month is not asked for twice', () => {
+  // Overspending comes out of Ready to Assign, so the category starts the next month at zero, not below.
+  const s = budget(keep, { extra: [['2026-01', 30000]], bills: [bill('2026-01-10', 35000)] });
+  assert.equal(need(s, '2026-02'), 30000);
 });
 
 test('7 and 8: the repeat survives a backup; a wrong one is refused', () => {
