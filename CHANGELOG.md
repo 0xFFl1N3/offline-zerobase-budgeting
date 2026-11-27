@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.0 – 2026-11-27
+
+### Changed
+- Budget: each category group is its own card, with space between groups and thin lines between categories. The column labels sit above the cards as plain text instead of in a header bar.
+
 ## 0.10.11 – 2026-11-27
 
 ### Fixed

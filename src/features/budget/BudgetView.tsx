@@ -149,8 +149,9 @@ export function BudgetView() {
       )}
       {autoMessage?.month === month && <p className="mt-3 text-sm text-emerald-700" role="status">{autoMessage.text}</p>}
 
-      <div className="mt-3 rounded-lg bg-white shadow-sm md:mt-6">
-        <div className="flex items-center gap-3 border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 md:hidden">
+      {/* Each group is a card of its own; the column labels sit above them as plain text. */}
+      <div className="mt-3 md:mt-6">
+        <div className="flex items-center gap-3 px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 md:hidden">
           <span>{t('budget.colCategory')}</span>
           <button
             type="button"
@@ -164,7 +165,7 @@ export function BudgetView() {
           </button>
           {!reordering && <span>{t('budget.colAvailable')}</span>}
         </div>
-        <div className={`${COLUMNS} border-b border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500`}>
+        <div className={`${COLUMNS} px-4 pb-2 text-xs font-medium uppercase tracking-wide text-slate-500`}>
           <span>{t('budget.colCategory')}</span>
           <span className="text-right">{t('budget.colAssigned')}</span>
           <span className="text-right">{t('budget.colActivity')}</span>
@@ -172,7 +173,7 @@ export function BudgetView() {
         </div>
 
         {groups.length === 0 && (
-          <p className="px-4 py-6 text-sm text-slate-500">
+          <p className="rounded-lg bg-white px-4 py-6 text-sm text-slate-500 shadow-sm">
             {t('budget.empty')}
           </p>
         )}
@@ -181,7 +182,7 @@ export function BudgetView() {
           const cats = state.categories.filter((c) => c.groupId === group.id && !c.archived);
           const sum = (f: (id: string) => Cents) => cats.reduce((t, c) => t + f(c.id), 0);
           return (
-            <div key={group.id} className="border-b border-slate-100 last:border-b-0">
+            <section key={group.id} aria-label={group.name} className="mb-4 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
               <MobileGroupRow
                 move={reordering ? <MoveButtons label={group.name} first={groupIndex === 0} last={groupIndex === groups.length - 1} onStep={(d) => void moveGroup(group.id, d)} /> : null}
                 name={group.name}
@@ -206,7 +207,7 @@ export function BudgetView() {
                   )
                 }
               />
-              <div {...groupDnd.rowProps(group.id, 'groups')} className={`${COLUMNS} bg-slate-50 px-4 py-2 text-sm font-semibold`}>
+              <div {...groupDnd.rowProps(group.id, 'groups')} className={`${COLUMNS} border-b border-slate-200 px-4 py-3 text-base font-semibold`}>
                 <NameCell
                   name={group.name}
                   renaming={renaming === group.id}
@@ -227,10 +228,11 @@ export function BudgetView() {
                     )
                   }
                 />
-                <span className="px-2 text-right tabular-nums">{formatMoney(sum((id) => categoryAssigned(state, id, month)), currency)}</span>
-                <span className="px-2 text-right tabular-nums">{formatMoney(sum((id) => categoryActivity(state, id, month)), currency)}</span>
-                <span className="px-2 text-right tabular-nums">{formatMoney(sum((id) => categoryAvailable(state, id, month)), currency)}</span>
+                <span className="px-2 text-right text-sm font-medium tabular-nums text-slate-600">{formatMoney(sum((id) => categoryAssigned(state, id, month)), currency)}</span>
+                <span className="px-2 text-right text-sm font-medium tabular-nums text-slate-600">{formatMoney(sum((id) => categoryActivity(state, id, month)), currency)}</span>
+                <span className="px-2 text-right text-sm font-semibold tabular-nums">{formatMoney(sum((id) => categoryAvailable(state, id, month)), currency)}</span>
               </div>
+              <div className="divide-y divide-slate-100">
               {cats.map((cat, catIndex) => {
                 const available = categoryAvailable(state, cat.id, month);
                 const goal = state.goals.find((g) => g.categoryId === cat.id);
@@ -271,7 +273,7 @@ export function BudgetView() {
                     actionLabel={hasTransactions([cat.id]) ? t('budget.archive') : t('common.delete')}
                     onAction={() => removeOrArchive(t('budget.categoryLabel', { name: cat.name }), [cat.id], () => void deleteCategory(cat.id), () => void archiveCategory(cat.id))}
                   />
-                  <div {...categoryDnd.rowProps(cat.id, group.id)} className={`${COLUMNS} px-4 py-1 text-sm`}>
+                  <div {...categoryDnd.rowProps(cat.id, group.id)} className={`${COLUMNS} px-4 py-2 text-sm`}>
                     <div className="pl-4">
                       <NameCell
                         name={cat.name}
@@ -316,19 +318,20 @@ export function BudgetView() {
                   </div>
                 );
               })}
-              <div className="px-3 py-2 md:px-8">
+              </div>
+              <div className="border-t border-slate-100 px-3 py-2 md:px-8">
                 <InlineAdd label={t('budget.addCategory')} placeholder={t('budget.categoryName')} onAdd={(name) => run(() => addCategory(group.id, name))} />
               </div>
-            </div>
+            </section>
           );
         })}
 
-        <div className="border-t border-slate-200 px-3 py-3 md:px-4">
+        <div className="px-3 py-2 md:px-4">
           <InlineAdd label={t('budget.addGroup')} placeholder={t('budget.groupName')} onAdd={(name) => run(() => addGroup(name))} />
         </div>
 
         {archivedCount > 0 && (
-          <div className="border-t border-slate-200 px-4 py-3 text-sm">
+          <div className="px-3 py-2 text-sm md:px-4">
             <button type="button" onClick={() => setShowArchived((v) => !v)} aria-expanded={showArchived} className="text-slate-600 hover:underline">
               {showArchived ? '▾' : '▸'} {t('budget.archived', { count: archivedCount })}
             </button>
@@ -398,8 +401,8 @@ function RenameInput({ name, onRename, onCancelRename }: { name: string; onRenam
 /** Phone layout of a group heading: tap it for Rename and Archive/Delete. */
 function MobileGroupRow({ name, available, fmt, ...a }: RowActions & { name: string; available: Cents; fmt: (c: Cents) => string }) {
   return (
-    <div className="bg-slate-50 md:hidden">
-      <div className="px-3 py-2.5 text-sm font-semibold">
+    <div className="border-b border-slate-200 md:hidden">
+      <div className="px-3 py-3 text-base font-semibold">
         {a.move ? (
           <span className={rowButton}>
             <span className="min-w-0 flex-1 truncate">{name}</span>
@@ -443,7 +446,7 @@ interface CategoryRowProps extends RowActions {
 function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt, goal, hasGoal, onEditGoal, onOpenDebt, debtLine, ...a }: CategoryRowProps) {
   const pill = available < 0 ? 'bg-red-100 text-red-800' : available === 0 ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-800';
   return (
-    <div className={`border-t border-slate-100 md:hidden ${a.open ? 'bg-slate-50' : ''}`}>
+    <div className={`md:hidden ${a.open ? 'bg-slate-50' : ''}`}>
       <div className="px-3 py-2.5 text-sm">
         {a.move ? (
           <span className={rowButton}>

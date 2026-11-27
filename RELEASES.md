@@ -2,6 +2,11 @@
 
 What changed for you in each release, newest first. The full technical list is in CHANGELOG.md.
 
+## 0.11 – A clearer look
+2026-11-27
+
+- Budget: each category group is its own card, so groups are easy to tell apart.
+
 ## 0.10 – Debts
 2026-11-27
 
