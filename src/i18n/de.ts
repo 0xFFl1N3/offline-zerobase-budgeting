@@ -70,6 +70,8 @@ export const de: Messages = {
   // Budget tab
   'budget.prevMonth': 'Vorheriger Monat',
   'budget.nextMonth': 'Nächster Monat',
+  'budget.thisMonth': 'Heute',
+  'budget.thisMonthTitle': 'Zurück zum {month}',
   'budget.readyToAssign': 'Noch zuzuweisen',
   'budget.hintZero': 'Jeder Euro hat eine Aufgabe',
   'budget.hintLeft': 'noch nicht verteilt',

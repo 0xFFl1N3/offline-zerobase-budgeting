@@ -73,6 +73,8 @@ export const en = {
   // Budget tab
   'budget.prevMonth': 'Previous month',
   'budget.nextMonth': 'Next month',
+  'budget.thisMonth': 'Today',
+  'budget.thisMonthTitle': 'Back to {month}',
   'budget.readyToAssign': 'Ready to Assign',
   'budget.hintZero': 'Every euro has a job',
   'budget.hintLeft': 'left to assign',

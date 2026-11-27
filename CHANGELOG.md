@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.2 – 2026-11-27
+
+### Added
+- A "Today" button next to the month switcher on the Budget tab, shown whenever another month is on screen: one click goes back to the current month.
+
 ## 0.19.1 – 2026-11-27
 
 ### Changed

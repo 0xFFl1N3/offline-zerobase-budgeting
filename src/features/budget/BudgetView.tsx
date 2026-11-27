@@ -4,7 +4,7 @@ import { ASSIGN_KINDS, assignPlan, type AssignKind } from '../../engine/autoassi
 import { AssignMenu } from './AssignMenu.tsx';
 import { activeSeriesUsing } from '../../engine/recurring.ts';
 import { formatMoney } from '../../engine/money.ts';
-import { addMonths, formatMonth, toISODate } from '../../engine/months.ts';
+import { formatMonth, monthsBetween, toISODate } from '../../engine/months.ts';
 import type { Cents } from '../../engine/types.ts';
 import { InlineAdd } from '../../components/InlineAdd.tsx';
 import { MoveButtons, useReorder } from '../../components/reorder.tsx';
@@ -152,6 +152,17 @@ export function BudgetView() {
           <button type="button" aria-label={t('budget.nextMonth')} onClick={() => shiftMonth(1)} className="rounded px-3 py-1.5 hover:bg-slate-200 md:px-2 md:py-1">
             ›
           </button>
+          {/* Only away from the current month: one click back to it. */}
+          {month !== currentMonth && (
+            <button
+              type="button"
+              onClick={() => shiftMonth(monthsBetween(month, currentMonth))}
+              title={t('budget.thisMonthTitle', { month: formatMonth(currentMonth) })}
+              className="rounded border border-slate-300 px-2 py-1 text-xs font-medium text-sky-700 hover:bg-slate-100"
+            >
+              {t('budget.thisMonth')}
+            </button>
+          )}
         </div>
         {/* "contents": on phones the button sits next to the month and the pill gets its own full-width line. */}
         <div className="contents md:flex md:items-center md:gap-3">

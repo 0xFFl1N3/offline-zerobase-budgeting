@@ -6,6 +6,7 @@ What changed for you in each release, newest first. The full technical list is i
 2026-11-27
 
 - Money you have already assigned to a later month is no longer shown as free in this month, so you cannot hand it out twice.
+- "Today" takes the budget back to the current month from any other month.
 
 ## 0.18 – Maths in amount fields
 2026-11-27
