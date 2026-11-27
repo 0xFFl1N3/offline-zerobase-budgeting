@@ -2,7 +2,8 @@
 export type Month = string;
 export type Cents = number;
 
-export type AccountType = 'checking' | 'cash' | 'savings';
+/** 'debt' is a loan or other money owed: outside the budget, its balance is negative while something is owed. */
+export type AccountType = 'checking' | 'cash' | 'savings' | 'debt';
 
 export interface Account {
   id: string;
@@ -13,6 +14,10 @@ export interface Account {
   closed: boolean;
   /** Date ('YYYY-MM-DD') of the last finished reconciliation, if any. */
   lastReconciled?: string;
+  /** Debt accounts: the category that payments are budgeted in. */
+  paymentCategoryId?: string;
+  /** Debt accounts: the agreed minimum monthly payment, if any. */
+  minimumPayment?: Cents;
 }
 
 export interface CategoryGroup {
@@ -61,7 +66,10 @@ export interface Transaction {
   accountId: string;
   date: string;
   payee: string;
-  /** null = income (inflow) or uncategorised. Ignored when transferAccountId is set. */
+  /**
+   * null = income (inflow) or uncategorised. On a transfer, only set for a debt payment: money moves from a
+   * budget account (accountId) to a debt account (transferAccountId) and is spent from this category.
+   */
   categoryId: string | null;
   memo: string;
   /** Negative = outflow, positive = inflow. */

@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.10.0 – 2026-11-27
+
+### Added
+- Groundwork for debt accounts: the budget, reports, filters, Age of money and backups now understand debts and payments to them. Debts can be added from 0.10.1.
+
 ## 0.9.3 – 2026-11-27
 
 ### Fixed

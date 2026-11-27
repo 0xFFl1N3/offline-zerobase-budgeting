@@ -41,16 +41,16 @@ export interface IncomeSpendingRow {
   net: Cents;
 }
 
-/** Income and spending per month. Transfers between accounts are neither. */
+/** Income and spending per month. Transfers between accounts are neither, except debt payments, which are spending. */
 export function incomeVsSpending(state: BudgetState, months: Month[]): IncomeSpendingRow[] {
   const index = new Map(months.map((m, i) => [m, i]));
   const rows: IncomeSpendingRow[] = months.map((month) => ({ month, income: 0, spending: 0, net: 0 }));
   for (const t of state.transactions) {
-    if (t.transferAccountId !== null) continue;
     const i = index.get(monthOf(t.date));
     if (i === undefined) continue;
     const parts = categoryParts(t);
     if (parts.length === 0) {
+      if (t.transferAccountId !== null) continue;
       if (t.amount > 0) rows[i]!.income += t.amount; // an outflow without a category is legacy data and not counted
       continue;
     }

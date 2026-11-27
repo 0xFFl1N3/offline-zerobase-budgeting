@@ -24,7 +24,8 @@ export const hasActiveFilters = (f: TxFilters): boolean =>
 function matchesCategory(state: BudgetState, t: Transaction, filter: string): boolean {
   if (filter === 'all') return true;
   if (filter === 'transfers') return t.transferAccountId !== null;
-  if (t.transferAccountId !== null) return false;
+  // Other filters see a debt payment (a transfer with a category) by its category, and no other transfer.
+  if (t.transferAccountId !== null && t.categoryId === null) return false;
   const parts = categoryParts(t);
   if (filter === 'income') return parts.length === 0 && t.amount > 0;
   if (filter === 'uncategorised') return parts.length === 0 && t.amount <= 0;

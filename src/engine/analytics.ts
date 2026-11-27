@@ -45,7 +45,8 @@ export function monthsWithData(state: BudgetState, from: Month, to: Month): Mont
 
 /**
  * Spending per category or group for the period ending at `month`.
- * Spending = outflows with a category, net of refunds booked to the same category; transfers and income are excluded.
+ * Spending = outflows with a category (debt payments included), net of refunds booked to the same category;
+ * other transfers and income are excluded.
  */
 export function spendingReport(state: BudgetState, kind: ReportKind, month: Month, groupBy: GroupBy): SpendingReport {
   const fromMonth: Month = kind === 'month' ? month : `${month.slice(0, 4)}-01`;
@@ -54,10 +55,10 @@ export function spendingReport(state: BudgetState, kind: ReportKind, month: Mont
 
   for (const t of state.transactions) {
     const m = monthOf(t.date);
-    if (m < fromMonth || m > month || t.transferAccountId !== null) continue;
+    if (m < fromMonth || m > month) continue;
     const parts = categoryParts(t);
     if (parts.length === 0) {
-      if (t.amount < 0) uncategorizedCount++;
+      if (t.amount < 0 && t.transferAccountId === null) uncategorizedCount++;
       continue;
     }
     for (const part of parts) spentByCategory.set(part.categoryId, (spentByCategory.get(part.categoryId) ?? 0) - part.amount);

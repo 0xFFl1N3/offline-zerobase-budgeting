@@ -12,7 +12,9 @@ const days = (from: string, to: string) => Math.round((Date.parse(to) - Date.par
  * Money is spent oldest first: every inflow (income, refunds, and each account's opening balance, dated at the
  * account's first transaction) joins a queue, and every outflow takes from the front. An outflow's age is the
  * average age of the money it took, weighted by amount; spending more than has come in counts as 0 days.
- * Transfers move money between accounts and are ignored. Transactions after `asOf` are ignored.
+ * Only money in budget accounts counts: transfers between them are ignored, a debt payment is an outflow,
+ * borrowed money arriving from a debt is an inflow, and what happens inside a debt account is ignored.
+ * Transactions after `asOf` are ignored.
  * Returns null until there are ten outflows.
  */
 export function ageOfMoney(state: BudgetState, asOf: string): number | null {
@@ -43,15 +45,22 @@ function datedAges(state: BudgetState, asOf: string): { date: string; age: numbe
   type Event = { date: string; amount: number; order: number };
   const events: Event[] = [];
   const firstDate = new Map<string, string>();
+  const debt = new Set(state.accounts.filter((a) => a.type === 'debt').map((a) => a.id));
+  const inBudget = (id: string | null) => id !== null && !debt.has(id);
   state.transactions.forEach((t, order) => {
     if (t.date > asOf) return;
     for (const id of [t.accountId, t.transferAccountId]) {
-      if (id && (!firstDate.has(id) || t.date < firstDate.get(id)!)) firstDate.set(id, t.date);
+      if (inBudget(id) && (!firstDate.has(id!) || t.date < firstDate.get(id!)!)) firstDate.set(id!, t.date);
     }
-    if (t.transferAccountId || t.amount === 0) return;
-    events.push({ date: t.date, amount: t.amount, order });
+    // What the transaction does to the money in budget accounts.
+    let amount = 0;
+    if (t.transferAccountId === null) amount = inBudget(t.accountId) ? t.amount : 0;
+    else if (inBudget(t.accountId) !== inBudget(t.transferAccountId)) amount = inBudget(t.accountId) ? t.amount : -t.amount;
+    if (amount === 0) return;
+    events.push({ date: t.date, amount, order });
   });
   for (const account of state.accounts) {
+    if (debt.has(account.id)) continue;
     const date = firstDate.get(account.id);
     if (date && account.openingBalance > 0) events.push({ date, amount: account.openingBalance, order: -1 });
   }

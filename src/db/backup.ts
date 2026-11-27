@@ -40,7 +40,7 @@ type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v);
 const MONTH = /^\d{4}-\d{2}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const ACCOUNT_TYPES: AccountType[] = ['checking', 'cash', 'savings'];
+const ACCOUNT_TYPES: AccountType[] = ['checking', 'cash', 'savings', 'debt'];
 
 function list(data: Obj, key: string): Obj[] {
   const v = data[key];
@@ -178,7 +178,12 @@ function parseData(raw: unknown): BudgetState {
   const accounts: Account[] = list(raw, 'accounts').map((o, index) => {
     const type = str(o, 'type', 'Account') as AccountType;
     if (!ACCOUNT_TYPES.includes(type)) throw new RuleError(`Account: unknown type "${type}".`);
-    return { id: str(o, 'id', 'Account'), name: str(o, 'name', 'Account'), type, openingBalance: int(o, 'openingBalance', 'Account'), sortOrder: o.sortOrder === undefined ? index : int(o, 'sortOrder', 'Account'), closed: bool(o, 'closed', 'Account'), ...parseLastReconciled(o) };
+    return {
+      id: str(o, 'id', 'Account'), name: str(o, 'name', 'Account'), type, openingBalance: int(o, 'openingBalance', 'Account'),
+      sortOrder: o.sortOrder === undefined ? index : int(o, 'sortOrder', 'Account'), closed: bool(o, 'closed', 'Account'), ...parseLastReconciled(o),
+      ...(o.paymentCategoryId !== undefined && { paymentCategoryId: str(o, 'paymentCategoryId', 'Account') }),
+      ...(o.minimumPayment !== undefined && { minimumPayment: int(o, 'minimumPayment', 'Account') }),
+    };
   });
   const groups: CategoryGroup[] = list(raw, 'groups').map((o) => ({
     id: str(o, 'id', 'Group'), name: str(o, 'name', 'Group'), sortOrder: int(o, 'sortOrder', 'Group'), archived: bool(o, 'archived', 'Group'),
@@ -222,8 +227,13 @@ function parseData(raw: unknown): BudgetState {
   for (const c of categories) if (!groupIds.has(c.groupId)) throw new RuleError(`Category "${c.name}" points to a missing group.`);
   for (const g of goals) if (!categoryIds.has(g.categoryId)) throw new RuleError('A goal points to a missing category.');
   for (const b of monthlyBudgets) if (!categoryIds.has(b.categoryId)) throw new RuleError('An assignment points to a missing category.');
+  const debtIds = new Set(accounts.filter((a) => a.type === 'debt').map((a) => a.id));
+  for (const a of accounts) if (a.paymentCategoryId !== undefined && !categoryIds.has(a.paymentCategoryId)) throw new RuleError('A debt points to a missing category.');
   for (const t of transactions) {
     if (!accountIds.has(t.accountId)) throw new RuleError('A transaction points to a missing account.');
+    if (t.transferAccountId !== null && t.categoryId !== null && (debtIds.has(t.accountId) || !debtIds.has(t.transferAccountId))) {
+      throw new RuleError('A transfer with a category must be a payment from a budget account to a debt.');
+    }
     if (t.transferAccountId !== null && !accountIds.has(t.transferAccountId)) throw new RuleError('A transfer points to a missing account.');
     if (t.categoryId !== null && !categoryIds.has(t.categoryId)) throw new RuleError('A transaction points to a missing category.');
     for (const part of t.splits ?? []) if (!categoryIds.has(part.categoryId)) throw new RuleError('A split points to a missing category.');

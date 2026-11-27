@@ -109,8 +109,9 @@ export function TransactionsView() {
   };
 
   const rows = useMemo(() => filterTransactions(state, filters), [state, filters]);
-  // Totals of what is listed; transfers are left out because they only move money between accounts.
-  const shown = rows.filter((t) => t.transferAccountId === null);
+  // Totals of what is listed; transfers are left out because they only move money between accounts,
+  // except debt payments (transfers with a category), which are spending.
+  const shown = rows.filter((t) => t.transferAccountId === null || t.categoryId !== null);
   const totalOut = shown.filter((t) => t.amount < 0).reduce((sum, t) => sum - t.amount, 0);
   const totalIn = shown.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
 

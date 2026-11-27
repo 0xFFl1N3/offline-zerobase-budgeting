@@ -1,10 +1,13 @@
-import type { BudgetState, Cents, Goal, GoalProgress, Month, Transaction, TransactionSplit } from './types.ts';
+import type { Account, BudgetState, Cents, Goal, GoalProgress, Month, Transaction, TransactionSplit } from './types.ts';
 import { addMonths, monthOf, monthsBetween } from './months.ts';
 import { RuleError } from './ruleError.ts';
 
-/** The category shares of a transaction: its splits, or the whole amount in its one category. Empty for transfers and income. */
+/**
+ * The category shares of a transaction: its splits, or the whole amount in its one category. Empty for income and
+ * for transfers, except a debt payment (a transfer with a category), which is spending from that category.
+ */
 export function categoryParts(t: Pick<Transaction, 'transferAccountId' | 'splits' | 'categoryId' | 'amount'>): TransactionSplit[] {
-  if (t.transferAccountId !== null) return [];
+  if (t.transferAccountId !== null) return t.categoryId !== null ? [{ categoryId: t.categoryId, amount: t.amount }] : [];
   if (t.splits && t.splits.length > 0) return t.splits;
   return t.categoryId !== null ? [{ categoryId: t.categoryId, amount: t.amount }] : [];
 }
@@ -14,6 +17,11 @@ export const touchesCategory = (t: Pick<Transaction, 'transferAccountId' | 'spli
   const ids = new Set(categoryIds);
   return categoryParts(t).some((p) => ids.has(p.categoryId));
 };
+
+export const isDebt = (account: Pick<Account, 'type'>): boolean => account.type === 'debt';
+
+/** The accounts whose money is budgeted (everything but debts). */
+export const budgetAccounts = (state: BudgetState): Account[] => state.accounts.filter((a) => !isDebt(a));
 
 /** Balance of one account, counting transactions up to and including `upToMonth` (all if omitted). */
 export function accountBalance(state: BudgetState, accountId: string, upToMonth?: Month): Cents {
@@ -110,7 +118,7 @@ export function archivedCategoryIds(state: BudgetState): Set<string> {
 }
 
 /**
- * Ready to Assign = all account balances minus the balances of all active categories, as of the end of `month`.
+ * Ready to Assign = all budget account balances (not debts) minus the balances of all active categories, as of the end of `month`.
  * Archived categories do not count, so their remaining balance (or shortfall) flows back to Ready to Assign.
  * Because an overspent category starts the next month at zero, last month's overspending is taken from here.
  */
@@ -118,7 +126,8 @@ export function readyToAssign(state: BudgetState, month: Month): Cents {
   const archived = archivedCategoryIds(state);
   const active = new Set(state.categories.filter((c) => !archived.has(c.id)).map((c) => c.id));
   let total = 0;
-  for (const a of state.accounts) total += accountBalance(state, a.id, month);
+  // Debts are outside the budget: only money in budget accounts can be assigned.
+  for (const a of budgetAccounts(state)) total += accountBalance(state, a.id, month);
   for (const [, net] of monthlyNet(state, active)) total -= availableFrom(net, month);
   return total;
 }
