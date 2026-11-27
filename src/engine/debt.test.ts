@@ -102,7 +102,7 @@ test('only payments from a budget account to a debt carry a category', async () 
 
 test("an outflow booked on a debt's category becomes a payment to the debt", async () => {
   const { asDebtPayment } = await import('./debt.ts');
-  const { payeeMemory, suggestCategory } = await import('./csvImport.ts');
+  const { payeeMemory, suggestCategory } = await import('./payees.ts');
   const s = state([]);
   const outflow = tx('o', '2026-03-10', -5000, { payee: 'Ratenzahlung', categoryId: 'tvpay' });
   const paid = asDebtPayment(s, outflow);

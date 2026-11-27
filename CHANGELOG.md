@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.14.2 – 2026-11-27
+
+### Changed
+- The payee field and the bank import now share one payee memory instead of two with slightly different rules. From the import's: purchases and refunds remember their categories separately, and a payment to a debt suggests the debt's payment category. From the payee field's: case and extra spaces do not matter, so "REWE  Markt" in a bank file finds "rewe markt".
+- A category that has been archived is skipped for the one used before it, rather than suggesting nothing.
+
 ## 0.14.1 – 2026-11-27
 
 ### Added

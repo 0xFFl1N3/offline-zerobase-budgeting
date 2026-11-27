@@ -3,7 +3,7 @@
  * right after an import, an undo or a restore.
  */
 import { archivedCategoryIds } from './budget.ts';
-import type { BudgetState, Transaction } from './types.ts';
+import type { BudgetState } from './types.ts';
 
 export interface PayeeInfo {
   /** As written the last time it was used. */
@@ -11,47 +11,51 @@ export interface PayeeInfo {
   /** How often it was used. */
   count: number;
   lastDate: string;
-  /** The category of the last transaction with this payee; null for income, splits and uncategorized ones. */
-  categoryId: string | null;
   /** Whether the last transaction was money in or out. */
   kind: 'inflow' | 'outflow';
+  /**
+   * The category last used for money out and for money in (a refund), from transactions with exactly one category
+   * that is still active. Splits and uncategorized transactions leave it as it was.
+   */
+  categoryFor: { outflow: string | null; inflow: string | null };
 }
 
 /** Payees are the same when they only differ in case or spacing. */
 export const payeeKey = (name: string) => name.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
 
-/** Every payee used in a non-transfer transaction, by payeeKey. */
+/**
+ * Every payee, by payeeKey: used by the payee field and by the bank import. Transfers are left out, except debt
+ * payments (a transfer with a category), so a payment to a debt is suggested its payment category too.
+ */
 export function payeeMemory(state: BudgetState): Map<string, PayeeInfo> {
-  const memory = new Map<string, PayeeInfo>();
-  const latest = new Map<string, Transaction>();
+  const archived = archivedCategoryIds(state);
+  const memory = new Map<string, PayeeInfo & { categoryDate: { outflow: string; inflow: string } }>();
   for (const t of state.transactions) {
-    if (t.transferAccountId !== null || !t.payee.trim()) continue;
+    if ((t.transferAccountId !== null && t.categoryId === null) || !t.payee.trim()) continue;
     const key = payeeKey(t.payee);
-    const seen = latest.get(key);
+    const kind = t.amount > 0 ? 'inflow' : 'outflow';
+    const info = memory.get(key) ?? { name: '', count: 0, lastDate: '', kind, categoryFor: { outflow: null, inflow: null }, categoryDate: { outflow: '', inflow: '' } };
+    info.count += 1;
     // Later date wins; on the same day the later entry in the list (entered or imported later) wins.
-    if (!seen || t.date >= seen.date) latest.set(key, t);
-    const info = memory.get(key);
-    memory.set(key, { ...(info ?? emptyInfo), count: (info?.count ?? 0) + 1 });
+    if (t.date >= info.lastDate) Object.assign(info, { name: t.payee.trim(), lastDate: t.date, kind });
+    if (t.categoryId !== null && !t.splits?.length && !archived.has(t.categoryId) && t.date >= info.categoryDate[kind]) {
+      info.categoryFor[kind] = t.categoryId;
+      info.categoryDate[kind] = t.date;
+    }
+    memory.set(key, info);
   }
-  for (const [key, t] of latest) {
-    memory.set(key, {
-      name: t.payee.trim(),
-      count: memory.get(key)!.count,
-      lastDate: t.date,
-      categoryId: t.splits?.length ? null : t.categoryId,
-      kind: t.amount > 0 ? 'inflow' : 'outflow',
-    });
-  }
-  return memory;
+  return new Map([...memory].map(([key, { categoryDate: _, ...info }]) => [key, info]));
 }
 
-const emptyInfo: PayeeInfo = { name: '', count: 0, lastDate: '', categoryId: null, kind: 'outflow' };
+/** The remembered category for money out (or in, for a positive amount), or null. */
+export function suggestCategory(memory: Map<string, PayeeInfo>, payee: string, amount: number): string | null {
+  return memory.get(payeeKey(payee))?.categoryFor[amount > 0 ? 'inflow' : 'outflow'] ?? null;
+}
 
-/** The remembered category if it can still be used (not archived, not deleted), else null. */
+/** The category to fill in for the payee's last kind of transaction, if it still exists. */
 export function rememberedCategory(state: BudgetState, info: PayeeInfo | undefined): string | null {
-  if (!info?.categoryId) return null;
-  const archived = archivedCategoryIds(state);
-  return state.categories.some((c) => c.id === info.categoryId) && !archived.has(info.categoryId) ? info.categoryId : null;
+  const id = info?.categoryFor[info.kind] ?? null;
+  return id !== null && state.categories.some((c) => c.id === id) ? id : null;
 }
 
 /**

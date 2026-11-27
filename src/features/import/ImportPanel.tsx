@@ -1,19 +1,7 @@
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { parseCsv } from '../../engine/csv.ts';
-import {
-  findMatches,
-  findTable,
-  guessMapping,
-  payeeMemory,
-  readRows,
-  suggestCategory,
-  toTransactions,
-  updateFromRow,
-  type ColumnMapping,
-  type CsvTable,
-  type DateFormat,
-  type ImportRow,
-} from '../../engine/csvImport.ts';
+import { findMatches, findTable, guessMapping, readRows, toTransactions, updateFromRow, type ColumnMapping, type CsvTable, type DateFormat, type ImportRow } from '../../engine/csvImport.ts';
+import { payeeMemory, suggestCategory } from '../../engine/payees.ts';
 import { formatMoney } from '../../engine/money.ts';
 import { accountBalances } from '../../engine/reconcile.ts';
 import { categoryLabel } from '../transactions/labels.ts';

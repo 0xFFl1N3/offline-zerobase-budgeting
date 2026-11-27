@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { detectSeparator, parseCsv } from './csv.ts';
-import { cleanPayee, detectDateFormat, findMatches, findTable, guessMapping, parseDate, payeeMemory, readRows, suggestCategory, toTransactions, updateFromRow } from './csvImport.ts';
+import { payeeMemory, suggestCategory } from './payees.ts';
+import { cleanPayee, detectDateFormat, findMatches, findTable, guessMapping, parseDate, readRows, toTransactions, updateFromRow } from './csvImport.ts';
 import type { BudgetState, Transaction } from './types.ts';
 
 // Shaped like a DKB "Girokonto" export; names and numbers are made up.
@@ -128,6 +129,7 @@ test('payee memory suggests the last category per payee, separately for refunds,
   assert.equal(suggestCategory(memory, 'Edeka', -1), 'food');
   assert.equal(suggestCategory(memory, 'EDEKA', 1), 'tv');
   assert.equal(suggestCategory(memory, 'Netflix.com', -1), null);
+  assert.equal(suggestCategory(memory, '  edeka  ', -1), 'food', 'case and spacing do not matter');
 });
 
 test('import builds cleared transactions (pending ones not cleared) and requires a category on outflows', () => {

@@ -259,25 +259,6 @@ export function updateFromRow(t: Transaction, row: ImportRow): Transaction {
   };
 }
 
-const payeeKey = (payee: string, amount: Cents) => `${amount < 0 ? '-' : '+'}${payee.trim().toLowerCase()}`;
-
-/** The category last used for each payee (outflows and refunds separately), from transactions with one category. */
-export function payeeMemory(state: BudgetState): Map<string, string> {
-  const archived = new Set(state.categories.filter((c) => c.archived).map((c) => c.id));
-  const latest = new Map<string, { date: string; categoryId: string }>();
-  for (const t of state.transactions) {
-    // A debt payment (a transfer with a category) is remembered too, so the next import suggests the debt's category.
-    if (t.categoryId === null || t.splits || archived.has(t.categoryId) || t.payee.trim() === '') continue;
-    const key = payeeKey(t.payee, t.amount);
-    const prev = latest.get(key);
-    if (!prev || t.date >= prev.date) latest.set(key, { date: t.date, categoryId: t.categoryId });
-  }
-  return new Map([...latest].map(([k, v]) => [k, v.categoryId]));
-}
-
-export const suggestCategory = (memory: Map<string, string>, payee: string, amount: Cents): string | null =>
-  memory.get(payeeKey(payee, amount)) ?? null;
-
 export interface ImportChoice {
   row: ImportRow;
   payee: string;

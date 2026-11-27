@@ -29,24 +29,33 @@ test('the memory keeps the last category, kind, spelling and how often a payee w
     tx('Rewe', '2026-02-01', -500, 'eat'),
     tx('Employer', '2026-03-28', 260000, null),
   ]));
-  assert.deepEqual(m.get('rewe'), { name: 'REWE', count: 3, lastDate: '2026-03-01', categoryId: 'groc', kind: 'outflow' });
+  assert.deepEqual(m.get('rewe'), { name: 'REWE', count: 3, lastDate: '2026-03-01', kind: 'outflow', categoryFor: { outflow: 'groc', inflow: null } });
   assert.equal(m.get('employer')!.kind, 'inflow');
 });
 
-test('transfers and empty payees are not remembered; a split remembers no category', () => {
+test('plain transfers and empty payees are not remembered; debt payments are; a split keeps the earlier category', () => {
   const m = payeeMemory(state([
     tx('Savings', '2026-01-28', -30000, null, { transferAccountId: 'b' }),
+    tx('TV financing', '2026-01-15', -5000, 'tv', { transferAccountId: 'debt' }),
     tx('  ', '2026-01-03', -100, 'groc'),
+    tx('Amazon', '2026-01-10', -2000, 'eat'),
     tx('Amazon', '2026-01-24', -5000, null, { splits: [{ categoryId: 'groc', amount: -2000 }, { categoryId: 'eat', amount: -3000 }] }),
   ]));
-  assert.deepEqual([...m.keys()], ['amazon']);
-  assert.equal(m.get('amazon')!.categoryId, null);
+  assert.deepEqual([...m.keys()].sort(), ['amazon', 'tv financing']);
+  assert.equal(m.get('amazon')!.categoryFor.outflow, 'eat');
+  assert.equal(m.get('tv financing')!.categoryFor.outflow, 'tv');
 });
 
-test('a remembered category that is archived or gone is not offered', () => {
-  const s = state([tx('A', '2026-01-01', -1, 'old'), tx('B', '2026-01-01', -1, 'deleted'), tx('C', '2026-01-01', -1, 'groc')]);
+test('purchases and refunds remember their categories separately', () => {
+  const m = payeeMemory(state([tx('REWE', '2026-01-02', -1000, 'groc'), tx('REWE', '2026-01-05', 250, 'eat')]));
+  assert.deepEqual(m.get('rewe')!.categoryFor, { outflow: 'groc', inflow: 'eat' });
+  assert.equal(m.get('rewe')!.kind, 'inflow');
+});
+
+test('an archived category is skipped for the one used before it; a missing one is not offered', () => {
+  const s = state([tx('A', '2026-01-01', -1, 'eat'), tx('A', '2026-02-01', -1, 'old'), tx('B', '2026-01-01', -1, 'deleted'), tx('C', '2026-01-01', -1, 'groc')]);
   const m = payeeMemory(s);
-  assert.equal(rememberedCategory(s, m.get('a')), null);
+  assert.equal(rememberedCategory(s, m.get('a')), 'eat');
   assert.equal(rememberedCategory(s, m.get('b')), null);
   assert.equal(rememberedCategory(s, m.get('c')), 'groc');
 });
