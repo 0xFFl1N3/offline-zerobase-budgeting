@@ -600,6 +600,9 @@ export const en = {
 
   // Errors
   'error.backupDuplicateAssignment': 'The file assigns money to the same category twice in one month.',
+
+  // Recurring
+  'recur.soonest': 'next: {name}, {date}',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

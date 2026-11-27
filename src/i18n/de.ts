@@ -597,4 +597,7 @@ export const de: Messages = {
 
   // Errors
   'error.backupDuplicateAssignment': 'Die Datei weist derselben Kategorie in einem Monat zweimal Geld zu.',
+
+  // Recurring
+  'recur.soonest': 'nächste: {name}, {date}',
 };

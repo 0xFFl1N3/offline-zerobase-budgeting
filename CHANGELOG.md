@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.1 – 2026-11-27
+
+### Changed
+- Transactions: the recurring list can be folded away by clicking its heading (remembered on this device); folded, it shows which one is next. The list is sorted by next date, with paused and ended ones last, and its columns line up. On phones each entry shows name and amount, then what and when, then the actions.
+
 ## 0.11.0 – 2026-11-27
 
 ### Changed

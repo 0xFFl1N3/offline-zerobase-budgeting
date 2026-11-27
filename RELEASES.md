@@ -6,6 +6,7 @@ What changed for you in each release, newest first. The full technical list is i
 2026-11-27
 
 - Budget: each category group is its own card, so groups are easy to tell apart.
+- Recurring transactions: a tidier list, soonest first, that folds away with a click on its heading.
 
 ## 0.10 – Debts
 2026-11-27
