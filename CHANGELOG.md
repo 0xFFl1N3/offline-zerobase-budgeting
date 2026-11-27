@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.4 – 2026-11-27
+
+### Fixed
+- Reconciling, in German: the hint about the adjustment was not a proper sentence. The amount now sits inside the sentence where each language puts it ("…wird beim Abschließen eine Korrektur von 30,00 € gebucht.").
+- The message after reconciling names the adjustment in a sentence of its own instead of tacking it onto the locked transactions.
+
 ## 0.11.3 – 2026-11-27
 
 ### Changed

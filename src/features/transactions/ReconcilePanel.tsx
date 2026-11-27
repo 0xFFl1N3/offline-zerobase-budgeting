@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { Fragment, useState, type FormEvent } from 'react';
 import { formatMoney, parseMoney } from '../../engine/money.ts';
 import { accountBalances } from '../../engine/reconcile.ts';
 import { formatDate } from '../../engine/months.ts';
@@ -107,7 +107,13 @@ export function ReconcilePanel({ accountId }: { accountId: string }) {
           {difference !== null && difference !== 0 && (
             <div className="mt-3 rounded bg-amber-50 p-3 text-sm text-amber-900">
               <p>
-                {t('rec.tickHint')} <span className="font-semibold tabular-nums">{fmt(difference)}</span>.
+                {/* The amount sits wherever the language puts it in the sentence, and is shown in bold. */}
+                {t('rec.tickHint', { amount: '\u0000' }).split('\u0000').map((part, i) => (
+                  <Fragment key={i}>
+                    {i > 0 && <span className="font-semibold tabular-nums">{fmt(difference)}</span>}
+                    {part}
+                  </Fragment>
+                ))}
               </p>
               {debt ? (
                 <p className="mt-2 text-xs">{t('rec.debtAdjustment')}</p>
