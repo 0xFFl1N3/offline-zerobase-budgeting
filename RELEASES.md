@@ -2,6 +2,11 @@
 
 What changed for you in each release, newest first. The full technical list is in CHANGELOG.md.
 
+## 0.12 – Try it with sample data
+2026-11-27
+
+- Try the app with a year of sample data, in English or German.
+
 ## 0.11 – A clearer look
 2026-11-27
 

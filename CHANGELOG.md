@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.12.0 – 2026-11-27
+
+### Added
+- Sample data for trying the app: a year of a believable household budget that ends today, with names in English or German. Accounts (including a credit card used as an ordinary account and two debts), goals of every kind, some overspending, reconciled and open transactions, and a recurring payment that is due. It comes out the same every time apart from the dates. Not reachable in the app yet; tests check it passes the same checks as a backup import, for dates across month ends, February and the turn of the year.
+
 ## 0.11.14 – 2026-11-27
 
 ### Changed
