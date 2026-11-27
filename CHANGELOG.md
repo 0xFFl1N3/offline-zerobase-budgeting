@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.20.2 – 2026-11-27
+
+### Fixed
+- In the suggestions, an own category was only added with Enter, and the field said so ("then Enter"), which makes no sense on a phone. The field now has an "Add" button next to it; Enter still works.
+
 ## 0.20.1 – 2026-11-27
 
 ### Added

@@ -5,6 +5,7 @@ import { useBudgetStore } from '../../store/budgetStore.ts';
 import { useNavigation } from '../../store/navigation.ts';
 import { useAction } from '../errors/useAction.ts';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
+import { Form } from '../../components/Form.tsx';
 
 /**
  * Suggested groups to tick; a ticked group opens its categories, the usual ones ticked. Groups and categories
@@ -77,18 +78,12 @@ export function Suggestions({ firstRun }: { firstRun: boolean }) {
                       );
                     })}
                   </div>
-                  <input {...NO_AUTOFILL}
-                    placeholder={t('suggest.ownCategory')}
-                    aria-label={t('suggest.ownCategoryIn', { group: group.name })}
-                    onKeyDown={(e) => {
-                      const name = e.currentTarget.value.trim();
-                      if (e.key !== 'Enter' || !name) return;
-                      e.preventDefault();
+                  <OwnCategory
+                    group={group.name}
+                    onAdd={(name) => {
                       if (!names.some((n) => sameName(n, name))) setOwn({ ...own, [group.id]: [...(own[group.id] ?? []), name] });
                       if (!ticked.some((n) => sameName(n, name))) setPicked({ ...picked, [group.id]: [...ticked, name] });
-                      e.currentTarget.value = '';
                     }}
-                    className="mt-2 w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-sm sm:w-64"
                   />
                 </div>
               )}
@@ -114,5 +109,33 @@ export function Suggestions({ firstRun }: { firstRun: boolean }) {
         </div>
       </div>
     </main>
+  );
+}
+
+/** A field for an own category with an Add button (phones have no obvious Enter); Enter works too. */
+function OwnCategory({ group, onAdd }: { group: string; onAdd: (name: string) => void }) {
+  const t = useT();
+  const [name, setName] = useState('');
+  return (
+    <Form
+      onSubmit={() => {
+        if (!name.trim()) return;
+        onAdd(name.trim());
+        setName('');
+      }}
+      className="mt-2 flex gap-2"
+    >
+      <input {...NO_AUTOFILL}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder={t('suggest.ownCategory')}
+        aria-label={t('suggest.ownCategoryIn', { group })}
+        enterKeyHint="done"
+        className="min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm sm:max-w-64"
+      />
+      <button type="submit" disabled={!name.trim()} className="rounded border border-sky-600 px-3 py-1.5 text-sm font-medium text-sky-700 hover:bg-sky-50 disabled:opacity-40">
+        {t('suggest.ownAdd')}
+      </button>
+    </Form>
   );
 }
