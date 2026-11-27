@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { parseMoney, toAmountInput } from '../engine/money.ts';
+import { toAmountInput } from '../engine/money.ts';
+import { parseAmountInput } from '../engine/amountInput.ts';
 import type { Cents } from '../engine/types.ts';
 import { NO_AUTOFILL } from './noAutofill.ts';
 
@@ -14,14 +15,15 @@ interface Props {
   boxed?: boolean;
 }
 
-/** Text field for an amount. Commits on Enter or blur, reverts on Escape or invalid input. */
+/** Text field for an amount; sums are worked out (see parseAmountInput). Commits on Enter or blur, reverts on Escape or invalid input. */
 export function MoneyField({ value, onCommit, ariaLabel, className = '', boxed = false }: Props) {
   const [text, setText] = useState<string | null>(null); // null = not editing
   const cancelled = useRef(false);
 
   const finish = () => {
     if (!cancelled.current && text !== null) {
-      const cents = parseMoney(text);
+      // A sum is worked out; "+2,69" adds to the amount that was there.
+      const cents = parseAmountInput(text, value);
       if (cents !== null && cents !== value) onCommit(cents);
     }
     cancelled.current = false;

@@ -2,6 +2,11 @@
 
 What changed for you in each release, newest first. The full technical list is in CHANGELOG.md.
 
+## 0.18 – Maths in amount fields
+2026-11-27
+
+- Type a sum where an amount goes ("100+2,69", "3*12,99") and it is worked out for you. In a budget cell, "+20" adds to what is there.
+
 ## 0.17 – Month overview
 2026-11-27
 

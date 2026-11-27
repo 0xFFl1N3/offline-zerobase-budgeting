@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.18.0 – 2026-11-27
+
+### Added
+- Sums in the Assigned cells: "100+2,69", "3*12,99", "(480-320)/5" are worked out when you press Enter or leave the cell. + − × ÷ can be typed as + - * / (also x and :), with brackets, in either number style. Starting with +, * or / changes the amount already there: "+2,69" adds 2,69. A leading minus still means a negative amount, as before. Something that is not a complete sum is not saved, like any invalid amount.
+- Anything without an operator is read exactly as before; a test checks this across many inputs. The bank import keeps reading amounts as before.
+
 ## 0.17.1 – 2026-11-27
 
 ### Added
