@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
+import { formatMoney, toAmountInput } from '../../engine/money.ts';
+import { parseAmountInput } from '../../engine/amountInput.ts';
 import { formatDate, toISODate } from '../../engine/months.ts';
 import { t as tr } from '../../i18n/i18n.ts';
 import { bookingBlocked, dueItems, type DueItem } from '../../engine/recurring.ts';
@@ -22,7 +23,7 @@ function DueRow({ item, rec }: { item: DueItem; rec: RecurringTransaction }) {
   const blocked = bookingBlocked(state, rec);
 
   const confirm = () => {
-    const cents = parseMoney(amountText);
+    const cents = parseAmountInput(amountText);
     if (cents === null || cents === 0) return setError(tr('recur.errorAmount'));
     const changed = Math.abs(cents) !== Math.abs(t.amount);
     void confirmRecurring(rec.id, changed && !isSplit ? Math.abs(cents) : undefined);

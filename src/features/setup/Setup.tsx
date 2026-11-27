@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { parseMoney, type Currency } from '../../engine/money.ts';
+import { type Currency } from '../../engine/money.ts';
+import { parseAmountInput } from '../../engine/amountInput.ts';
 import { useLanguage, useT } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { LanguageSelect } from '../settings/LanguageSelect.tsx';
@@ -19,7 +20,7 @@ export function Setup() {
   const [error, setError] = useState<string | null>(null);
 
   const submit = () => {
-    const initialBalance = parseMoney(balance);
+    const initialBalance = parseAmountInput(balance);
     if (!accountName.trim()) return setError(t('setup.errorName'));
     if (initialBalance === null) return setError(t('setup.errorBalance'));
     setError(null);

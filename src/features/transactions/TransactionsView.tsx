@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { archivedCategoryIds, isOffBudget, runningBalances } from '../../engine/budget.ts';
-import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
+import { formatMoney, toAmountInput } from '../../engine/money.ts';
+import { parseAmountInput } from '../../engine/amountInput.ts';
 import { formatDate, toISODate } from '../../engine/months.ts';
 import { clearedStatus, isReconciled, keepCleared } from '../../engine/reconcile.ts';
 import { FREQUENCIES } from '../../engine/recurring.ts';
@@ -23,6 +24,7 @@ import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 import { Form } from '../../components/Form.tsx';
 import { fillFromPayee, payeeMemory, type PayeeInfo } from '../../engine/payees.ts';
 import { PayeeField } from './PayeeField.tsx';
+import { SumHint } from '../../components/SumHint.tsx';
 
 const blankForm = (accounts: Account[], kind: TxKind = 'outflow'): TxForm => ({
   kind,
@@ -110,11 +112,11 @@ export function TransactionsView() {
   };
 
   const submit = () => {
-    const parsed = parseMoney(amountText);
+    const parsed = parseAmountInput(amountText);
     if (parsed === null) return setError(tr('tx.errorAmount'));
     let splits: TxForm['splits'] = null;
     if (form.kind === 'outflow' && splitRows) {
-      const amounts = splitRows.map((r) => parseMoney(r.text));
+      const amounts = splitRows.map((r) => parseAmountInput(r.text));
       if (amounts.some((a) => a === null)) return setError(tr('tx.errorSplitAmount'));
       splits = splitRows.map((r, i) => ({ categoryId: r.categoryId || null, amount: Math.abs(amounts[i] as number) }));
     }
@@ -204,9 +206,9 @@ export function TransactionsView() {
     );
   };
 
-  const total = parseMoney(amountText);
+  const total = parseAmountInput(amountText);
   const splitRemaining = splitRows && total !== null
-    ? Math.abs(total) - splitRows.reduce((sum, r) => sum + Math.abs(parseMoney(r.text) ?? 0), 0)
+    ? Math.abs(total) - splitRows.reduce((sum, r) => sum + Math.abs(parseAmountInput(r.text) ?? 0), 0)
     : null;
   const accountName = (id: string) => state.accounts.find((a) => a.id === id)?.name ?? '?';
 
@@ -371,9 +373,10 @@ export function TransactionsView() {
               </select>
             </label>
           )}
-          <label className="text-xs font-medium text-slate-600">
+          <label className="relative text-xs font-medium text-slate-600">
             {tr('tx.amount')}
             <input {...NO_AUTOFILL} value={amountText} onChange={(e) => setAmountText(e.target.value)} inputMode="decimal" placeholder={tr('common.amountPlaceholder')} className={`${field} mt-1 block w-24 text-right tabular-nums`} />
+            <SumHint text={amountText} />
           </label>
           <button type="submit" className="rounded bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">
             {editingId ? tr('common.save') : tr('common.add')}

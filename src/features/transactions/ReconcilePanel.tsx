@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
-import { formatMoney, parseMoney } from '../../engine/money.ts';
+import { formatMoney } from '../../engine/money.ts';
+import { parseAmountInput } from '../../engine/amountInput.ts';
 import { accountBalances } from '../../engine/reconcile.ts';
 import { formatDate } from '../../engine/months.ts';
 import { t } from '../../i18n/i18n.ts';
@@ -28,7 +29,7 @@ export function ReconcilePanel({ accountId }: { accountId: string }) {
   const balances = accountBalances(state, accountId);
   // A debt or tracking account is outside the budget: its difference only changes what is owed or worth, without a category.
   const debt = account.type === 'debt' || account.type === 'tracking';
-  const statement = parseMoney(statementText);
+  const statement = parseAmountInput(statementText);
   const difference = statement === null ? null : statement - balances.cleared;
 
   const close = () => {

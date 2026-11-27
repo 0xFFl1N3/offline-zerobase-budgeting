@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { isSum, parseAmountInput } from './amountInput.ts';
 import { parseMoney } from './money.ts';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 test('anything without an operator is read exactly as before', () => {
   const inputs = [
@@ -43,4 +45,11 @@ test('isSum tells a sum from a single amount', () => {
   assert.equal(isSum('1.234,56'), false);
   assert.equal(isSum('+2', 100), true);
   assert.equal(isSum('+2'), false);
+});
+
+test('every amount typed in the app goes through parseAmountInput', () => {
+  const files = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(join(dir, e.name)) : e.name.endsWith('.tsx') ? [join(dir, e.name)] : []));
+  const direct = files('src').filter((f) => readFileSync(f, 'utf8').includes('parseMoney('));
+  assert.deepEqual(direct, [], 'screens read typed amounts with parseAmountInput, so sums work everywhere');
 });

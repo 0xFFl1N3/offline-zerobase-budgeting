@@ -23,6 +23,7 @@ export const de: Messages = {
   'common.rename': 'Umbenennen',
   'common.done': 'Fertig',
   'common.amountPlaceholder': '0,00',
+  'common.notAnAmount': 'noch kein gültiger Betrag',
   'currency.EUR': 'Euro (EUR)',
   'currency.USD': 'US-Dollar (USD)',
   'language.system': 'Wie mein System',

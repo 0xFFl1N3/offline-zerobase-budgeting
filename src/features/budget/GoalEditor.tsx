@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { parseMoney, toAmountInput } from '../../engine/money.ts';
+import { toAmountInput } from '../../engine/money.ts';
+import { parseAmountInput } from '../../engine/amountInput.ts';
 import { REPEAT_MONTHS, type Category, type Goal, type GoalType, type RepeatMonths } from '../../engine/types.ts';
 import { t, type MessageKey } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
@@ -7,6 +8,7 @@ import { buildGoal, goalToForm } from './buildGoal.ts';
 import { useAction } from '../errors/useAction.ts';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 import { Form } from '../../components/Form.tsx';
+import { SumHint } from '../../components/SumHint.tsx';
 
 const TYPE_LABELS: Record<GoalType, MessageKey> = {
   target_balance: 'goal.typeTarget',
@@ -34,7 +36,7 @@ export function GoalEditor({ category, goal, onClose, fresh = false }: Props) {
   const { run, error, setError } = useAction();
 
   const submit = () => {
-    const amount = parseMoney(amountText);
+    const amount = parseAmountInput(amountText);
     if (amount === null) return setError(t('goal.errorAmount'));
     const result = buildGoal({ type, amount, targetDate, repeatMonths }, category.id, goal?.id ?? crypto.randomUUID());
     if (!result.ok) return setError(t(result.error));
@@ -55,7 +57,7 @@ export function GoalEditor({ category, goal, onClose, fresh = false }: Props) {
           ))}
         </select>
       </label>
-      <label className={label}>
+      <label className={`relative ${label}`}>
         {type === 'monthly_amount' ? t('goal.perMonth') : t('goal.target')}
         <input {...NO_AUTOFILL}
           autoFocus
@@ -65,6 +67,7 @@ export function GoalEditor({ category, goal, onClose, fresh = false }: Props) {
           placeholder={t('common.amountPlaceholder')}
           className={`${field} mt-1 block w-32 text-right tabular-nums`}
         />
+        <SumHint text={amountText} />
       </label>
       {type !== 'monthly_amount' && (
         <label className={label}>

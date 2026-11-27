@@ -26,6 +26,7 @@ export const en = {
   'common.rename': 'Rename',
   'common.done': 'Done',
   'common.amountPlaceholder': '0.00',
+  'common.notAnAmount': 'not a valid amount yet',
   'currency.EUR': 'Euro (EUR)',
   'currency.USD': 'US dollar (USD)',
   'language.system': 'Same as my system',

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
+import { formatMoney, toAmountInput } from '../../engine/money.ts';
+import { parseAmountInput } from '../../engine/amountInput.ts';
 import { formatDate } from '../../engine/months.ts';
 import { FREQUENCIES, nextDate } from '../../engine/recurring.ts';
 import { t as tr } from '../../i18n/i18n.ts';
@@ -22,7 +23,7 @@ function EditForm({ rec, onDone }: { rec: RecurringTransaction; onDone: () => vo
   const { run, error, setError } = useAction();
 
   const save = async () => {
-    const cents = parseMoney(amount);
+    const cents = parseAmountInput(amount);
     if (!isSplit && (cents === null || cents === 0)) return setError(tr('recur.errorAmount'));
     if (await run(() => editRecurring(rec.id, { payee, memo, frequency, endDate: endDate || null, ...(!isSplit && { amount: Math.abs(cents as number) }) }))) onDone();
   };

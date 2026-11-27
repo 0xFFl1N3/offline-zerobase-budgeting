@@ -2,7 +2,8 @@ import { useState, type ReactNode } from 'react';
 import { accountBalance, isOffBudget } from '../../engine/budget.ts';
 import { valueUpdate } from '../../engine/debt.ts';
 import { toISODate } from '../../engine/months.ts';
-import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
+import { formatMoney, toAmountInput } from '../../engine/money.ts';
+import { parseAmountInput } from '../../engine/amountInput.ts';
 import type { Account, AccountType } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { MoveButtons, useReorder } from '../../components/reorder.tsx';
@@ -31,11 +32,11 @@ function AddAccountForm({ onDone }: { onDone: () => void }) {
   const groupName = groupId ? (state.groups.find((g) => g.id === groupId)?.name ?? '') : t('debt.groupName');
 
   const submit = () => {
-    const amount = balance.trim() === '' ? 0 : parseMoney(balance);
+    const amount = balance.trim() === '' ? 0 : parseAmountInput(balance);
     if (!name.trim()) return;
     if (amount === null) return setError(t(debt ? 'debt.errorOwed' : 'account.errorOpening'));
     if (debt) {
-      const min = minimum.trim() === '' ? null : parseMoney(minimum);
+      const min = minimum.trim() === '' ? null : parseAmountInput(minimum);
       if (minimum.trim() !== '' && (min === null || min <= 0)) return setError(t('debt.errorMinimum'));
       const input = { name, owed: Math.abs(amount), minimumPayment: min, groupName: t('debt.groupName'), groupId: groupId || null };
       void run(() => addDebt(input)).then((ok) => ok && onDone());
@@ -116,12 +117,12 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
   };
 
   const submit = () => {
-    const cents = parseMoney(opening);
+    const cents = parseAmountInput(opening);
     if (!name.trim()) return setError(t('account.errorName'));
     if (cents === null) return setError(t(debt ? 'debt.errorOwed' : 'account.errorOpening'));
     if (tracking) return void run(() => editAccount(account.id, { name, openingBalance: cents }));
     if (!debt) return void run(() => editAccount(account.id, { name, type, openingBalance: cents }));
-    const min = minimum.trim() === '' ? null : parseMoney(minimum);
+    const min = minimum.trim() === '' ? null : parseAmountInput(minimum);
     if (minimum.trim() !== '' && (min === null || min <= 0)) return setError(t('debt.errorMinimum'));
     void run(() => editAccount(account.id, { name, openingBalance: -Math.abs(cents), minimumPayment: min }));
   };
@@ -162,7 +163,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
           <button
             type="button"
             onClick={() => {
-              const value = parseMoney(valueText);
+              const value = parseAmountInput(valueText);
               if (value === null) return setError(t('tracking.errorValue'));
               if (value === balance) return setValueText('');
               void run(() => saveTransaction(valueUpdate(account.id, balance, value, toISODate(), t('tracking.valuePayee'), crypto.randomUUID())));

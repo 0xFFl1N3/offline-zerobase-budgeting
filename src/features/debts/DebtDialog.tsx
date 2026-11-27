@@ -4,7 +4,8 @@ import { accountBalance, categoryAvailable } from '../../engine/budget.ts';
 import { useNavigation } from '../../store/navigation.ts';
 import { debtChange, nextPaymentMonth, owedHistory, payoffForecast, plannedPayment, type PayoffForecast } from '../../engine/debt.ts';
 import { useAction } from '../errors/useAction.ts';
-import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
+import { formatMoney, toAmountInput } from '../../engine/money.ts';
+import { parseAmountInput } from '../../engine/amountInput.ts';
 import { formatMonth, toISODate } from '../../engine/months.ts';
 import { t } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
@@ -40,8 +41,8 @@ export function DebtDialog({ debtId, onClose }: { debtId: string; onClose: () =>
   const owed = -accountBalance(state, debt.id);
   const first = nextPaymentMonth(state, debt, today);
   const plan = planned ? payoffForecast(owed, planned, first) : null;
-  const monthly = parseMoney(monthlyText);
-  const extra = extraText.trim() === '' ? 0 : parseMoney(extraText);
+  const monthly = parseAmountInput(monthlyText);
+  const extra = extraText.trim() === '' ? 0 : parseAmountInput(extraText);
   const tried = monthly !== null && monthly > 0 && extra !== null ? payoffForecast(owed, monthly, first, Math.abs(extra)) : null;
   const sooner = plan && tried ? plan.payments - tried.payments : 0;
   const history = owedHistory(state, debt, today.slice(0, 7));
@@ -49,7 +50,7 @@ export function DebtDialog({ debtId, onClose }: { debtId: string; onClose: () =>
   const button = 'rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50';
 
   const owe = () => {
-    const amount = parseMoney(raiseText);
+    const amount = parseAmountInput(raiseText);
     if (amount === null || amount <= 0) return raise.setError(t('debt.errorAmount'));
     const tx = debtChange(debt.id, amount, today, t('debt.raisePayee'), raiseMemo.trim(), crypto.randomUUID());
     void raise.run(() => saveTransaction(tx)).then((ok) => {
@@ -71,7 +72,7 @@ export function DebtDialog({ debtId, onClose }: { debtId: string; onClose: () =>
     onClose();
   };
   const correctTo = () => {
-    const actual = parseMoney(correctText);
+    const actual = parseAmountInput(correctText);
     if (actual === null || actual < 0) return correct.setError(t('debt.errorOwedAmount'));
     if (actual === owed) return setCorrectText('');
     const tx = debtChange(debt.id, actual - owed, today, t('debt.correctPayee'), '', crypto.randomUUID());

@@ -2,6 +2,13 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.18.1 – 2026-11-27
+
+### Added
+- Sums work in every amount you type: transactions and split parts, goals, reconciling, the debt plan, due recurring transactions, setup, accounts and an investment's value.
+- While a sum is typed into a budget cell, the transaction amount or a goal amount, a small hint under the field shows the result ("= 102,69 €"), or "not a valid amount yet".
+- A test makes sure every screen reads typed amounts this way, so a new field cannot miss it.
+
 ## 0.18.0 – 2026-11-27
 
 ### Added

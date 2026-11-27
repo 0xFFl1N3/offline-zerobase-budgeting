@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { toAmountInput } from '../engine/money.ts';
 import { parseAmountInput } from '../engine/amountInput.ts';
+import { SumHint } from './SumHint.tsx';
 import type { Cents } from '../engine/types.ts';
 import { NO_AUTOFILL } from './noAutofill.ts';
 
@@ -53,6 +54,7 @@ export function MoneyField({ value, onCommit, ariaLabel, className = '', boxed =
         }
       }}
     />
+    {text !== null && <SumHint text={text} current={value} />}
     </span>
   );
 }
