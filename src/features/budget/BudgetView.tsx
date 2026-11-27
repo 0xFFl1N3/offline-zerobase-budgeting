@@ -98,6 +98,17 @@ export function BudgetView() {
   /** On phones: up/down buttons instead of amounts, since dragging needs a mouse. */
   const [reordering, setReordering] = useState(false);
   const folding = useCollapsedGroups();
+  /** Categories ticked in the budget: Auto-assign then fills only these. Kept while moving between months. */
+  const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set());
+  const tick = (ids: string[], on: boolean) =>
+    setTicked((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (on) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
 
   const hasTransactions = (ids: string[]) =>
     state.transactions.some((t) => touchesCategory(t, ids)) || state.recurring.some((r) => touchesCategory(r.template, ids));
@@ -132,12 +143,16 @@ export function BudgetView() {
   // Today's month: from here on, money already assigned to later months is not free any more (see availableToAssign).
   const currentMonth = toISODate().slice(0, 7);
   const rta = availableToAssign(state, month, currentMonth);
-  const plans = Object.fromEntries(ASSIGN_KINDS.map((kind) => [kind, assignPlan(state, month, kind, currentMonth)])) as Record<AssignKind, ReturnType<typeof assignPlan>>;
+  // Only ticks on categories still in the budget count (one may have been archived or deleted since).
+  const activeGroupIds = new Set(state.groups.filter((g) => !g.archived).map((g) => g.id));
+  const tickedIds = state.categories.filter((c) => !c.archived && activeGroupIds.has(c.groupId) && ticked.has(c.id)).map((c) => c.id);
+  const only = tickedIds.length > 0 ? new Set(tickedIds) : undefined;
+  const plans = Object.fromEntries(ASSIGN_KINDS.map((kind) => [kind, assignPlan(state, month, kind, currentMonth, only)])) as Record<AssignKind, ReturnType<typeof assignPlan>>;
   const autoAssign = useBudgetStore((s) => s.autoAssign);
   const runAutoAssign = async (kind: AssignKind) => {
     const plan = plans[kind];
     if (plan.readyAfter < 0 && !window.confirm(t('budget.autoAssignConfirm', { total: fmt(plan.total), over: fmt(-plan.readyAfter) }))) return;
-    const n = await autoAssign(kind);
+    const n = await autoAssign(kind, only);
     setAutoMessage({ month, text: t('budget.autoAssignDone', { amount: fmt(plan.total), count: n }) });
   };
   const groups = state.groups.filter((g) => !g.archived);
@@ -168,7 +183,7 @@ export function BudgetView() {
         </div>
         {/* "contents": on phones the button sits next to the month and the pill gets its own full-width line. */}
         <div className="contents md:flex md:items-center md:gap-3">
-          <AssignMenu plans={plans} format={fmt} onPick={(kind) => void runAutoAssign(kind)} />
+          <AssignMenu plans={plans} format={fmt} onPick={(kind) => void runAutoAssign(kind)} tickedCount={tickedIds.length} onClearTicks={() => setTicked(new Set())} />
           <ReadyToAssignPill amount={rta} currency={currency} onOpen={() => setOverview(true)} className="w-full text-center md:w-auto" />
         </div>
       </div>
@@ -251,6 +266,13 @@ export function BudgetView() {
               <div className={`${COLUMNS} ${collapsed ? '' : 'border-b border-slate-200'} px-4 py-3 text-base font-semibold`}>
                 <span className="flex min-w-0 items-center gap-1">
                 <FoldButton name={group.name} collapsed={collapsed} onToggle={() => folding.toggle(group.id)} />
+                <Tick
+                  label={t('budget.selectGroup', { name: group.name })}
+                  checked={cats.length > 0 && cats.every((c) => ticked.has(c.id))}
+                  mixed={cats.some((c) => ticked.has(c.id)) && !cats.every((c) => ticked.has(c.id))}
+                  disabled={cats.length === 0}
+                  onChange={(on) => tick(cats.map((c) => c.id), on)}
+                />
                 <NameCell
                   name={group.name}
                   renaming={renaming === group.id}
@@ -320,7 +342,11 @@ export function BudgetView() {
                     onAction={() => removeOrArchive(t('budget.categoryLabel', { name: cat.name }), [cat.id], () => void deleteCategory(cat.id), () => void archiveCategory(cat.id))}
                   />
                   <div {...categoryDnd.rowProps(cat.id, group.id)} className={`${COLUMNS} px-4 py-2 text-sm`}>
-                    <div className="pl-4">
+                    {/* Lined up under the group: room for its arrow, then the tick box, then the name. */}
+                    <div className="flex items-start gap-1">
+                    <span className="w-7 shrink-0" />
+                    <Tick label={t('budget.selectCategory', { name: cat.name })} checked={ticked.has(cat.id)} onChange={(on) => tick([cat.id], on)} className="mt-0.5" />
+                    <div className="min-w-0 flex-1">
                       <NameCell
                         name={cat.name}
                         renaming={renaming === cat.id}
@@ -350,6 +376,7 @@ export function BudgetView() {
                           {debtLine}
                         </button>
                       )}
+                    </div>
                     </div>
                     <MoneyField
                       ariaLabel={t('budget.assignedTo', { name: cat.name })}
@@ -414,6 +441,26 @@ export function BudgetView() {
 }
 
 const rowButton = 'flex w-full items-center gap-3 text-left';
+
+/** A tick box in front of a group or category; ticked ones are what Auto-assign fills. */
+function Tick({ label, checked, mixed = false, disabled = false, onChange, className = '' }: { label: string; checked: boolean; mixed?: boolean; disabled?: boolean; onChange: (on: boolean) => void; className?: string }) {
+  return (
+    <span className={`flex h-5 w-5 shrink-0 items-center justify-center ${className}`}>
+      <input {...NO_AUTOFILL}
+        type="checkbox"
+        aria-label={label}
+        checked={checked}
+        disabled={disabled}
+        // "Some ticked" shows as a dash; a click then ticks all of them.
+        ref={(el) => {
+          if (el) el.indeterminate = mixed;
+        }}
+        onChange={(e) => onChange(mixed || e.target.checked)}
+        className="h-4 w-4 cursor-pointer accent-sky-600 disabled:cursor-default"
+      />
+    </span>
+  );
+}
 
 /** The arrow that folds a group away to its heading, or opens it again. */
 function FoldButton({ name, collapsed, onToggle }: { name: string; collapsed: boolean; onToggle: () => void }) {

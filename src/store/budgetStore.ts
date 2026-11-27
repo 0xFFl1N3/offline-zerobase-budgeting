@@ -79,7 +79,8 @@ export interface BudgetStore {
   assign: (categoryId: string, assigned: Cents) => Promise<void>;
   /** Adds to each category what its goal still needs this month. Returns how many categories were funded. */
   /** Fills categories the chosen way (goals by default); returns how many categories changed. */
-  autoAssign: (kind?: AssignKind) => Promise<number>;
+  /** `only`: just these categories (the ones ticked in the budget). */
+  autoAssign: (kind?: AssignKind, only?: ReadonlySet<string>) => Promise<number>;
   /**
    * Starts a recurring series from a transaction just entered: it is booked now if its date has come,
    * otherwise it becomes the first due occurrence.
@@ -337,9 +338,9 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       });
     },
 
-    autoAssign: async (kind = 'goals') => {
+    autoAssign: async (kind = 'goals', only) => {
       const { state, month } = get();
-      const assignments = planAssignments(state, assignPlan(state, month, kind), month);
+      const assignments = planAssignments(state, assignPlan(state, month, kind, undefined, only), month);
       if (assignments.length === 0) return 0;
       await repo.setAssignedMany(db, month, assignments);
       const changed = new Set(assignments.map((a) => a.categoryId));

@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.10 – 2026-11-27
+
+### Added
+- Tick boxes in front of every category and group in the budget (on wider screens). Ticking a group ticks all of its categories; a dash means some of them are ticked. With anything ticked, Auto-assign fills only the ticked categories: its button shows how many, and its menu says so and has "Untick all". The ticks stay while moving between months and are not stored.
+
 ## 0.19.9 – 2026-11-27
 
 ### Added

@@ -56,11 +56,17 @@ export const overspendingPlan = (state: BudgetState, month: Month, currentMonth?
 export const lastMonthPlan = (state: BudgetState, month: Month, currentMonth?: Month) =>
   planBy(state, month, (id) => (categoryAssigned(state, id, month) === 0 ? Math.max(0, categoryAssigned(state, id, addMonths(month, -1))) : 0), currentMonth);
 
-/** `currentMonth` (today's): whether money planned for later months is no longer free (see availableToAssign). */
-export function assignPlan(state: BudgetState, month: Month, kind: AssignKind, currentMonth?: Month): AutoAssignPlan {
-  if (kind === 'overspending') return overspendingPlan(state, month, currentMonth);
-  if (kind === 'lastMonth') return lastMonthPlan(state, month, currentMonth);
-  return autoAssignPlan(state, month, currentMonth);
+/**
+ * `currentMonth` (today's): whether money planned for later months is no longer free (see availableToAssign).
+ * `only`: the categories ticked in the budget; when given, the plan leaves every other category alone.
+ */
+export function assignPlan(state: BudgetState, month: Month, kind: AssignKind, currentMonth?: Month, only?: ReadonlySet<string>): AutoAssignPlan {
+  const plan =
+    kind === 'overspending' ? overspendingPlan(state, month, currentMonth) : kind === 'lastMonth' ? lastMonthPlan(state, month, currentMonth) : autoAssignPlan(state, month, currentMonth);
+  if (!only) return plan;
+  const steps = plan.steps.filter((step) => only.has(step.categoryId));
+  const total = steps.reduce((sum, step) => sum + step.add, 0);
+  return { steps, total, readyAfter: plan.readyAfter + plan.total - total };
 }
 
 /** The Assigned amounts the plan results in, for storing. */

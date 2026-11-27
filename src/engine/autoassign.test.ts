@@ -87,3 +87,13 @@ test('each kind reports nothing to do when there is nothing to do', () => {
   s.goals = [];
   for (const kind of ['goals', 'overspending', 'lastMonth'] as const) assert.equal(assignPlan(s, M, kind).steps.length, 0, kind);
 });
+
+test('with ticked categories, only those are filled, whatever the kind', () => {
+  const s = state();
+  const plan = assignPlan(s, M, 'goals', undefined, new Set(['pc', 'fun']));
+  assert.deepEqual(plan.steps, [{ categoryId: 'pc', add: 15000 }]);
+  assert.equal(plan.total, 15000);
+  assert.equal(plan.readyAfter, readyToAssign(s, M) - 15000);
+  assert.deepEqual(assignPlan(s, M, 'goals', undefined, new Set()).steps, [], 'nothing ticked that needs money: nothing to do');
+  assert.deepEqual(assignPlan(s, M, 'goals', undefined, new Set(['rent', 'pc'])), assignPlan(s, M, 'goals'), 'all that need money ticked: same as no selection');
+});

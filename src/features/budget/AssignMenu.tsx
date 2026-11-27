@@ -7,13 +7,16 @@ interface Props {
   plans: Record<AssignKind, AutoAssignPlan>;
   format: (cents: number) => string;
   onPick: (kind: AssignKind) => void;
+  /** How many categories are ticked in the budget; the plans then cover only those. */
+  tickedCount: number;
+  onClearTicks: () => void;
 }
 
 /**
  * The Auto-assign button and its menu. Each entry says up front how much it would assign; one with nothing to do
  * says why in plain text (never only in a tooltip, which phones do not show).
  */
-export function AssignMenu({ plans, format, onPick }: Props) {
+export function AssignMenu({ plans, format, onPick, tickedCount, onClearTicks }: Props) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -58,12 +61,28 @@ export function AssignMenu({ plans, format, onPick }: Props) {
         className={`flex items-center gap-1.5 rounded border px-3 py-2 text-sm font-medium ${anything ? 'border-sky-600 text-sky-700 hover:bg-sky-50' : 'border-slate-300 text-slate-500 hover:bg-slate-50'}`}
       >
         {t('budget.autoAssign')}
+        {tickedCount > 0 && <span className="rounded-full bg-sky-600 px-1.5 text-xs font-semibold leading-5 text-white tabular-nums">{tickedCount}</span>}
         <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden="true">
           <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       {open && (
         <div role="menu" aria-label={t('budget.autoAssign')} className="absolute right-0 top-full z-30 mt-1 w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-slate-200">
+          {tickedCount > 0 && (
+            <div className="flex items-center gap-2 border-b border-slate-100 bg-sky-50 px-4 py-2 text-xs text-sky-900">
+              <span className="flex-1">{t('assign.onlyTicked', { count: tickedCount })}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  onClearTicks();
+                  setOpen(false);
+                }}
+                className="font-medium text-sky-700 hover:underline"
+              >
+                {t('assign.clearTicks')}
+              </button>
+            </div>
+          )}
           {ASSIGN_KINDS.map((kind) => {
             const plan = plans[kind];
             const none = plan.steps.length === 0;
