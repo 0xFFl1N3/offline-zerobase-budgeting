@@ -18,7 +18,7 @@ const AMOUNT_LABELS: Record<GoalKind, MessageKey> = {
   monthly: 'goal.perMonth',
 };
 
-export const EMPTY_GOAL_FORM: GoalForm = { type: 'keep', amount: 0, targetDate: '', repeatMonths: null };
+export const EMPTY_GOAL_FORM: GoalForm = { type: 'monthly', amount: 0, targetDate: '', repeatMonths: null };
 
 /** The goal's fields as the user types them, shared by the goal editor and "Add category". */
 export function useGoalFields(initial: GoalForm = EMPTY_GOAL_FORM) {

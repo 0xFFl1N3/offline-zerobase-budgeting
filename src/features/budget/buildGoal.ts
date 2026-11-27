@@ -6,7 +6,7 @@ import type { MessageKey } from '../../i18n/en.ts';
  * goal without a month, "save up by a month" one with a month.
  */
 export type GoalKind = 'keep' | 'save_by' | 'monthly';
-export const GOAL_KINDS: GoalKind[] = ['keep', 'save_by', 'monthly'];
+export const GOAL_KINDS: GoalKind[] = ['monthly', 'keep', 'save_by'];
 
 /** What the goal editor holds. For 'monthly', `amount` is the monthly amount. */
 export interface GoalForm {

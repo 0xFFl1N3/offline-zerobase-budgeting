@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.7 – 2026-11-27
+
+### Changed
+- "Assign a set amount every month" is now first in the list of goal kinds and is what a new goal starts with, since it is the one used most.
+
 ## 0.19.6 – 2026-11-27
 
 ### Added
