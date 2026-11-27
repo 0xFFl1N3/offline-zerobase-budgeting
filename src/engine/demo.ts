@@ -1,5 +1,6 @@
 /**
- * Sample data for trying the app: a year of a believable household budget that ends today. The same every time
+ * Sample data for trying the app: two years of a believable household budget that end today, so the longest
+ * chart range (24 months) is full. The same every time
  * apart from the dates (a fixed random seed), so screenshots and the user guide stay comparable.
  */
 import { readyToAssign } from './budget.ts';
@@ -36,7 +37,9 @@ const lastDay = (month: string) => Number(addDays(`${addMonths(month, 1)}-01`, -
 /** A day in a month; days past the month's end become its last day. */
 const dayIn = (month: string, day: number) => `${month}-${String(Math.min(day, lastDay(month))).padStart(2, '0')}`;
 
-/** A year of sample data ending on `today` ('YYYY-MM-DD'). */
+/** Two years of sample data ending on `today` ('YYYY-MM-DD'). */
+const MONTHS = 24;
+
 export function buildDemo(today: string, language: DemoLanguage): BudgetState {
   const N = NAMES[language];
   let seed = 20261127;
@@ -47,10 +50,12 @@ export function buildDemo(today: string, language: DemoLanguage): BudgetState {
   const id = (p: string) => `demo-${p}-${String(++n).padStart(4, '0')}`;
 
   const current = monthOf(today);
-  const months = Array.from({ length: 12 }, (_, i) => addMonths(current, i - 11));
+  const months = Array.from({ length: MONTHS }, (_, i) => addMonths(current, i - (MONTHS - 1)));
   const before = (month: string) => addMonths(month, -1);
-  // The December inside the year (Christmas) and the next December from now (the gifts goal).
-  const december = months.find((m) => m.endsWith('-12'))!;
+  // The Decembers in the data (Christmas) and the next December from now (the gifts goal).
+  const decembers = months.filter((m) => m.endsWith('-12'));
+  /** The same month in each of the two years: `i` counts from the start of a year of data. */
+  const yearly = (i: number) => [months[i]!, months[i + 12]!];
   const nextDecember = current.endsWith('-12') ? current : `${current.slice(0, 4)}-12`;
 
   const accounts: Account[] = [
@@ -58,7 +63,7 @@ export function buildDemo(today: string, language: DemoLanguage): BudgetState {
     { id: 'acc-card', name: N.card, type: 'checking', openingBalance: 0, sortOrder: 1, closed: false },
     { id: 'acc-cash', name: N.cash, type: 'cash', openingBalance: 8000, sortOrder: 2, closed: false },
     { id: 'acc-save', name: N.savings, type: 'savings', openingBalance: 300000, sortOrder: 3, closed: false },
-    { id: 'acc-tv', name: N.tv, type: 'debt', openingBalance: -120000, sortOrder: 4, closed: false, paymentCategoryId: 'cat-tv', minimumPayment: 5000 },
+    { id: 'acc-tv', name: N.tv, type: 'debt', openingBalance: -180000, sortOrder: 4, closed: false, paymentCategoryId: 'cat-tv', minimumPayment: 5000 },
     { id: 'acc-anna', name: N.anna, type: 'debt', openingBalance: -50000, sortOrder: 5, closed: false, paymentCategoryId: 'cat-anna' },
   ];
   const groups: CategoryGroup[] = N.groups.map((name, i) => ({ id: `grp-${i}`, name, sortOrder: i, archived: false }));
@@ -85,13 +90,13 @@ export function buildDemo(today: string, language: DemoLanguage): BudgetState {
   // Assigned each month (cents).
   const plan: Record<string, number> = {
     'cat-rent': 95000, 'cat-power': 8500, 'cat-net': 4500, 'cat-ins': 4000, 'cat-groc': 42000, 'cat-eat': 9000,
-    'cat-fuel': 11000, 'cat-ticket': 4900, 'cat-stream': 2600, 'cat-hobby': 6000, 'cat-gifts': 2500,
+    'cat-fuel': 10000, 'cat-ticket': 4900, 'cat-stream': 2600, 'cat-hobby': 6000, 'cat-gifts': 2500,
     'cat-emerg': 40000, 'cat-hol': 20000, 'cat-tv': 5000,
   };
   const monthlyBudgets: MonthlyBudget[] = [];
   for (const m of months) for (const [categoryId, assigned] of Object.entries(plan)) monthlyBudgets.push({ categoryId, month: m, assigned });
-  for (const i of [6, 9]) monthlyBudgets.push({ categoryId: 'cat-anna', month: months[i]!, assigned: 10000 });
-  monthlyBudgets.find((b) => b.categoryId === 'cat-gifts' && b.month === december)!.assigned += 25000; // Christmas, on top of the plan
+  for (const i of [18, 21]) monthlyBudgets.push({ categoryId: 'cat-anna', month: months[i]!, assigned: 10000 });
+  for (const december of decembers) monthlyBudgets.find((b) => b.categoryId === 'cat-gifts' && b.month === december)!.assigned += 25000; // Christmas, on top of the plan
 
   const transactions: Transaction[] = [];
   const add = (date: string, accountId: string, payee: string, cents: number, categoryId: string | null, extra: Partial<Transaction> = {}) => {
@@ -106,7 +111,7 @@ export function buildDemo(today: string, language: DemoLanguage): BudgetState {
   const streamDay = Math.max(1, Number(today.slice(8)) - 2);
 
   months.forEach((m, i) => {
-    add(dayIn(m, 27), 'acc-giro', N.employer, 285000, null, { memo: N.salary });
+    add(dayIn(m, 27), 'acc-giro', N.employer, 260000, null, { memo: N.salary });
     transfer(dayIn(m, 3), 'acc-giro', 'acc-cash', N.atm, 15000, { memo: N.withdrawal });
     spend(dayIn(m, 1), 'acc-giro', 'Hausverwaltung Schmidt', 95000, 'cat-rent');
     spend(dayIn(m, 1), 'acc-giro', 'Deutsche Bahn', 4900, 'cat-ticket', N.ticketMemo);
@@ -128,15 +133,19 @@ export function buildDemo(today: string, language: DemoLanguage): BudgetState {
     if (i % 3 === 2) add(dayIn(m, 26), 'acc-save', N.interest, 1400 + i * 100, null);
   });
   // One-offs
-  spend(dayIn(december, 14), 'acc-card', 'Galeria', 18900, 'cat-gifts', N.presents);
-  spend(dayIn(december, 21), 'acc-cash', 'Weihnachtsmarkt', 3500, 'cat-eat');
-  spend(dayIn(months[3]!, 1), 'acc-giro', 'Allianz', 48000, 'cat-ins', N.insYearly);
-  spend(dayIn(months[5]!, 12), 'acc-card', 'Blumen Meyer', 4500, 'cat-gifts', N.birthday);
-  spend(dayIn(months[8]!, 4), 'acc-card', 'Booking.com', 61200, 'cat-hol', N.trip);
-  spend(dayIn(months[8]!, 9), 'acc-cash', 'Ristorante Al Lago', 8600, 'cat-hol');
-  spend(dayIn(months[10]!, 3), 'acc-giro', 'Kfz-Werkstatt Huber', 34000, 'cat-emerg', N.brakes);
-  add(dayIn(months[6]!, 12), 'acc-giro', 'REWE', 1250, 'cat-groc', { memo: N.refund });
-  for (const i of [6, 9]) add(dayIn(months[i]!, 1), 'acc-giro', 'Anna', -10000, 'cat-anna', { transferAccountId: 'acc-anna' });
+  for (const december of decembers) {
+    spend(dayIn(december, 14), 'acc-card', 'Galeria', between(150, 210), 'cat-gifts', N.presents);
+    spend(dayIn(december, 21), 'acc-cash', 'Weihnachtsmarkt', 3500, 'cat-eat');
+  }
+  for (const m of yearly(3)) spend(dayIn(m, 1), 'acc-giro', 'Allianz', 48000, 'cat-ins', N.insYearly);
+  for (const m of yearly(5)) spend(dayIn(m, 12), 'acc-card', 'Blumen Meyer', between(35, 55), 'cat-gifts', N.birthday);
+  for (const m of yearly(8)) {
+    spend(dayIn(m, 4), 'acc-card', 'Booking.com', between(540, 680), 'cat-hol', N.trip);
+    spend(dayIn(m, 9), 'acc-cash', 'Ristorante Al Lago', between(70, 95), 'cat-hol');
+  }
+  spend(dayIn(months[22]!, 3), 'acc-giro', 'Kfz-Werkstatt Huber', 34000, 'cat-emerg', N.brakes);
+  add(dayIn(months[18]!, 12), 'acc-giro', 'REWE', 1250, 'cat-groc', { memo: N.refund });
+  for (const i of [18, 21]) add(dayIn(months[i]!, 1), 'acc-giro', 'Anna', -10000, 'cat-anna', { transferAccountId: 'acc-anna' });
   // Each month's card purchases are paid on the 2nd of the next month.
   months.slice(1).forEach((m) => {
     const prev = before(m);

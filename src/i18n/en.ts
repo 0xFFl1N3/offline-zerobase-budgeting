@@ -40,7 +40,7 @@ export const en = {
   'setup.currency': 'Currency',
   'setup.start': 'Start budgeting',
   'setup.demo': 'Try with sample data',
-  'setup.demoHint': 'A year of made-up transactions to look around in. You can set up your own budget at any time.',
+  'setup.demoHint': 'Two years of made-up transactions to look around in. You can set up your own budget at any time.',
 
   // Sample data
   'demo.notice': 'You are looking at sample data.',

@@ -37,7 +37,7 @@ export const de: Messages = {
   'setup.currency': 'Währung',
   'setup.start': 'Los geht’s',
   'setup.demo': 'Mit Beispieldaten ausprobieren',
-  'setup.demoHint': 'Ein Jahr erfundener Buchungen zum Umschauen. Du kannst jederzeit ein eigenes Budget anlegen.',
+  'setup.demoHint': 'Zwei Jahre erfundener Buchungen zum Umschauen. Du kannst jederzeit ein eigenes Budget anlegen.',
 
   // Sample data
   'demo.notice': 'Du siehst Beispieldaten.',

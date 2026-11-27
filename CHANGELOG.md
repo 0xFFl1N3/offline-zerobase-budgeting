@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.12.3 – 2026-11-27
+
+### Changed
+- The sample data now covers two years instead of one, so the 24-month view in Statistics is full. Yearly things (insurance, holiday, a birthday, Christmas) happen in both years. The TV financing starts higher so it is still being paid off, the salary is a little lower so the savings stay believable, and the fuel budget is a bit tight so overspending shows up.
+
 ## 0.12.2 – 2026-11-27
 
 ### Added
