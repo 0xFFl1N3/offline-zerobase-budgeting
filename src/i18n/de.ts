@@ -213,6 +213,8 @@ export const de: Messages = {
   'tx.splitAcross': 'Auf Kategorien aufgeteilt',
   'tx.income': 'Einnahme (geht an „Noch zuzuweisen“)',
   'tx.incomeLabel': 'Einnahme',
+  'tx.showMore': '{count} weitere anzeigen',
+  'tx.shown': '{shown} von {total} angezeigt',
   'tx.chooseCategory': 'Kategorie wählen …',
   'tx.memo': 'Notiz',
   'tx.optional': 'Optional',

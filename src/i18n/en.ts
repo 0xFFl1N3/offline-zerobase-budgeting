@@ -216,6 +216,8 @@ export const en = {
   'tx.splitAcross': 'Split across categories',
   'tx.income': 'Income (goes to Ready to Assign)',
   'tx.incomeLabel': 'Income',
+  'tx.showMore': 'Show {count} more',
+  'tx.shown': 'Showing {shown} of {total}',
   'tx.chooseCategory': 'Choose a category…',
   'tx.memo': 'Memo',
   'tx.optional': 'Optional',

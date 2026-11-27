@@ -34,6 +34,9 @@ const blankForm = (accounts: Account[], kind: TxKind = 'outflow'): TxForm => ({
 
 const field = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-sm';
 
+/** How many transactions the list draws at first, and how many more each click adds. */
+const PAGE_SIZE = 100;
+
 export function TransactionsView() {
   const state = useBudgetStore((s) => s.state);
   const currency = useBudgetStore((s) => s.currency);
@@ -79,6 +82,9 @@ export function TransactionsView() {
   const [filtersOpen, setFiltersOpen] = useState(() => useNavigation.getState().pendingFilters !== null);
   const [openTx, setOpenTx] = useState<string | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
+  // Long lists draw the newest rows first and more on request; filters and totals still cover everything.
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  useEffect(() => setLimit(PAGE_SIZE), [filters]);
   const filterAccount = filters.accountId;
   const setFilter = (patch: Partial<TxFilters>) => setFilters((f) => ({ ...f, ...patch }));
 
@@ -145,7 +151,7 @@ export function TransactionsView() {
   const totalIn = shown.filter((t) => signed(t) > 0).reduce((sum, t) => sum + signed(t), 0);
 
   /** What each listed transaction shows, for the table and for the phone list. */
-  const items = rows.map((t) => {
+  const items = rows.slice(0, limit).map((t) => {
     const mirrored = mirroredFor(t);
     const amount = signed(t);
     // The status shown is the selected account's side; with all accounts, the sending side.
@@ -537,7 +543,7 @@ export function TransactionsView() {
 
       {/* Phones: one card per transaction; tap it for Edit, Repeat and Delete. */}
       {/* mb-20 keeps the last card clear of the round + button. */}
-      <ul className="mt-2 mb-20 divide-y divide-slate-100 rounded-lg bg-white shadow-sm md:hidden">
+      <ul className="mt-2 divide-y divide-slate-100 rounded-lg bg-white shadow-sm md:hidden">
         {rows.length === 0 && (
           <li className="px-3 py-6 text-sm text-slate-500">{activeFilters ? tr('tx.noMatch') : tr('tx.none')}</li>
         )}
@@ -571,6 +577,16 @@ export function TransactionsView() {
           </li>
         ))}
       </ul>
+      <div className="mt-3 mb-20 flex items-center gap-3 text-sm md:mb-0">
+        {rows.length > limit && (
+          <>
+            <button type="button" onClick={() => setLimit(limit + PAGE_SIZE)} className="rounded-md px-3 py-1.5 font-medium text-sky-700 ring-1 ring-slate-200 hover:bg-sky-50">
+              {tr('tx.showMore', { count: Math.min(PAGE_SIZE, rows.length - limit) })}
+            </button>
+            <span className="text-slate-500">{tr('tx.shown', { shown: limit, total: rows.length })}</span>
+          </>
+        )}
+      </div>
     </section>
   );
 }

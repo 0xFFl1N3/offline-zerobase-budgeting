@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.9 – 2026-11-27
+
+### Changed
+- The transaction list shows the newest 100 transactions at first, with a "Show 100 more" button below. Filters, search, the count and the totals still cover all transactions. Changing a filter starts again at 100. This keeps the list quick with years of data.
+
 ## 0.11.8 – 2026-11-27
 
 ### Fixed
