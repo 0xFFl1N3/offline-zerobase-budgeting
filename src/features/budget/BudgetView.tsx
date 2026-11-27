@@ -182,7 +182,8 @@ export function BudgetView() {
           const cats = state.categories.filter((c) => c.groupId === group.id && !c.archived);
           const sum = (f: (id: string) => Cents) => cats.reduce((t, c) => t + f(c.id), 0);
           return (
-            <section key={group.id} aria-label={group.name} className="mb-4 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
+            // The whole card is the drop target for moving groups, so the drop line falls between cards.
+            <section key={group.id} aria-label={group.name} {...groupDnd.rowProps(group.id, 'groups', true)} className="mb-4 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
               <MobileGroupRow
                 move={reordering ? <MoveButtons label={group.name} first={groupIndex === 0} last={groupIndex === groups.length - 1} onStep={(d) => void moveGroup(group.id, d)} /> : null}
                 name={group.name}
@@ -207,7 +208,7 @@ export function BudgetView() {
                   )
                 }
               />
-              <div {...groupDnd.rowProps(group.id, 'groups')} className={`${COLUMNS} border-b border-slate-200 px-4 py-3 text-base font-semibold`}>
+              <div className={`${COLUMNS} border-b border-slate-200 px-4 py-3 text-base font-semibold`}>
                 <NameCell
                   name={group.name}
                   renaming={renaming === group.id}

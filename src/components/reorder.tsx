@@ -20,7 +20,11 @@ export function useReorder(
     return e.clientY < box.top + box.height / 2 ? 'before' : 'after';
   };
 
-  const rowProps = (id: string, scope: string) => ({
+  /**
+   * `between`: the rows are separate cards with a gap between them, so the drop line is drawn in the gap
+   * (outside the card) rather than along the row's own edge, where it would look like a drop into the card.
+   */
+  const rowProps = (id: string, scope: string, between = false) => ({
     'data-reorder-row': true,
     onDragOver: (e: DragEvent<HTMLElement>) => {
       if (!e.dataTransfer.types.includes(mime(scope))) return;
@@ -36,7 +40,13 @@ export function useReorder(
       setOver(null);
       if (dragged !== id) onMove(dragged, id, placeFor(e));
     },
-    style: over?.id === id ? { boxShadow: over.place === 'before' ? 'inset 0 2px 0 0 #0ea5e9' : 'inset 0 -2px 0 0 #0ea5e9' } : undefined,
+    style:
+      over?.id === id
+        ? between
+          ? // Keep the card's own ring and shadow (Tailwind's variables) next to the line.
+            { boxShadow: `${over.place === 'before' ? '0 -9px 0 -7px #0ea5e9' : '0 9px 0 -7px #0ea5e9'}, var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000)` }
+          : { boxShadow: over.place === 'before' ? 'inset 0 2px 0 0 #0ea5e9' : 'inset 0 -2px 0 0 #0ea5e9' }
+        : undefined,
   });
 
   const handle = (id: string, label: string, scope: string): ReactNode => (

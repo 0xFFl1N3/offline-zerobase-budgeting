@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.2 – 2026-11-27
+
+### Fixed
+- Budget: while moving a group, the drop line was drawn under the target group's heading, as if the group could be dropped into it. It is now drawn in the gap between the group cards.
+
 ## 0.11.1 – 2026-11-27
 
 ### Changed
