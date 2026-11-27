@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { AnalyticsView } from './features/analytics/AnalyticsView.tsx';
 import { AccountsSidebar } from './features/accounts/AccountsSidebar.tsx';
 import { BudgetView } from './features/budget/BudgetView.tsx';
@@ -17,6 +17,7 @@ import { useNavigation, type Tab } from './store/navigation.ts';
 import { UndoBar } from './features/undo/UndoBar.tsx';
 import { VersionButton } from './features/changelog/Changelog.tsx';
 import { ErrorBar, LoadFailed } from './features/errors/ErrorBar.tsx';
+import { DebtDialog } from './features/debts/DebtDialog.tsx';
 import { useAutoBackup } from './features/backup/AutoBackupCard.tsx';
 
 
@@ -39,6 +40,9 @@ export default function App() {
   const language = useLanguage();
   const active = useNavigation((s) => s.tab);
   const setActive = useNavigation((s) => s.setTab);
+  const debtDialog = useNavigation((s) => s.debtDialog);
+  const openDebt = useNavigation((s) => s.openDebt);
+  const closeDebt = useCallback(() => openDebt(null), [openDebt]);
   /** The accounts drawer on phones. */
   const [drawer, setDrawer] = useState(false);
 
@@ -143,6 +147,7 @@ export default function App() {
 
       <UndoBar />
       <ErrorBar />
+      {debtDialog && <DebtDialog debtId={debtDialog} onClose={closeDebt} />}
 
       {/* Phone: tabs along the bottom, within thumb reach. */}
       <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">

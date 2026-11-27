@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react';
-import { touchesCategory, categoryActivity, categoryAssigned, categoryAvailable, overspentIn, readyToAssign } from '../../engine/budget.ts';
+import { accountBalance, touchesCategory, categoryActivity, categoryAssigned, categoryAvailable, overspentIn, readyToAssign } from '../../engine/budget.ts';
 import { autoAssignPlan } from '../../engine/autoassign.ts';
 import { activeSeriesUsing } from '../../engine/recurring.ts';
 import { formatMoney } from '../../engine/money.ts';
-import { addMonths, formatMonth } from '../../engine/months.ts';
+import { addMonths, formatMonth, toISODate } from '../../engine/months.ts';
 import type { Cents } from '../../engine/types.ts';
 import { InlineAdd } from '../../components/InlineAdd.tsx';
 import { MoveButtons, useReorder } from '../../components/reorder.tsx';
@@ -11,7 +11,7 @@ import { MoneyField } from '../../components/MoneyField.tsx';
 import { t } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { GoalEditor } from './GoalEditor.tsx';
-import { debtForCategory } from '../../engine/debt.ts';
+import { debtForCategory, nextPaymentMonth, payoffForecast, plannedPayment } from '../../engine/debt.ts';
 import { useNavigation } from '../../store/navigation.ts';
 import { useAction } from '../errors/useAction.ts';
 import { NameCell } from './NameCell.tsx';
@@ -49,6 +49,7 @@ export function BudgetView() {
   const addCategory = useBudgetStore((s) => s.addCategory);
   const { run } = useAction();
   const newTransaction = useNavigation((s) => s.newTransaction);
+  const openDebt = useNavigation((s) => s.openDebt);
 
   const renameGroup = useBudgetStore((s) => s.renameGroup);
   const renameCategory = useBudgetStore((s) => s.renameCategory);
@@ -246,6 +247,15 @@ export function BudgetView() {
                         amount: available > 0 ? available : (debt.minimumPayment ?? 0),
                       })
                   : undefined;
+                // "€620.00 left · paid off April 2028", opening the payoff plan.
+                const debtLine = (() => {
+                  if (!debt) return null;
+                  const owed = -accountBalance(state, debt.id);
+                  if (owed <= 0) return t('debt.paidOff');
+                  const planned = plannedPayment(state, debt);
+                  const f = planned ? payoffForecast(owed, planned, nextPaymentMonth(state, debt, toISODate())) : null;
+                  return f ? t('debt.leftShort', { amount: fmt(owed), month: formatMonth(f.lastMonth) }) : t('debt.leftNoPlan', { amount: fmt(owed) });
+                })();
                 return (
                   <div key={cat.id}>
                   <MobileCategoryRow
@@ -260,6 +270,8 @@ export function BudgetView() {
                     hasGoal={goal !== undefined}
                     onEditGoal={() => setEditingGoal(cat.id)}
                     onRecordPayment={recordPayment}
+                    onOpenDebt={debt ? () => openDebt(debt.id) : undefined}
+                    debtLine={debtLine}
                     open={open === cat.id}
                     onToggle={() => toggle(cat.id)}
                     renaming={renaming === cat.id}
@@ -298,10 +310,15 @@ export function BudgetView() {
                           {t('budget.setGoal')}
                         </button>
                       )}
-                      {recordPayment && (
-                        <button type="button" onClick={recordPayment} className="text-xs text-sky-700 hover:underline">
-                          {t('debt.recordPayment')}
-                        </button>
+                      {debt && (
+                        <span className="flex flex-wrap gap-x-3 text-xs">
+                          <button type="button" onClick={() => openDebt(debt.id)} className="text-slate-600 hover:underline">
+                            {debtLine}
+                          </button>
+                          <button type="button" onClick={recordPayment} className="text-sky-700 hover:underline">
+                            {t('debt.recordPayment')}
+                          </button>
+                        </span>
                       )}
                     </div>
                     <MoneyField
@@ -440,10 +457,12 @@ interface CategoryRowProps extends RowActions {
   onEditGoal: () => void;
   /** For a debt's payment category. */
   onRecordPayment?: () => void;
+  onOpenDebt?: () => void;
+  debtLine?: string | null;
 }
 
 /** Phone layout of a category: name, goal and Available; tap it to assign money and for the other actions. */
-function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt, goal, hasGoal, onEditGoal, onRecordPayment, ...a }: CategoryRowProps) {
+function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt, goal, hasGoal, onEditGoal, onRecordPayment, onOpenDebt, debtLine, ...a }: CategoryRowProps) {
   const pill = available < 0 ? 'bg-red-100 text-red-800' : available === 0 ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-800';
   return (
     <div className={`border-t border-slate-100 md:hidden ${a.open ? 'bg-slate-50' : ''}`}>
@@ -460,6 +479,7 @@ function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt,
             <span className="min-w-0 flex-1">
               <span className="block truncate">{name}</span>
               {goal}
+              {debtLine && <span className="block text-xs text-slate-500">{debtLine}</span>}
             </span>
             <span className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-medium tabular-nums ${pill}`}>{fmt(available)}</span>
           </button>
@@ -478,6 +498,7 @@ function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt,
           </div>
           <div className="mt-2 flex flex-wrap gap-1">
             {onRecordPayment && <button type="button" onClick={onRecordPayment} className={actionLink}>{t('debt.recordPayment')}</button>}
+            {onOpenDebt && <button type="button" onClick={onOpenDebt} className={actionLink}>{t('debt.planLink')}</button>}
             <button type="button" onClick={onEditGoal} className={actionLink}>{hasGoal ? t('budget.editGoal') : t('budget.setGoal')}</button>
             <button type="button" onClick={a.onStartRename} className={actionLink}>{t('common.rename')}</button>
             <button type="button" onClick={a.onAction} className="rounded px-2 py-1.5 text-sm text-red-600 hover:bg-red-50">{a.actionLabel}</button>

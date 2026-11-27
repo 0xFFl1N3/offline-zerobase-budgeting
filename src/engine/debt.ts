@@ -1,5 +1,7 @@
 import { RuleError } from './ruleError.ts';
-import type { BudgetState, Transaction } from './types.ts';
+import { accountBalance } from './budget.ts';
+import { addMonths } from './months.ts';
+import type { Account, BudgetState, Cents, Month, Transaction } from './types.ts';
 
 const isDebtId = (state: BudgetState, id: string | null) => id !== null && state.accounts.some((a) => a.id === id && a.type === 'debt');
 
@@ -35,4 +37,49 @@ export function asDebtPayment<T extends Pick<Transaction, 'accountId' | 'transfe
   const debt = debtForCategory(state, t.categoryId);
   if (!debt || debt.id === t.accountId || state.accounts.find((a) => a.id === t.accountId)?.type === 'debt') return t;
   return { ...t, transferAccountId: debt.id };
+}
+
+export interface PayoffForecast {
+  /** Payments still to make (0 when nothing is owed). */
+  payments: number;
+  /** Month of the last payment. */
+  lastMonth: Month;
+  /** The last payment, usually smaller than the others. */
+  lastAmount: Cents;
+}
+
+/**
+ * When a debt is paid off with a fixed monthly payment (no interest: the amount owed already includes it).
+ * `extra` is a one-time payment on top of the first one. Returns null when the payment is not positive.
+ */
+export function payoffForecast(owed: Cents, monthly: Cents, firstMonth: Month, extra: Cents = 0): PayoffForecast | null {
+  const left = Math.max(0, owed - Math.max(0, extra));
+  if (owed <= 0) return { payments: 0, lastMonth: firstMonth, lastAmount: 0 };
+  if (left === 0) return { payments: 1, lastMonth: firstMonth, lastAmount: 0 };
+  if (!(monthly > 0)) return null;
+  const payments = Math.ceil(left / monthly);
+  return { payments, lastMonth: addMonths(firstMonth, payments - 1), lastAmount: left - (payments - 1) * monthly };
+}
+
+/** What is planned per month for a debt: its category's monthly goal, else the minimum payment. */
+export function plannedPayment(state: BudgetState, debt: Account): Cents | null {
+  const goal = state.goals.find((g) => g.categoryId === debt.paymentCategoryId && g.type === 'monthly_amount');
+  return goal?.monthlyAmount ?? debt.minimumPayment ?? null;
+}
+
+/** The month of the next payment: this month, unless a payment to the debt was already made this month. */
+export function nextPaymentMonth(state: BudgetState, debt: Account, today: string): Month {
+  const month = today.slice(0, 7);
+  const paid = state.transactions.some((t) => t.transferAccountId === debt.id && t.amount < 0 && t.date.startsWith(month));
+  return paid ? addMonths(month, 1) : month;
+}
+
+/** What is owed at the end of each month (positive), from the debt's first month up to `toMonth`. */
+export function owedHistory(state: BudgetState, debt: Account, toMonth: Month): { month: Month; value: Cents }[] {
+  const own = state.transactions.filter((t) => t.accountId === debt.id || t.transferAccountId === debt.id);
+  if (own.length === 0) return [];
+  const first = own.reduce((m, t) => (t.date.slice(0, 7) < m ? t.date.slice(0, 7) : m), toMonth);
+  const rows: { month: Month; value: Cents }[] = [];
+  for (let m = first; m <= toMonth; m = addMonths(m, 1)) rows.push({ month: m, value: -accountBalance(state, debt.id, m) });
+  return rows;
 }

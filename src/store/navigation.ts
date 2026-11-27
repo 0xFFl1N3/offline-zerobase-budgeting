@@ -25,12 +25,17 @@ interface Navigation {
   /** Opens the Transactions tab with the entry form filled in. */
   newTransaction: (prefill: PendingTransaction) => void;
   takePendingTransaction: () => PendingTransaction | null;
+  /** The debt whose payoff plan is open, if any. */
+  debtDialog: string | null;
+  openDebt: (id: string | null) => void;
 }
 
 export const useNavigation = create<Navigation>((set, get) => ({
   tab: 'budget',
   pendingFilters: null,
   pendingTransaction: null,
+  debtDialog: null,
+  openDebt: (id) => set({ debtDialog: id }),
   newTransaction: (prefill) => set({ tab: 'transactions', pendingTransaction: prefill }),
   takePendingTransaction: () => {
     const prefill = get().pendingTransaction;

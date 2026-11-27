@@ -114,3 +114,20 @@ test("an outflow booked on a debt's category becomes a payment to the debt", asy
   // The next import suggests the debt's category for the same payee.
   assert.equal(suggestCategory(payeeMemory(state([paid])), 'Ratenzahlung', -5000), 'tvpay');
 });
+
+test('payoff forecast: whole payments, then a smaller last one; extra payments shorten it', async () => {
+  const { payoffForecast, plannedPayment, nextPaymentMonth, owedHistory } = await import('./debt.ts');
+  assert.deepEqual(payoffForecast(82000, 5000, '2026-12'), { payments: 17, lastMonth: '2028-04', lastAmount: 2000 });
+  assert.deepEqual(payoffForecast(82000, 5000, '2026-12', 20000), { payments: 13, lastMonth: '2027-12', lastAmount: 2000 });
+  assert.deepEqual(payoffForecast(5000, 5000, '2026-12'), { payments: 1, lastMonth: '2026-12', lastAmount: 5000 });
+  assert.equal(payoffForecast(82000, 0, '2026-12'), null);
+  assert.equal(payoffForecast(0, 5000, '2026-12')!.payments, 0);
+
+  const s = state([payment('p1', '2026-03-10', 200)]);
+  const tv = s.accounts[1]!;
+  assert.equal(plannedPayment(s, tv), 5000, 'no goal: the minimum');
+  assert.equal(plannedPayment({ ...s, goals: [{ id: 'g', categoryId: 'tvpay', type: 'monthly_amount', monthlyAmount: 8000 }] }, tv), 8000);
+  assert.equal(nextPaymentMonth(s, tv, '2026-03-20'), '2026-04', 'March is paid');
+  assert.equal(nextPaymentMonth(s, tv, '2026-04-02'), '2026-04');
+  assert.deepEqual(owedHistory(s, tv, '2026-04'), [{ month: '2026-03', value: 62000 }, { month: '2026-04', value: 62000 }]);
+});

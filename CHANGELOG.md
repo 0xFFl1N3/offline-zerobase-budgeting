@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.10.3 – 2026-11-27
+
+### Added
+- Payoff plan for debts: how much is still owed, how many payments are left and when the last one is, with a calculator to try another monthly amount or a one-time extra payment, and a chart of what was paid back so far. Open it from the line under the debt's category in the Budget, or from the debt in the accounts list.
+
 ## 0.10.2 – 2026-11-27
 
 ### Added

@@ -503,7 +503,6 @@ export const en = {
   'changelog.open': 'See what changed',
   'changelog.new': 'New',
   'changelog.current': 'this version',
-  'changelog.close': 'Close',
 
   // Errors
   'error.rule': '{detail}',
@@ -551,6 +550,26 @@ export const en = {
 
   // Debts
   'debt.recordPayment': 'Record payment',
+
+  // Debts
+  'debt.stillOwed': '{amount} still to pay back',
+  'debt.paidOff': 'Paid off',
+  'debt.overpaid': 'Paid off, {amount} overpaid',
+  'debt.withPlan': 'At {amount} a month:',
+  'debt.forecast': { one: '1 more payment of {amount} in {month}.', other: '{count} more payments; the last, {amount}, in {month}.' },
+  'debt.noPlan': 'Give its category a monthly goal, or the debt a minimum payment, to see when it is paid off.',
+  'debt.tryTitle': 'Try another amount',
+  'debt.tryMonthly': 'Each month',
+  'debt.tryExtra': 'Once, extra',
+  'debt.tryInvalid': 'Enter a monthly amount greater than zero.',
+  'debt.sooner': { one: '1 month sooner.', other: '{count} months sooner.' },
+  'debt.later': { one: '1 month later.', other: '{count} months later.' },
+  'debt.history': 'Paid back so far',
+  'debt.historyLabel': 'What was owed on {name} at the end of each month',
+  'debt.owedColumn': 'Owed',
+  'debt.leftShort': '{amount} left · paid off {month}',
+  'debt.leftNoPlan': '{amount} left',
+  'debt.planLink': 'Payoff plan…',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

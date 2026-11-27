@@ -500,7 +500,6 @@ export const de: Messages = {
   'changelog.open': 'Änderungen ansehen',
   'changelog.new': 'Neu',
   'changelog.current': 'diese Version',
-  'changelog.close': 'Schließen',
 
   // Errors
   'error.rule': '{detail}',
@@ -548,4 +547,24 @@ export const de: Messages = {
 
   // Debts
   'debt.recordPayment': 'Rate buchen',
+
+  // Debts
+  'debt.stillOwed': 'Noch {amount} zurückzuzahlen',
+  'debt.paidOff': 'Abbezahlt',
+  'debt.overpaid': 'Abbezahlt, {amount} zu viel gezahlt',
+  'debt.withPlan': 'Mit {amount} im Monat:',
+  'debt.forecast': { one: 'noch 1 Rate von {amount} im {month}.', other: 'noch {count} Raten; die letzte, {amount}, im {month}.' },
+  'debt.noPlan': 'Gib der Kategorie ein Monatsziel oder der Schuld eine Mindestrate, um zu sehen, wann sie abbezahlt ist.',
+  'debt.tryTitle': 'Anderen Betrag ausprobieren',
+  'debt.tryMonthly': 'Pro Monat',
+  'debt.tryExtra': 'Einmalig extra',
+  'debt.tryInvalid': 'Gib einen monatlichen Betrag über null ein.',
+  'debt.sooner': { one: '1 Monat früher.', other: '{count} Monate früher.' },
+  'debt.later': { one: '1 Monat später.', other: '{count} Monate später.' },
+  'debt.history': 'Bisher zurückgezahlt',
+  'debt.historyLabel': 'Offener Betrag von {name} am Ende jedes Monats',
+  'debt.owedColumn': 'Offen',
+  'debt.leftShort': '{amount} offen · abbezahlt {month}',
+  'debt.leftNoPlan': '{amount} offen',
+  'debt.planLink': 'Tilgungsplan…',
 };

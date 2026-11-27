@@ -7,6 +7,7 @@ import { MoveButtons, useReorder } from '../../components/reorder.tsx';
 import { BackupPanel } from '../backup/BackupPanel.tsx';
 import { t } from '../../i18n/i18n.ts';
 import { useAction } from '../errors/useAction.ts';
+import { useNavigation } from '../../store/navigation.ts';
 import { activeSeriesUsing } from '../../engine/recurring.ts';
 
 function AddAccountForm({ onDone }: { onDone: () => void }) {
@@ -135,6 +136,11 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
       <div className="flex flex-wrap items-center gap-3">
         <button type="submit" className="rounded bg-sky-600 px-3 py-1 text-sm text-white hover:bg-sky-700">{t('common.save')}</button>
         <button type="button" onClick={onDone} className="text-sm text-slate-600 hover:underline">{t('common.cancel')}</button>
+        {debt && (
+          <button type="button" onClick={() => useNavigation.getState().openDebt(account.id)} className="text-sm text-sky-700 hover:underline">
+            {t('debt.planLink')}
+          </button>
+        )}
         {used ? (
           <button
             type="button"
