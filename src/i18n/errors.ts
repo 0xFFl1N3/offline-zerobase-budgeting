@@ -7,6 +7,11 @@ import { t, type MessageKey } from './i18n.ts';
 const EXACT: Record<string, MessageKey> = {
   'A category with transactions cannot be deleted. Archive it instead.': 'error.categoryHasTransactions',
   'An account needs a name.': 'account.errorName',
+  "A debt's payment category cannot be deleted while the debt exists. Archive it instead.": 'error.paymentCategory',
+  'A debt cannot be changed into another kind of account, or the other way round.': 'error.debtType',
+  'Enter what is still owed as a positive amount.': 'error.owedPositive',
+  'Spending from a category has to come from a budget account, not from a debt.': 'error.debtSpending',
+  'Only a payment from a budget account to a debt can have a category.': 'error.debtTransferCategory',
   'Move the remaining balance to another account before closing this one.': 'error.closeWithBalance',
   'An account with transactions cannot be deleted. Close it instead.': 'error.accountHasTransactions',
   'Categories can only be reordered within their group.': 'error.reorderGroup',

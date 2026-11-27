@@ -66,7 +66,8 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
   const importTransactions = useBudgetStore((s) => s.importTransactions);
   const fmt = (c: number) => formatMoney(c, currency);
 
-  const accounts = state.accounts.filter((a) => !a.closed);
+  // Bank files belong to budget accounts; a debt changes through payments to it.
+  const accounts = state.accounts.filter((a) => !a.closed && a.type !== 'debt');
   const [accountId, setAccountId] = useState(defaultAccountId && accounts.some((a) => a.id === defaultAccountId) ? defaultAccountId : (accounts[0]?.id ?? ''));
   const [fileName, setFileName] = useState('');
   const [table, setTable] = useState<CsvTable | null>(null);

@@ -89,3 +89,13 @@ test('backups keep debt accounts and refuse a category on any other transfer', (
   const refused = parseBackup(serializeBackup(createBackup(wrong, 'EUR')));
   assert.equal(refused.ok, false);
 });
+
+test('only payments from a budget account to a debt carry a category', async () => {
+  const { checkDebtRules } = await import('./debt.ts');
+  const s = state([]);
+  assert.doesNotThrow(() => checkDebtRules(s, { accountId: 'giro', transferAccountId: 'tv', categoryId: 'tvpay' }));
+  assert.doesNotThrow(() => checkDebtRules(s, { accountId: 'tv', transferAccountId: 'giro', categoryId: null }), 'borrowed cash');
+  assert.doesNotThrow(() => checkDebtRules(s, { accountId: 'tv', transferAccountId: null, categoryId: null }), 'raising the debt');
+  assert.throws(() => checkDebtRules(s, { accountId: 'tv', transferAccountId: null, categoryId: 'tvpay' }), /budget account/);
+  assert.throws(() => checkDebtRules(s, { accountId: 'tv', transferAccountId: 'giro', categoryId: 'tvpay' }), /payment/);
+});

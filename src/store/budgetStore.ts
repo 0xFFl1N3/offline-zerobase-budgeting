@@ -3,6 +3,8 @@ import { createDb, type BudgetDB } from '../db/db.ts';
 import type { BackupFile } from '../db/backup.ts';
 import * as repo from '../db/repository.ts';
 import type { Currency } from '../engine/money.ts';
+import { addDebtAccount, type NewDebt } from '../engine/edit.ts';
+import { checkDebtRules } from '../engine/debt.ts';
 import { moveAccount, moveAccountTo, moveCategory, moveCategoryTo, moveGroup, moveGroupTo, removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from '../engine/edit.ts';
 import { autoAssignPlan, planAssignments } from '../engine/autoassign.ts';
 import { addMonths } from '../engine/months.ts';
@@ -49,8 +51,10 @@ export interface BudgetStore {
   readSaved: () => Promise<{ state: BudgetState; currency: Currency }>;
   completeSetup: (input: { accountName: string; initialBalance: Cents; currency: Currency }) => Promise<void>;
   addAccount: (name: string, type: AccountType, openingBalance: Cents) => Promise<void>;
+  /** Adds a debt with its payment category (and a monthly goal for the minimum payment). */
+  addDebt: (input: NewDebt) => Promise<void>;
   /** Changes an account's name, type or opening balance. */
-  editAccount: (id: string, changes: { name?: string; type?: AccountType; openingBalance?: Cents }) => Promise<void>;
+  editAccount: (id: string, changes: { name?: string; type?: AccountType; openingBalance?: Cents; minimumPayment?: Cents | null }) => Promise<void>;
   /** Closes an account (its balance must be zero) or reopens it. */
   setAccountClosed: (id: string, closed: boolean) => Promise<void>;
   /** Deletes an account without transactions. */
@@ -244,6 +248,12 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set((s) => ({ state: { ...s.state, accounts: [...s.state.accounts, account] } }));
     },
 
+    addDebt: async (input) => {
+      const setup = addDebtAccount(get().state, input, () => crypto.randomUUID());
+      await repo.saveDebtSetup(db, setup);
+      set({ state: setup.state });
+    },
+
     editAccount: async (id, changes) => {
       const next = updateAccount(get().state, id, changes);
       await repo.saveAccount(db, next.accounts.find((a) => a.id === id)!);
@@ -317,6 +327,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     },
 
     startRecurringSeries: async (t, frequency, endDate) => {
+      checkDebtRules(get().state, t);
       const { transaction, recurring } = startRecurring(t, frequency, endDate, toISODate(), crypto.randomUUID());
       await repo.saveRecurringBooking(db, recurring, transaction);
       set((s) => ({
@@ -374,6 +385,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       }),
 
     saveTransaction: async (t) => {
+      checkDebtRules(get().state, t);
       await repo.saveTransaction(db, t);
       set((s) => ({
         state: { ...s.state, transactions: [...s.state.transactions.filter((x) => x.id !== t.id), t] },
@@ -381,6 +393,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     },
 
     importTransactions: async (transactions) => {
+      for (const t of transactions) checkDebtRules(get().state, t);
       await repo.saveTransactions(db, transactions);
       const ids = new Set(transactions.map((t) => t.id));
       set((s) => ({ state: { ...s.state, transactions: [...s.state.transactions.filter((t) => !ids.has(t.id)), ...transactions] } }));

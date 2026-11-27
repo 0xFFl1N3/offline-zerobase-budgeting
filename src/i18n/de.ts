@@ -516,4 +516,27 @@ export const de: Messages = {
 
   // Errors
   'error.updatedElsewhere': 'Die App wurde in einem anderen Tab aktualisiert. Lade diese Seite neu, um weiterzumachen.',
+
+  // Errors
+  'error.paymentCategory': 'Die Zahlungskategorie einer Schuld kann nicht gelöscht werden, solange die Schuld besteht. Archiviere sie stattdessen.',
+  'error.debtType': 'Eine Schuld kann nicht in eine andere Kontoart geändert werden und umgekehrt.',
+  'error.owedPositive': 'Gib den noch offenen Betrag als positive Zahl ein.',
+
+  // Debts
+  'debt.type': 'Schuld (Kredit, Finanzierung)',
+  'debt.owed': 'Noch zurückzuzahlen',
+  'debt.owedHint': 'Der gesamte offene Betrag, Zinsen eingerechnet.',
+  'debt.owedAtStart': 'Offen beim Anlegen',
+  'debt.minimum': 'Monatliche Mindestrate (optional)',
+  'debt.groupName': 'Schuldenzahlungen',
+  'debt.heading': 'Schulden',
+  'debt.totalOwed': 'Insgesamt offen',
+  'debt.typeLabel': 'Schuld',
+  'debt.addHint': 'Legt die Kategorie „{name}“ unter „{group}“ an, in der du die Raten budgetierst.',
+  'debt.errorOwed': 'Gib den offenen Betrag als Zahl ein.',
+  'debt.errorMinimum': 'Gib die Mindestrate als Betrag über null ein oder lass das Feld leer.',
+
+  // Errors
+  'error.debtSpending': 'Ausgaben aus einer Kategorie müssen von einem Budgetkonto kommen, nicht von einer Schuld.',
+  'error.debtTransferCategory': 'Nur eine Zahlung von einem Budgetkonto an eine Schuld kann eine Kategorie haben.',
 };

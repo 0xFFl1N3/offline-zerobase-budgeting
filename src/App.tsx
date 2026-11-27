@@ -91,7 +91,8 @@ export default function App() {
       {dueCount}
     </span>
   );
-  const total = state.accounts.filter((a) => !a.closed).reduce((sum, a) => sum + accountBalance(state, a.id), 0);
+  // Money in budget accounts; debts are listed separately in the accounts drawer.
+  const total = state.accounts.filter((a) => !a.closed && a.type !== 'debt').reduce((sum, a) => sum + accountBalance(state, a.id), 0);
   const current = TABS.find((tab) => tab.id === active)!;
 
   return (

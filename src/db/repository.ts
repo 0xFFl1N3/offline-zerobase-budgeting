@@ -57,6 +57,15 @@ export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; setti
 
 export const saveAccount = (db: BudgetDB, a: Account) => db.accounts.put(a);
 
+/** Saves a new debt with its payment category (and group and goal, when new), all or nothing. */
+export const saveDebtSetup = (db: BudgetDB, d: { account: Account; group: CategoryGroup | null; category: Category; goal: Goal | null }) =>
+  db.transaction('rw', [db.accounts, db.groups, db.categories, db.goals], async () => {
+    if (d.group) await db.groups.put(d.group);
+    await db.categories.put(d.category);
+    if (d.goal) await db.goals.put(d.goal);
+    await db.accounts.put(d.account);
+  });
+
 /** Stores a finished reconciliation: the account's date and every changed or added transaction, together. */
 export const saveReconciliation = (db: BudgetDB, account: Account, transactions: Transaction[]) =>
   db.transaction('rw', [db.accounts, db.transactions], async () => {

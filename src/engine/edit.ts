@@ -1,5 +1,5 @@
 import { accountBalance, touchesCategory } from './budget.ts';
-import type { AccountType, BudgetState, Cents } from './types.ts';
+import type { Account, AccountType, BudgetState, Category, CategoryGroup, Cents, Goal } from './types.ts';
 import { RuleError } from './ruleError.ts';
 
 /**
@@ -9,6 +9,9 @@ import { RuleError } from './ruleError.ts';
  */
 export function removeCategories(state: BudgetState, categoryIds: string[]): BudgetState {
   const gone = new Set(categoryIds);
+  if (state.accounts.some((a) => a.paymentCategoryId !== undefined && gone.has(a.paymentCategoryId))) {
+    throw new RuleError("A debt's payment category cannot be deleted while the debt exists. Archive it instead.");
+  }
   if (state.transactions.some((t) => touchesCategory(t, gone)) || state.recurring.some((r) => touchesCategory(r.template, gone))) {
     throw new RuleError('A category with transactions cannot be deleted. Archive it instead.');
   }
@@ -56,10 +59,14 @@ const hasTransactions = (state: BudgetState, accountId: string) =>
 export function updateAccount(
   state: BudgetState,
   accountId: string,
-  changes: { name?: string; type?: AccountType; openingBalance?: Cents },
+  changes: { name?: string; type?: AccountType; openingBalance?: Cents; minimumPayment?: Cents | null },
 ): BudgetState {
   if (!state.accounts.some((a) => a.id === accountId)) throw new RuleError('Unknown account.');
   if (changes.name !== undefined && !changes.name.trim()) throw new RuleError('An account needs a name.');
+  const account = state.accounts.find((a) => a.id === accountId)!;
+  if (changes.type !== undefined && (changes.type === 'debt') !== (account.type === 'debt')) {
+    throw new RuleError('A debt cannot be changed into another kind of account, or the other way round.');
+  }
   return {
     ...state,
     accounts: state.accounts.map((a) =>
@@ -69,9 +76,84 @@ export function updateAccount(
             ...(changes.name !== undefined && { name: changes.name.trim() }),
             ...(changes.type !== undefined && { type: changes.type }),
             ...(changes.openingBalance !== undefined && { openingBalance: changes.openingBalance }),
+            ...(changes.minimumPayment !== undefined && { minimumPayment: changes.minimumPayment ?? undefined }),
           }
         : a,
     ),
+  };
+}
+
+export interface NewDebt {
+  name: string;
+  /** What is still to be paid back, interest included (positive). */
+  owed: Cents;
+  /** Optional agreed minimum monthly payment (positive). */
+  minimumPayment: Cents | null;
+  /** Name for the category group of debt payments, if it has to be created (in the user's language). */
+  groupName: string;
+}
+
+export interface DebtSetup {
+  state: BudgetState;
+  account: Account;
+  /** Only when a new group was needed. */
+  group: CategoryGroup | null;
+  category: Category;
+  goal: Goal | null;
+}
+
+/**
+ * Adds a debt account together with its payment category (in the group of existing debt payments, or a new
+ * group) and, if a minimum payment is given, a monthly goal of that amount on the category.
+ */
+export function addDebtAccount(state: BudgetState, input: NewDebt, newId: () => string): DebtSetup {
+  const name = input.name.trim();
+  if (!name) throw new RuleError('An account needs a name.');
+  if (!(input.owed >= 0)) throw new RuleError('Enter what is still owed as a positive amount.');
+  if (input.minimumPayment !== null && !(input.minimumPayment > 0)) throw new RuleError('Enter an amount greater than zero.');
+
+  // Reuse the group that holds the other debts' payment categories, if it is still in use.
+  const existing = state.accounts
+    .map((a) => state.categories.find((c) => c.id === a.paymentCategoryId)?.groupId)
+    .map((id) => state.groups.find((g) => g.id === id && !g.archived))
+    .find((g) => g !== undefined);
+  const group: CategoryGroup = existing ?? {
+    id: newId(),
+    name: input.groupName,
+    sortOrder: state.groups.reduce((max, g) => Math.max(max, g.sortOrder + 1), 0),
+    archived: false,
+  };
+  const category: Category = {
+    id: newId(),
+    groupId: group.id,
+    name,
+    sortOrder: state.categories.filter((c) => c.groupId === group.id).reduce((max, c) => Math.max(max, c.sortOrder + 1), 0),
+    archived: false,
+  };
+  const goal: Goal | null =
+    input.minimumPayment !== null ? { id: newId(), categoryId: category.id, type: 'monthly_amount', monthlyAmount: input.minimumPayment } : null;
+  const account: Account = {
+    id: newId(),
+    name,
+    type: 'debt',
+    openingBalance: -input.owed,
+    sortOrder: state.accounts.reduce((max, a) => Math.max(max, a.sortOrder + 1), 0),
+    closed: false,
+    paymentCategoryId: category.id,
+    ...(input.minimumPayment !== null && { minimumPayment: input.minimumPayment }),
+  };
+  return {
+    state: {
+      ...state,
+      accounts: [...state.accounts, account],
+      groups: existing ? state.groups : [...state.groups, group],
+      categories: [...state.categories, category],
+      goals: goal ? [...state.goals, goal] : state.goals,
+    },
+    account,
+    group: existing ? null : group,
+    category,
+    goal,
   };
 }
 

@@ -519,6 +519,29 @@ export const en = {
 
   // Errors
   'error.updatedElsewhere': 'The app was updated in another tab. Reload this page to continue.',
+
+  // Errors
+  'error.paymentCategory': "A debt's payment category can't be deleted while the debt exists. Archive it instead.",
+  'error.debtType': "A debt can't be changed into another kind of account, or the other way round.",
+  'error.owedPositive': 'Enter what is still owed as a positive amount.',
+
+  // Debts
+  'debt.type': 'Debt (loan, financing)',
+  'debt.owed': 'Still to pay back',
+  'debt.owedHint': 'The total you still owe, interest included.',
+  'debt.owedAtStart': 'Owed when added',
+  'debt.minimum': 'Minimum monthly payment (optional)',
+  'debt.groupName': 'Debt payments',
+  'debt.heading': 'Debts',
+  'debt.totalOwed': 'Total owed',
+  'debt.typeLabel': 'Debt',
+  'debt.addHint': "Adds a category \"{name}\" under \"{group}\" to budget the payments in.",
+  'debt.errorOwed': 'Enter what is still owed as an amount.',
+  'debt.errorMinimum': 'Enter the minimum payment as an amount greater than zero, or leave it empty.',
+
+  // Errors
+  'error.debtSpending': 'Spending from a category has to come from a budget account, not from a debt.',
+  'error.debtTransferCategory': 'Only a payment from a budget account to a debt can have a category.',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.10.1 – 2026-11-27
+
+### Added
+- Debt accounts: choose "Debt" when adding an account and enter what is still to pay back and, optionally, the minimum monthly payment. The debt gets its own category under "Debt payments" to budget the payments in, with the minimum payment as its monthly goal.
+- Debts are listed separately in the accounts list, with the total owed. They don't count toward Ready to Assign.
+
 ## 0.10.0 – 2026-11-27
 
 ### Added

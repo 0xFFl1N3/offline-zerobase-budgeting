@@ -441,3 +441,26 @@ test('filling the budget automatically saves all or nothing', async () => {
   assert.equal(await store.getState().autoAssign(), 2);
   assert.equal(await db.monthlyBudgets.count(), 2);
 });
+
+test('adding a debt creates its payment category and goal, and protects the category', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  await store.getState().addDebt({ name: 'TV financing', owed: 82000, minimumPayment: 5000, groupName: 'Debt payments' });
+  await store.getState().addDebt({ name: 'Loan from Anna', owed: 30000, minimumPayment: null, groupName: 'Debt payments' });
+  const s = store.getState().state;
+  const tv = s.accounts.find((a) => a.name === 'TV financing')!;
+  assert.equal(tv.type, 'debt');
+  assert.equal(accountBalance(s, tv.id), -82000);
+  assert.equal(s.groups.filter((g) => g.name === 'Debt payments').length, 1, 'both debts share one group');
+  const category = s.categories.find((c) => c.id === tv.paymentCategoryId)!;
+  assert.equal(category.name, 'TV financing');
+  assert.deepEqual(s.goals.map((g) => [g.categoryId, g.type, g.monthlyAmount]), [[category.id, 'monthly_amount', 5000]]);
+  assert.equal(readyToAssign(s, store.getState().month), 100000, 'debts do not change Ready to Assign');
+
+  await assert.rejects(store.getState().deleteCategory(category.id), /payment category/);
+  await assert.rejects(store.getState().editAccount(tv.id, { type: 'checking' }), /debt/);
+
+  const reloaded = createBudgetStore(db, '2026-01');
+  await reloaded.getState().load();
+  assert.deepEqual(reloaded.getState().state.accounts.find((a) => a.id === tv.id), tv);
+});

@@ -22,7 +22,8 @@ import { useAction } from '../errors/useAction.ts';
 const blankForm = (accounts: Account[], kind: TxKind = 'outflow'): TxForm => ({
   kind,
   date: toISODate(),
-  accountId: accounts[0]?.id ?? '',
+  // Spending and income happen in budget accounts; a debt is only reached by a transfer.
+  accountId: (kind === 'transfer' ? accounts : accounts.filter((a) => a.type !== 'debt'))[0]?.id ?? '',
   payee: '',
   categoryId: null,
   transferAccountId: null,
@@ -41,6 +42,7 @@ export function TransactionsView() {
   const setCleared = useBudgetStore((s) => s.setCleared);
 
   const accounts = state.accounts.filter((a) => !a.closed);
+  const budgetAccounts = accounts.filter((a) => a.type !== 'debt');
 
   const [form, setForm] = useState<TxForm>(() => blankForm(accounts));
   const [amountText, setAmountText] = useState('');
@@ -210,7 +212,10 @@ export function TransactionsView() {
           <label className="text-xs font-medium text-slate-600">
             {tr('tx.type')}
             <select value={form.kind} onChange={(e) => {
-              update({ kind: e.target.value as TxKind, categoryId: null, transferAccountId: null });
+              const kind = e.target.value as TxKind;
+              // Leaving a transfer that started from a debt: spending and income need a budget account.
+              const fromDebt = kind !== 'transfer' && !budgetAccounts.some((a) => a.id === form.accountId);
+              update({ kind, categoryId: null, transferAccountId: null, ...(fromDebt && { accountId: budgetAccounts[0]?.id ?? '' }) });
               setSplitRows(null);
             }} className={`${field} mt-1 block`}>
               <option value="outflow">{tr('tx.outflow')}</option>
@@ -225,7 +230,7 @@ export function TransactionsView() {
           <label className="text-xs font-medium text-slate-600">
             {form.kind === 'transfer' ? tr('tx.fromAccount') : tr('tx.account')}
             <select value={form.accountId} onChange={(e) => update({ accountId: e.target.value })} className={`${field} mt-1 block`}>
-              {accounts.map((a) => (
+              {(form.kind === 'transfer' ? accounts : budgetAccounts).map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
               ))}
             </select>
