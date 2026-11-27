@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { parseMoney, toAmountInput } from '../../engine/money.ts';
 import type { Category, Goal, GoalType } from '../../engine/types.ts';
 import { t, type MessageKey } from '../../i18n/i18n.ts';
@@ -6,6 +6,7 @@ import { useBudgetStore } from '../../store/budgetStore.ts';
 import { buildGoal, goalToForm } from './buildGoal.ts';
 import { useAction } from '../errors/useAction.ts';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
+import { Form } from '../../components/Form.tsx';
 
 const TYPE_LABELS: Record<GoalType, MessageKey> = {
   target_balance: 'goal.typeTarget',
@@ -28,8 +29,7 @@ export function GoalEditor({ category, goal, onClose }: Props) {
   const [targetDate, setTargetDate] = useState(initial.targetDate);
   const { run, error, setError } = useAction();
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
+  const submit = () => {
     const amount = parseMoney(amountText);
     if (amount === null) return setError(t('goal.errorAmount'));
     const result = buildGoal({ type, amount, targetDate }, category.id, goal?.id ?? crypto.randomUUID());
@@ -41,7 +41,7 @@ export function GoalEditor({ category, goal, onClose }: Props) {
   const field = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-sm';
   const label = 'text-xs font-medium text-slate-600';
   return (
-    <form onSubmit={submit} className="mx-4 mb-2 ml-8 flex flex-wrap items-end gap-3 rounded bg-slate-50 p-3">
+    <Form onSubmit={submit} className="mx-4 mb-2 ml-8 flex flex-wrap items-end gap-3 rounded bg-slate-50 p-3">
       <span className="w-full text-sm font-medium">{t('goal.for', { name: category.name })}</span>
       <label className={label}>
         {t('goal.type')}
@@ -83,6 +83,6 @@ export function GoalEditor({ category, goal, onClose }: Props) {
       )}
       <button type="button" onClick={onClose} className="text-sm text-slate-600 hover:underline">{t('common.cancel')}</button>
       {error && <p className="w-full text-sm text-red-600">{error}</p>}
-    </form>
+    </Form>
   );
 }

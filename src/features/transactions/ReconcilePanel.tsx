@@ -1,4 +1,4 @@
-import { Fragment, useState, type FormEvent } from 'react';
+import { Fragment, useState } from 'react';
 import { formatMoney, parseMoney } from '../../engine/money.ts';
 import { accountBalances } from '../../engine/reconcile.ts';
 import { formatDate } from '../../engine/months.ts';
@@ -6,6 +6,7 @@ import { t } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { useAction } from '../errors/useAction.ts';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
+import { Form } from '../../components/Form.tsx';
 
 const field = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-sm';
 
@@ -37,8 +38,7 @@ export function ReconcilePanel({ accountId }: { accountId: string }) {
     setError(null);
   };
 
-  const finish = (e: FormEvent) => {
-    e.preventDefault();
+  const finish = () => {
     if (statement === null || difference === null) return setError(t('rec.errorStatement'));
     if (difference < 0 && !categoryId && !debt) return setError(t('rec.errorCategory'));
     const locked = balances.clearedCount;
@@ -79,7 +79,7 @@ export function ReconcilePanel({ accountId }: { accountId: string }) {
       {done && !open && <p className="mt-2 text-sm text-emerald-700" role="status">{done}</p>}
 
       {open && (
-        <form onSubmit={finish} className="mt-3 border-t border-slate-100 pt-3">
+        <Form onSubmit={finish} className="mt-3 border-t border-slate-100 pt-3">
           <div className="flex flex-wrap items-end gap-3">
             <label className="text-xs font-medium text-slate-600">
               {t('rec.statement')}
@@ -144,7 +144,7 @@ export function ReconcilePanel({ accountId }: { accountId: string }) {
             <button type="button" onClick={close} className="text-sm text-slate-600 hover:underline">{t('common.cancel')}</button>
             <span className="text-xs text-slate-500">{t('rec.locks', { count: balances.clearedCount })}</span>
           </div>
-        </form>
+        </Form>
       )}
     </div>
   );

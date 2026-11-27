@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { accountBalance } from '../../engine/budget.ts';
 import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
 import type { Account, AccountType } from '../../engine/types.ts';
@@ -10,6 +10,7 @@ import { useAction } from '../errors/useAction.ts';
 import { useNavigation } from '../../store/navigation.ts';
 import { activeSeriesUsing } from '../../engine/recurring.ts';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
+import { Form } from '../../components/Form.tsx';
 
 function AddAccountForm({ onDone }: { onDone: () => void }) {
   const addAccount = useBudgetStore((s) => s.addAccount);
@@ -26,8 +27,7 @@ function AddAccountForm({ onDone }: { onDone: () => void }) {
   const [groupId, setGroupId] = useState<string>(defaultGroup?.id ?? '');
   const groupName = groupId ? (state.groups.find((g) => g.id === groupId)?.name ?? '') : t('debt.groupName');
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
+  const submit = () => {
     const amount = balance.trim() === '' ? 0 : parseMoney(balance);
     if (!name.trim()) return;
     if (amount === null) return setError(t(debt ? 'debt.errorOwed' : 'account.errorOpening'));
@@ -43,7 +43,7 @@ function AddAccountForm({ onDone }: { onDone: () => void }) {
 
   const field = 'w-full rounded border border-slate-300 px-2 py-1 text-sm';
   return (
-    <form onSubmit={submit} className="mt-3 space-y-2">
+    <Form onSubmit={submit} className="mt-3 space-y-2">
       <input {...NO_AUTOFILL} autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={t('account.namePlaceholder')} className={field} />
       <select value={type} onChange={(e) => setType(e.target.value as AccountType)} className={field}>
         <option value="checking">{t('account.checking')}</option>
@@ -80,7 +80,7 @@ function AddAccountForm({ onDone }: { onDone: () => void }) {
         <button type="submit" className="rounded bg-sky-600 px-3 py-1 text-sm text-white hover:bg-sky-700">{t('common.add')}</button>
         <button type="button" onClick={onDone} className="text-sm text-slate-600 hover:underline">{t('common.cancel')}</button>
       </div>
-    </form>
+    </Form>
   );
 }
 
@@ -107,8 +107,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
     if (await runAction(fn)) onDone();
   };
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
+  const submit = () => {
     const cents = parseMoney(opening);
     if (!name.trim()) return setError(t('account.errorName'));
     if (cents === null) return setError(t(debt ? 'debt.errorOwed' : 'account.errorOpening'));
@@ -120,7 +119,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
 
   const field = 'w-full rounded border border-slate-300 px-2 py-1 text-sm';
   return (
-    <form onSubmit={submit} className="mt-1 mb-2 space-y-2 rounded border border-slate-200 bg-slate-50 p-2">
+    <Form onSubmit={submit} className="mt-1 mb-2 space-y-2 rounded border border-slate-200 bg-slate-50 p-2">
       <label className="block text-xs font-medium text-slate-600">
         {t('account.name')}
         <input {...NO_AUTOFILL} autoFocus value={name} onChange={(e) => setName(e.target.value)} className={`${field} mt-1`} />
@@ -192,7 +191,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
           </button>
         )}
       </div>
-    </form>
+    </Form>
   );
 }
 

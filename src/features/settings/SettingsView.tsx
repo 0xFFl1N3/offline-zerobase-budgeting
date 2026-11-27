@@ -8,6 +8,7 @@ import { LanguageSelect } from './LanguageSelect.tsx';
 import { StorageCard } from './StorageCard.tsx';
 import { AutoBackupCard } from '../backup/AutoBackupCard.tsx';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
+import { Form } from '../../components/Form.tsx';
 
 export function SettingsView() {
   const currency = useBudgetStore((s) => s.currency);
@@ -71,10 +72,9 @@ export function SettingsView() {
         <h2 className="text-sm font-semibold text-red-700">{t('settings.clearTitle')}</h2>
         <p className="mt-2 text-sm text-slate-600">{t('settings.clearText')}</p>
         {clearing ? (
-          <form
+          <Form
             className="mt-3 flex flex-wrap items-center gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
+            onSubmit={() => {
               if (typed === CONFIRM_WORD) void clearAllData();
             }}
           >
@@ -104,7 +104,7 @@ export function SettingsView() {
             >
               {t('common.cancel')}
             </button>
-          </form>
+          </Form>
         ) : (
           <button type="button" onClick={() => setClearing(true)} className="mt-3 rounded border border-red-300 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50">
             {t('settings.clearButton')}

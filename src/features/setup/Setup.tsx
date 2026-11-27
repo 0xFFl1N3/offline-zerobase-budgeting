@@ -1,9 +1,10 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { parseMoney, type Currency } from '../../engine/money.ts';
 import { useT } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { LanguageSelect } from '../settings/LanguageSelect.tsx';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
+import { Form } from '../../components/Form.tsx';
 
 const field = 'mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2';
 
@@ -15,8 +16,7 @@ export function Setup() {
   const [currency, setCurrency] = useState<Currency>('EUR');
   const [error, setError] = useState<string | null>(null);
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
+  const submit = () => {
     const initialBalance = parseMoney(balance);
     if (!accountName.trim()) return setError(t('setup.errorName'));
     if (initialBalance === null) return setError(t('setup.errorBalance'));
@@ -28,7 +28,7 @@ export function Setup() {
     <main className="mx-auto mt-24 max-w-md rounded-xl bg-white p-8 shadow">
       <h1 className="text-2xl font-semibold">{t('setup.title')}</h1>
       <p className="mt-2 text-sm text-slate-600">{t('setup.intro')}</p>
-      <form onSubmit={submit} className="mt-6 space-y-4">
+      <Form onSubmit={submit} className="mt-6 space-y-4">
         <label className="block text-sm font-medium">
           {t('setup.language')}
           <LanguageSelect className={field} />
@@ -59,7 +59,7 @@ export function Setup() {
         <button type="submit" className="w-full rounded bg-sky-600 py-2 font-medium text-white hover:bg-sky-700">
           {t('setup.start')}
         </button>
-      </form>
+      </Form>
     </main>
   );
 }

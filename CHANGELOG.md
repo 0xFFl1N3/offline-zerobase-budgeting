@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.14 – 2026-11-27
+
+### Changed
+- All forms now use one shared form component that always stops the browser's own submit. Without it, a form submitted by the browser would reload the page and put what was typed into the address bar. A test fails if a plain form is added anywhere else.
+
 ## 0.11.13 – 2026-11-27
 
 ### Fixed

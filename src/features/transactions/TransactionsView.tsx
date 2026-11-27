@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { archivedCategoryIds, runningBalances } from '../../engine/budget.ts';
 import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
 import { formatDate, toISODate } from '../../engine/months.ts';
@@ -20,6 +20,7 @@ import { buildTransaction, toForm, type TxForm, type TxKind } from './buildTrans
 import { useAction } from '../errors/useAction.ts';
 import { overpayment } from '../../engine/debt.ts';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
+import { Form } from '../../components/Form.tsx';
 
 const blankForm = (accounts: Account[], kind: TxKind = 'outflow'): TxForm => ({
   kind,
@@ -101,8 +102,7 @@ export function TransactionsView() {
     setFormOpen(false);
   };
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
+  const submit = () => {
     const parsed = parseMoney(amountText);
     if (parsed === null) return setError(tr('tx.errorAmount'));
     let splits: TxForm['splits'] = null;
@@ -228,7 +228,7 @@ export function TransactionsView() {
       </button>
 
       {/* On phones the form opens full-screen; on larger screens it is always shown. */}
-      <form
+      <Form
         onSubmit={submit}
         className={`bg-white p-4 md:static md:block md:rounded-lg md:shadow-sm ${formOpen ? 'fixed inset-0 z-40 overflow-y-auto' : 'hidden'}`}
       >
@@ -407,7 +407,7 @@ export function TransactionsView() {
           </div>
         )}
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      </form>
+      </Form>
 
       {importing && (
         <ImportPanel
