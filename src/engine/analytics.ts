@@ -1,4 +1,4 @@
-import { categoryParts } from './budget.ts';
+import { categoryParts, offBudgetIds } from './budget.ts';
 import { monthOf } from './months.ts';
 import type { BudgetState, Cents, Month } from './types.ts';
 
@@ -52,13 +52,15 @@ export function spendingReport(state: BudgetState, kind: ReportKind, month: Mont
   const fromMonth: Month = kind === 'month' ? month : `${month.slice(0, 4)}-01`;
   const spentByCategory = new Map<string, Cents>();
   let uncategorizedCount = 0;
+  const off = offBudgetIds(state);
 
   for (const t of state.transactions) {
     const m = monthOf(t.date);
     if (m < fromMonth || m > month) continue;
     const parts = categoryParts(t);
     if (parts.length === 0) {
-      if (t.amount < 0 && t.transferAccountId === null) uncategorizedCount++;
+      // Inside a debt or tracking account nothing has a category (raising a debt, a value change).
+      if (t.amount < 0 && t.transferAccountId === null && !off.has(t.accountId)) uncategorizedCount++;
       continue;
     }
     for (const part of parts) spentByCategory.set(part.categoryId, (spentByCategory.get(part.categoryId) ?? 0) - part.amount);

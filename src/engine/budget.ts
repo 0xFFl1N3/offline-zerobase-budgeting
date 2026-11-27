@@ -20,8 +20,14 @@ export const touchesCategory = (t: Pick<Transaction, 'transferAccountId' | 'spli
 
 export const isDebt = (account: Pick<Account, 'type'>): boolean => account.type === 'debt';
 
-/** The accounts whose money is budgeted (everything but debts). */
-export const budgetAccounts = (state: BudgetState): Account[] => state.accounts.filter((a) => !isDebt(a));
+/** Debts and tracking accounts: their money is not budgeted, and transactions inside them have no category. */
+export const isOffBudget = (account: Pick<Account, 'type'>): boolean => account.type === 'debt' || account.type === 'tracking';
+
+/** The accounts whose money is budgeted (everything but debts and tracking accounts). */
+export const budgetAccounts = (state: BudgetState): Account[] => state.accounts.filter((a) => !isOffBudget(a));
+
+/** Ids of the accounts outside the budget. */
+export const offBudgetIds = (state: BudgetState): Set<string> => new Set(state.accounts.filter(isOffBudget).map((a) => a.id));
 
 /** Balance of one account, counting transactions up to and including `upToMonth` (all if omitted). */
 export function accountBalance(state: BudgetState, accountId: string, upToMonth?: Month): Cents {

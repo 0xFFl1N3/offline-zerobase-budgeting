@@ -1,26 +1,34 @@
 import { RuleError } from './ruleError.ts';
-import { accountBalance } from './budget.ts';
+import { accountBalance, offBudgetIds } from './budget.ts';
 import { addMonths } from './months.ts';
 import type { Account, BudgetState, Cents, Month, Transaction } from './types.ts';
 
-const isDebtId = (state: BudgetState, id: string | null) => id !== null && state.accounts.some((a) => a.id === id && a.type === 'debt');
-
 /**
- * Checks the rules that keep debts outside the budget. Money can only be spent from a category out of a budget
- * account: a transaction inside a debt account has no category (it only changes what is owed), and a transfer
- * has a category only when it is a payment from a budget account to a debt.
+ * Checks the rules that keep debts and tracking accounts outside the budget. Money can only be spent from a
+ * category out of a budget account: a transaction inside an account outside the budget has no category (it only
+ * changes what is owed or what something is worth), and a transfer has a category only when money leaves the budget,
+ * from a budget account to a debt or a tracking account. Money moved into a tracking account always comes from a
+ * category: it never comes straight out of Ready to Assign.
  */
-export function checkDebtRules(state: BudgetState, t: Pick<Transaction, 'accountId' | 'transferAccountId' | 'categoryId' | 'splits'>) {
+export function checkDebtRules(state: BudgetState, t: Pick<Transaction, 'accountId' | 'transferAccountId' | 'categoryId' | 'splits'> & { amount?: number }) {
   const hasCategory = t.categoryId !== null || (t.splits?.length ?? 0) > 0;
+  const off = offBudgetIds(state);
+  const isOff = (id: string | null) => id !== null && off.has(id);
   const payments = new Set(state.accounts.map((a) => a.paymentCategoryId).filter((id) => id !== undefined));
   if (t.splits?.some((p) => payments.has(p.categoryId))) throw new RuleError('A debt payment cannot be part of a split.');
   if (t.transferAccountId === null) {
-    if (isDebtId(state, t.accountId) && hasCategory) throw new RuleError('Spending from a category has to come from a budget account, not from a debt.');
+    if (isOff(t.accountId) && hasCategory) throw new RuleError('Spending from a category has to come from a budget account, not from a debt.');
     return;
   }
-  if (hasCategory && (isDebtId(state, t.accountId) || !isDebtId(state, t.transferAccountId))) {
+  if (hasCategory && (isOff(t.accountId) || !isOff(t.transferAccountId))) {
     throw new RuleError('Only a payment from a budget account to a debt can have a category.');
   }
+  const isTracking = (id: string | null) => state.accounts.some((a) => a.id === id && a.type === 'tracking');
+  // Money into a tracking account, written from the budget account's side (as the form does) or from the tracking
+  // account's side (only from a backup). Either way it must come from a category, which only the budget side carries.
+  const fromBudgetSide = !isOff(t.accountId) && isTracking(t.transferAccountId) && (t.amount ?? 0) < 0;
+  const fromTrackingSide = isTracking(t.accountId) && !isOff(t.transferAccountId) && (t.amount ?? 0) > 0;
+  if ((fromBudgetSide && !hasCategory) || fromTrackingSide) throw new RuleError('Money moved into a tracking account needs the category it comes from.');
 }
 
 /** The open debt whose payments are budgeted in this category, if any. */

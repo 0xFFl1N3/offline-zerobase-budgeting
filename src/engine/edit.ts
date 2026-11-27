@@ -64,7 +64,9 @@ export function updateAccount(
   if (!state.accounts.some((a) => a.id === accountId)) throw new RuleError('Unknown account.');
   if (changes.name !== undefined && !changes.name.trim()) throw new RuleError('An account needs a name.');
   const account = state.accounts.find((a) => a.id === accountId)!;
-  if (changes.type !== undefined && (changes.type === 'debt') !== (account.type === 'debt')) {
+  // Only the budget kinds (checking, cash, savings) can be swapped: a debt or a tracking account stays what it is.
+  const offBudget = (type: AccountType) => type === 'debt' || type === 'tracking';
+  if (changes.type !== undefined && changes.type !== account.type && (offBudget(changes.type) || offBudget(account.type))) {
     throw new RuleError('A debt cannot be changed into another kind of account, or the other way round.');
   }
   return {
@@ -199,10 +201,11 @@ function moveAmong<T extends Ordered>(items: T[], id: string, delta: -1 | 1, isS
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
-/** Budget accounts and debts are listed separately, so each is ordered among its own kind. */
+/** Budget accounts, debts and tracking accounts are listed separately, so each is ordered among its own kind. */
+const listOf = (type: AccountType) => (type === 'debt' || type === 'tracking' ? type : 'budget');
 const sameKind = (state: BudgetState, id: string) => {
-  const debt = state.accounts.find((a) => a.id === id)?.type === 'debt';
-  return (a: { type: AccountType }) => (a.type === 'debt') === debt;
+  const list = listOf(state.accounts.find((a) => a.id === id)!.type);
+  return (a: { type: AccountType }) => listOf(a.type) === list;
 };
 
 export const moveAccount = (state: BudgetState, id: string, delta: -1 | 1): BudgetState => ({

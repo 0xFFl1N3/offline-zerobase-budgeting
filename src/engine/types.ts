@@ -2,8 +2,11 @@
 export type Month = string;
 export type Cents = number;
 
-/** 'debt' is a loan or other money owed: outside the budget, its balance is negative while something is owed. */
-export type AccountType = 'checking' | 'cash' | 'savings' | 'debt';
+/**
+ * 'debt' is a loan or other money owed: outside the budget, its balance is negative while something is owed.
+ * 'tracking' is money kept outside the budget (investments, a pension): it counts towards net worth only.
+ */
+export type AccountType = 'checking' | 'cash' | 'savings' | 'debt' | 'tracking';
 
 export interface Account {
   id: string;

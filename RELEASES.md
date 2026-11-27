@@ -2,6 +2,11 @@
 
 What changed for you in each release, newest first. The full technical list is in CHANGELOG.md.
 
+## 0.16 – Investments
+2026-11-27
+
+- Statistics: correcting or raising a debt no longer shows up as income or as spending without a category.
+
 ## 0.15 – Bills that come back
 2026-11-27
 

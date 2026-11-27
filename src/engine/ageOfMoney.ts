@@ -1,4 +1,5 @@
 import type { BudgetState, Month } from './types.ts';
+import { offBudgetIds } from './budget.ts';
 
 /** How many of the most recent outflows are averaged. */
 export const AGE_OUTFLOWS = 10;
@@ -45,8 +46,8 @@ function datedAges(state: BudgetState, asOf: string): { date: string; age: numbe
   type Event = { date: string; amount: number; order: number };
   const events: Event[] = [];
   const firstDate = new Map<string, string>();
-  const debt = new Set(state.accounts.filter((a) => a.type === 'debt').map((a) => a.id));
-  const inBudget = (id: string | null) => id !== null && !debt.has(id);
+  const off = offBudgetIds(state);
+  const inBudget = (id: string | null) => id !== null && !off.has(id);
   state.transactions.forEach((t, order) => {
     if (t.date > asOf) return;
     for (const id of [t.accountId, t.transferAccountId]) {
@@ -60,7 +61,7 @@ function datedAges(state: BudgetState, asOf: string): { date: string; age: numbe
     events.push({ date: t.date, amount, order });
   });
   for (const account of state.accounts) {
-    if (debt.has(account.id)) continue;
+    if (off.has(account.id)) continue;
     const date = firstDate.get(account.id);
     if (date && account.openingBalance > 0) events.push({ date, amount: account.openingBalance, order: -1 });
   }

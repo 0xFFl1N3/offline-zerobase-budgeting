@@ -2,6 +2,14 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.16.0 – 2026-11-27
+
+### Added
+- A new kind of account for money kept outside the budget (investments, a pension, a building-society plan): its balance is not in Ready to Assign but counts towards net worth. Money moved into it from a budget account always comes from a category, never straight from Ready to Assign; money moved out of it into a budget account is income. Transactions inside it (changes in value) have no category, and reconciling it books the difference without one. It cannot be turned into a budget account or a debt. Not yet in the app's screens; stored, checked in backups and covered by tests.
+
+### Fixed
+- Statistics: correcting a debt downwards counted as income in "Income and spending", and raising a debt counted as spending without a category. Changes inside a debt (or a tracking account) are now neither.
+
 ## 0.15.3 – 2026-11-27
 
 ### Added

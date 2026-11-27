@@ -91,8 +91,10 @@ export interface ReconcileResult {
  */
 export function reconcile(state: BudgetState, accountId: string, statementBalance: Cents, options: ReconcileOptions): ReconcileResult {
   const difference = statementBalance - accountBalances(state, accountId).cleared;
-  // On a debt the difference only changes what is owed; it is outside the budget, so it has no category.
-  const debt = state.accounts.find((a) => a.id === accountId)?.type === 'debt';
+  // On a debt or a tracking account the difference only changes what is owed or worth: it is outside the budget,
+  // so it has no category.
+  const kind = state.accounts.find((a) => a.id === accountId)?.type;
+  const debt = kind === 'debt' || kind === 'tracking';
   const categoryId = debt ? null : options.categoryId;
   if (difference < 0 && categoryId === null && !debt) throw new RuleError('An adjustment that lowers the balance needs a category.');
   const adjustment: Transaction | null =

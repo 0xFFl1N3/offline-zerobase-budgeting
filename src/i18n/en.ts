@@ -571,6 +571,7 @@ export const en = {
   // Errors
   'error.debtSpending': 'Spending with a category has to come from a regular account (checking, cash, savings), not from a debt.',
   'error.debtTransferCategory': 'A transfer can only have a category if it is a payment from a regular account to a debt.',
+  'error.trackingCategory': 'Choose the category the money comes from: money for savings or investments is planned in a category.',
 
   // Errors
   'error.debtSplit': "A debt payment can't be part of a split.",

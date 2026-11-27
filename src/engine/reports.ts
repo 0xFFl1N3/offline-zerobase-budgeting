@@ -1,4 +1,4 @@
-import { categoryParts } from './budget.ts';
+import { categoryParts, offBudgetIds } from './budget.ts';
 import { addMonths, monthOf, monthsBetween } from './months.ts';
 import type { BudgetState, Cents, Month } from './types.ts';
 
@@ -45,12 +45,14 @@ export interface IncomeSpendingRow {
 export function incomeVsSpending(state: BudgetState, months: Month[]): IncomeSpendingRow[] {
   const index = new Map(months.map((m, i) => [m, i]));
   const rows: IncomeSpendingRow[] = months.map((month) => ({ month, income: 0, spending: 0, net: 0 }));
+  const off = offBudgetIds(state);
   for (const t of state.transactions) {
     const i = index.get(monthOf(t.date));
     if (i === undefined) continue;
     const parts = categoryParts(t);
     if (parts.length === 0) {
-      if (t.transferAccountId !== null) continue;
+      // Transfers are not income, and neither is a change inside a debt or tracking account (a correction, a gain).
+      if (t.transferAccountId !== null || off.has(t.accountId)) continue;
       if (t.amount > 0) rows[i]!.income += t.amount; // an outflow without a category is legacy data and not counted
       continue;
     }

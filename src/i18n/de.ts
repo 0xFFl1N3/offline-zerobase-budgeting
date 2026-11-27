@@ -568,6 +568,7 @@ export const de: Messages = {
   // Errors
   'error.debtSpending': 'Ausgaben mit Kategorie müssen von einem normalen Konto (Girokonto, Bargeld, Sparkonto) abgehen, nicht von einer Schuld.',
   'error.debtTransferCategory': 'Eine Umbuchung kann nur dann eine Kategorie haben, wenn sie eine Rate von einem normalen Konto an eine Schuld ist.',
+  'error.trackingCategory': 'Wähle die Kategorie, aus der das Geld kommt: Geld fürs Sparen oder Anlegen wird in einer Kategorie geplant.',
 
   // Errors
   'error.debtSplit': 'Eine Schuldenzahlung kann nicht Teil einer Aufteilung sein.',

@@ -43,7 +43,7 @@ type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v);
 const MONTH = /^\d{4}-\d{2}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const ACCOUNT_TYPES: AccountType[] = ['checking', 'cash', 'savings', 'debt'];
+const ACCOUNT_TYPES: AccountType[] = ['checking', 'cash', 'savings', 'debt', 'tracking'];
 
 function list(data: Obj, key: string): Obj[] {
   const v = data[key];
