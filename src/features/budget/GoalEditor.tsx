@@ -1,25 +1,10 @@
-import { useState } from 'react';
-import { toAmountInput } from '../../engine/money.ts';
-import { parseAmountInput } from '../../engine/amountInput.ts';
-import { REPEAT_MONTHS, type Category, type Goal, type RepeatMonths } from '../../engine/types.ts';
-import { t, type MessageKey } from '../../i18n/i18n.ts';
+import type { Category, Goal } from '../../engine/types.ts';
+import { t } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
-import { buildGoal, goalToForm, GOAL_KINDS, type GoalKind } from './buildGoal.ts';
+import { goalToForm } from './buildGoal.ts';
+import { EMPTY_GOAL_FORM, useGoalFields } from './GoalFields.tsx';
 import { useAction } from '../errors/useAction.ts';
-import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 import { Form } from '../../components/Form.tsx';
-import { SumHint } from '../../components/SumHint.tsx';
-
-const KIND_LABELS: Record<GoalKind, MessageKey> = {
-  keep: 'goal.typeKeep',
-  save_by: 'goal.typeSaveBy',
-  monthly: 'goal.typeMonthly',
-};
-const AMOUNT_LABELS: Record<GoalKind, MessageKey> = {
-  keep: 'goal.keepAmount',
-  save_by: 'goal.target',
-  monthly: 'goal.perMonth',
-};
 
 interface Props {
   category: Category;
@@ -34,69 +19,21 @@ export function GoalEditor({ category, goal, onClose, fresh = false }: Props) {
   const removeGoal = useBudgetStore((s) => s.removeGoal);
 
   // A fresh goal after a past due date keeps the amount and asks for a new month.
-  const initial = goal ? { ...goalToForm(goal), ...(fresh ? { targetDate: '', repeatMonths: null } : {}) } : { type: 'keep' as GoalKind, amount: 0, targetDate: '', repeatMonths: null };
-  const [type, setType] = useState<GoalKind>(initial.type);
-  const [amountText, setAmountText] = useState(initial.amount ? toAmountInput(initial.amount) : '');
-  const [targetDate, setTargetDate] = useState(initial.targetDate);
-  const [repeatMonths, setRepeatMonths] = useState<RepeatMonths | null>(initial.repeatMonths ?? null);
+  const initial = goal ? { ...goalToForm(goal), ...(fresh ? { targetDate: '', repeatMonths: null } : {}) } : EMPTY_GOAL_FORM;
+  const { fields, build } = useGoalFields(initial);
   const { run, error, setError } = useAction();
 
   const submit = () => {
-    const amount = parseAmountInput(amountText);
-    if (amount === null) return setError(t('goal.errorAmount'));
-    const result = buildGoal({ type, amount, targetDate, repeatMonths }, category.id, goal?.id ?? crypto.randomUUID());
-    if (!result.ok) return setError(t(result.error));
+    const result = build(category.id, goal?.id ?? crypto.randomUUID());
+    if (!result.ok) return setError(result.error);
     const next = result.goal;
     void run(() => saveGoal(next)).then((ok) => ok && onClose());
   };
 
-  const field = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-sm';
-  const label = 'text-xs font-medium text-slate-600';
   return (
     <Form onSubmit={submit} className="mx-4 mb-2 ml-8 flex flex-wrap items-end gap-3 rounded bg-slate-50 p-3">
       <span className="w-full text-sm font-medium">{t('goal.for', { name: category.name })}</span>
-      <label className={label}>
-        {t('goal.type')}
-        <select value={type} onChange={(e) => setType(e.target.value as GoalKind)} className={`${field} mt-1 block`}>
-          {GOAL_KINDS.map((kind) => (
-            <option key={kind} value={kind}>{t(KIND_LABELS[kind])}</option>
-          ))}
-        </select>
-      </label>
-      <label className={`relative ${label}`}>
-        {t(AMOUNT_LABELS[type])}
-        <input {...NO_AUTOFILL}
-          autoFocus
-          value={amountText}
-          onChange={(e) => setAmountText(e.target.value)}
-          inputMode="decimal"
-          placeholder={t('common.amountPlaceholder')}
-          className={`${field} mt-1 block w-32 text-right tabular-nums`}
-        />
-        <SumHint text={amountText} />
-      </label>
-      {type === 'save_by' && (
-        <label className={label}>
-          {t('goal.byMonth')}
-          <input {...NO_AUTOFILL} type="month" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className={`${field} mt-1 block`} />
-        </label>
-      )}
-      {type === 'save_by' && (
-        <label className={label}>
-          {t('goal.repeat')}
-          <select
-            value={repeatMonths ?? ''}
-            onChange={(e) => setRepeatMonths(e.target.value ? (Number(e.target.value) as RepeatMonths) : null)}
-            className={`${field} mt-1 block`}
-          >
-            <option value="">{t('goal.repeatOnce')}</option>
-            {REPEAT_MONTHS.map((n) => (
-              <option key={n} value={n}>{t(`goal.repeatEvery${n}`)}</option>
-            ))}
-          </select>
-        </label>
-      )}
-      {type === 'keep' && <p className="w-full text-xs text-slate-500">{t('goal.keepHint')}</p>}
+      {fields}
       <button type="submit" className="rounded bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">{t('goal.save')}</button>
       {goal && (
         <button

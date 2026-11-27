@@ -61,6 +61,9 @@ export interface Goal {
   monthlyAmount?: Cents;
 }
 
+/** A goal for a category that does not exist yet. */
+export type GoalDraft = Omit<Goal, 'id' | 'categoryId'>;
+
 export interface MonthlyBudget {
   categoryId: string;
   month: Month;

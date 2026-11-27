@@ -7,6 +7,7 @@ import { formatMoney } from '../../engine/money.ts';
 import { formatMonth, monthsBetween, toISODate } from '../../engine/months.ts';
 import type { Cents } from '../../engine/types.ts';
 import { InlineAdd } from '../../components/InlineAdd.tsx';
+import { AddCategory } from './AddCategory.tsx';
 import { MoveButtons, useReorder } from '../../components/reorder.tsx';
 import { MoneyField } from '../../components/MoneyField.tsx';
 import { t } from '../../i18n/i18n.ts';
@@ -61,7 +62,6 @@ export function BudgetView() {
   const shiftMonth = useBudgetStore((s) => s.shiftMonth);
   const assign = useBudgetStore((s) => s.assign);
   const addGroup = useBudgetStore((s) => s.addGroup);
-  const addCategory = useBudgetStore((s) => s.addCategory);
   const { run } = useAction();
   const openDebt = useNavigation((s) => s.openDebt);
 
@@ -360,7 +360,7 @@ export function BudgetView() {
               })}
               </div>
               <div className="border-t border-slate-100 px-3 py-2 md:px-8">
-                <InlineAdd label={t('budget.addCategory')} placeholder={t('budget.categoryName')} onAdd={(name) => run(() => addCategory(group.id, name))} />
+                <AddCategory groupId={group.id} />
               </div>
             </section>
           );

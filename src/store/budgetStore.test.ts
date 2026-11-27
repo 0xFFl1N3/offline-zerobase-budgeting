@@ -499,3 +499,18 @@ test('a debt can go into a group of your choosing', async () => {
   const bike = after.accounts.find((a) => a.name === 'Bike')!;
   assert.equal(after.groups.find((g) => g.id === after.categories.find((c) => c.id === bike.paymentCategoryId)!.groupId)!.name, 'Debt payments');
 });
+
+test('a category can be created together with its goal, stored in one go', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  await store.getState().addGroup('Living');
+  const groupId = store.getState().state.groups[0]!.id;
+  await store.getState().addCategory(groupId, ' Groceries ', { type: 'target_balance', targetAmount: 30000 });
+  const { categories, goals } = store.getState().state;
+  assert.equal(categories[0]!.name, 'Groceries');
+  assert.deepEqual(goals.map((g) => [g.categoryId, g.type, g.targetAmount]), [[categories[0]!.id, 'target_balance', 30000]]);
+  assert.equal(goals[0]!.id === categories[0]!.id, false);
+  assert.deepEqual(await db.goals.toArray(), goals, 'the goal is stored');
+  await store.getState().addCategory(groupId, 'Rent');
+  assert.equal(store.getState().state.goals.length, 1, 'without a goal, none is made');
+});

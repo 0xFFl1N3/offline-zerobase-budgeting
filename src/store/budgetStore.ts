@@ -12,7 +12,7 @@ import { addMonths } from '../engine/months.ts';
 import { activeSeriesUsing, bookNext, pauseSeries, recurringFrom, setRecurringPaused, skipNext, startRecurring, updateRecurring, type RecurringChanges } from '../engine/recurring.ts';
 import { toISODate } from '../engine/months.ts';
 import { reconcile, withCleared } from '../engine/reconcile.ts';
-import type { Account, AccountType, BudgetState, Cents, ClearedStatus, Frequency, Goal, Month, Transaction } from '../engine/types.ts';
+import type { Account, AccountType, BudgetState, Cents, ClearedStatus, Frequency, Goal, GoalDraft, Month, Transaction } from '../engine/types.ts';
 import { RuleError } from '../engine/ruleError.ts';
 import { classify, markReported, type Problem } from '../i18n/errors.ts';
 import { connectTabs } from './tabSync.ts';
@@ -73,7 +73,8 @@ export interface BudgetStore {
   moveGroupTo: (id: string, targetId: string, place: 'before' | 'after') => Promise<void>;
   moveCategoryTo: (id: string, targetId: string, place: 'before' | 'after') => Promise<void>;
   addGroup: (name: string) => Promise<void>;
-  addCategory: (groupId: string, name: string) => Promise<void>;
+  /** With `goal`, the category is created together with that goal. */
+  addCategory: (groupId: string, name: string, goal?: GoalDraft) => Promise<void>;
   /** Sets this month's Assigned amount for a category. */
   assign: (categoryId: string, assigned: Cents) => Promise<void>;
   /** Adds to each category what its goal still needs this month. Returns how many categories were funded. */
@@ -312,14 +313,18 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set((s) => ({ state: { ...s.state, groups: [...s.state.groups, group] } }));
     },
 
-    addCategory: async (groupId, name) => {
+    addCategory: async (groupId, name, draft) => {
       if (!name.trim()) return;
       const sortOrder = get()
         .state.categories.filter((c) => c.groupId === groupId)
         .reduce((max, c) => Math.max(max, c.sortOrder + 1), 0);
       const category = { id: crypto.randomUUID(), groupId, name: name.trim(), sortOrder, archived: false };
-      await repo.saveCategory(db, category);
-      set((s) => ({ state: { ...s.state, categories: [...s.state.categories, category] } }));
+      const goal: Goal | null = draft ? { ...draft, id: crypto.randomUUID(), categoryId: category.id } : null;
+      if (goal) await repo.addCategoryWithGoal(db, category, goal);
+      else await repo.saveCategory(db, category);
+      set((s) => ({
+        state: { ...s.state, categories: [...s.state.categories, category], goals: goal ? [...s.state.goals, goal] : s.state.goals },
+      }));
     },
 
     assign: async (categoryId, assigned) => {

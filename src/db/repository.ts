@@ -77,6 +77,12 @@ export const saveReconciliation = (db: BudgetDB, account: Account, transactions:
 export const deleteAccount = (db: BudgetDB, id: string) => db.accounts.delete(id);
 export const saveGroup = (db: BudgetDB, g: CategoryGroup) => db.groups.put(g);
 export const saveCategory = (db: BudgetDB, c: Category) => db.categories.put(c);
+/** A new category together with its goal, all or nothing. */
+export const addCategoryWithGoal = (db: BudgetDB, c: Category, g: Goal) =>
+  db.transaction('rw', db.categories, db.goals, async () => {
+    await db.categories.put(c);
+    await db.goals.put(g);
+  });
 async function deleteCategoriesIn(db: BudgetDB, ids: string[]) {
   for (const id of ids) {
     await db.categories.delete(id);

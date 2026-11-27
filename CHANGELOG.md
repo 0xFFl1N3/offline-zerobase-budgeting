@@ -2,6 +2,14 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.6 – 2026-11-27
+
+### Added
+- "Add goal" next to the name field when adding a category. It opens the goal's fields below; Enter or "Add category" creates the category together with its goal, stored in one go. "No goal" closes the fields again, and Enter without them adds the category alone, as before.
+
+### Fixed
+- On phones, the goal type list no longer runs past the edge of the screen.
+
 ## 0.19.5 – 2026-11-27
 
 ### Added
