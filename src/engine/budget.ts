@@ -138,6 +138,23 @@ export function readyToAssign(state: BudgetState, month: Month): Cents {
   return total;
 }
 
+/** What active categories have assigned in the months after `month` (money planned ahead). */
+export function assignedAfter(state: BudgetState, month: Month): Cents {
+  const archived = archivedCategoryIds(state);
+  return state.monthlyBudgets.filter((b) => b.month > month && !archived.has(b.categoryId)).reduce((sum, b) => sum + b.assigned, 0);
+}
+
+/**
+ * Ready to Assign as the pill shows it. From the current month (today's) on, money already assigned in later months
+ * is no longer free, so it is taken off: 2.800 € to assign in November with 500 € assigned to December shows 2.300 €
+ * in both months, and the same money cannot be assigned twice. Past months show what they always did. Without
+ * `currentMonth` it is readyToAssign, unchanged.
+ */
+export function availableToAssign(state: BudgetState, month: Month, currentMonth?: Month): Cents {
+  const base = readyToAssign(state, month);
+  return currentMonth === undefined || month < currentMonth ? base : base - assignedAfter(state, month);
+}
+
 /** How one month's Ready to Assign comes about, and what happened in the categories. */
 export interface MonthSummary {
   /** Ready to Assign at the end of last month: what was not assigned then. */
@@ -148,7 +165,9 @@ export interface MonthSummary {
   income: Cents;
   /** Assigned to categories this month. */
   assigned: Cents;
-  /** The four above added up. */
+  /** From the current month on: already assigned in later months, so no longer free (0 for past months). */
+  plannedLater: Cents;
+  /** The parts above added up: what the pill shows. */
   readyToAssign: Cents;
   /** Spent from categories this month (negative). */
   spent: Cents;
@@ -160,7 +179,7 @@ export interface MonthSummary {
  * The month overview. The parts are worked out on their own (not as the difference to the total), so a test can
  * check that they always add up to Ready to Assign.
  */
-export function monthSummary(state: BudgetState, month: Month): MonthSummary {
+export function monthSummary(state: BudgetState, month: Month, currentMonth?: Month): MonthSummary {
   const archived = archivedCategoryIds(state);
   const active = state.categories.filter((c) => !archived.has(c.id)).map((c) => c.id);
   const activeIds = new Set(active);
@@ -178,12 +197,14 @@ export function monthSummary(state: BudgetState, month: Month): MonthSummary {
   const overspentLastMonth = overspentIn(state, previous);
   const income = flow - spent;
   const assigned = active.reduce((sum, id) => sum + categoryAssigned(state, id, month), 0);
+  const plannedLater = currentMonth === undefined || month < currentMonth ? 0 : assignedAfter(state, month);
   return {
     fromLastMonth,
     overspentLastMonth,
     income,
     assigned,
-    readyToAssign: fromLastMonth + overspentLastMonth + income - assigned,
+    plannedLater,
+    readyToAssign: fromLastMonth + overspentLastMonth + income - assigned - plannedLater,
     spent,
     available: active.reduce((sum, id) => sum + categoryAvailable(state, id, month), 0),
   };

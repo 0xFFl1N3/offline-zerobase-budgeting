@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.0 – 2026-11-27
+
+### Added
+- The engine can now tell how much is really free to assign when money has already been assigned to later months: from the current month on, what is assigned in later months is taken off Ready to Assign, so the same money cannot be assigned twice (2.800 € with 500 € assigned to December shows 2.300 € in November and in December). Past months stay as they were, and for anyone who does not assign ahead every number stays the same. Not on screen yet; tests cover the change of month, more planned than there is, income dated in a later month, archived categories, Auto-assign and the month overview.
+
 ## 0.18.1 – 2026-11-27
 
 ### Added
