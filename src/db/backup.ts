@@ -77,6 +77,16 @@ const optStr = (o: Obj, k: string, what: string): string | null => {
 };
 
 function parseGoal(o: Obj): Goal {
+  const goal = parseGoalBody(o);
+  const paused = o['pausedMonths'];
+  if (paused === undefined) return goal;
+  if (!Array.isArray(paused) || !paused.every((m) => typeof m === 'string' && MONTH.test(m))) {
+    throw new RuleError('Goal: "pausedMonths" must be a list of months like 2026-06.');
+  }
+  return { ...goal, pausedMonths: paused as string[] };
+}
+
+function parseGoalBody(o: Obj): Goal {
   const what = 'Goal';
   const id = str(o, 'id', what);
   const categoryId = str(o, 'categoryId', what);

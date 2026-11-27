@@ -33,19 +33,21 @@ export function GoalProgress({ state, goal, month, currency }: Props) {
       : p.dueMonth
         ? t('goal.progressBy', { ...amounts, month: formatMonth(p.dueMonth) }) + (goal.repeatMonths ? ` · ${t(`goal.repeats${goal.repeatMonths}`)}` : '')
         : t('goal.keepProgress', amounts);
-  const status =
-    p.neededThisMonth > 0 ? t('goal.assignMore', { amount: fmt(p.neededThisMonth) }) : p.percent >= 100 ? t('goal.funded') : t('goal.onTrack');
-  const funded = p.neededThisMonth === 0;
+  const status = p.paused
+    ? t('goal.pausedMonth')
+    : p.neededThisMonth > 0 ? t('goal.assignMore', { amount: fmt(p.neededThisMonth) }) : p.percent >= 100 ? t('goal.funded') : t('goal.onTrack');
+  const funded = p.neededThisMonth === 0 && !p.paused;
+  const tone = p.paused ? 'text-slate-500' : funded ? 'text-emerald-700' : 'text-amber-700';
 
   return (
     <div className="mt-0.5 max-w-md">
       <div className="h-1.5 overflow-hidden rounded bg-slate-200" role="progressbar" aria-valuenow={p.percent} aria-valuemin={0} aria-valuemax={100}>
-        <div className={`h-full ${funded ? 'bg-emerald-500' : 'bg-sky-500'}`} style={{ width: `${p.percent}%` }} />
+        <div className={`h-full ${p.paused ? 'bg-slate-400' : funded ? 'bg-emerald-500' : 'bg-sky-500'}`} style={{ width: `${p.percent}%` }} />
       </div>
       {/* What is still needed sits at the right end of the bar, where the eye lands when scanning down the list. */}
       <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-slate-500">
         <span>{base}</span>
-        <span className={`ml-auto ${funded ? 'text-emerald-700' : 'text-amber-700'}`}>{status}</span>
+        <span className={`ml-auto ${tone}`}>{status}</span>
       </div>
     </div>
   );

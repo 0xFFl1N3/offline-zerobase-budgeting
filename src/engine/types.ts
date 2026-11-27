@@ -59,6 +59,8 @@ export interface Goal {
   repeatMonths?: RepeatMonths;
   /** monthly_amount */
   monthlyAmount?: Cents;
+  /** Months ('YYYY-MM') in which the goal asks for nothing: "Pause this month". */
+  pausedMonths?: Month[];
 }
 
 /** A goal for a category that does not exist yet. */
@@ -152,4 +154,6 @@ export interface GoalProgress {
   dueMonth?: Month;
   /** A one-time goal whose due month has passed: it is met or not, and the user decides what comes next. */
   pastDue?: true;
+  /** Paused for this month ("Pause this month"): it asks for nothing. */
+  paused?: true;
 }

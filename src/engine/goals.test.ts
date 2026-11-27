@@ -117,3 +117,27 @@ test('7 and 8: the repeat survives a backup; a wrong one is refused', () => {
   delete oneTime.repeatMonths;
   assert.equal(dueMonth(oneTime, '2027-04'), '2027-03', 'without the repeat it is a one-time goal again');
 });
+
+test('a paused month asks for nothing; the months around it are unchanged', () => {
+  const monthly: Goal = { id: 'g', categoryId: 'ins', type: 'monthly_amount', monthlyAmount: 1000, pausedMonths: ['2026-02'] };
+  const s = budget(monthly);
+  const feb = goalProgress(s, monthly, '2026-02');
+  assert.deepEqual([feb.neededThisMonth, feb.paused], [0, true]);
+  assert.deepEqual([need(s, '2026-01'), need(s, '2026-03')], [1000, 1000], 'nothing is made up in March');
+  assert.equal(autoAssignPlan(s, '2026-02').steps.length, 0, 'Fund goals leaves it out');
+});
+
+test('pausing a goal with a due month spreads what is missing over the months left', () => {
+  const by = goal({ targetDate: '2026-04', pausedMonths: ['2026-01'] }); // 480 € by April
+  const s = budget(by);
+  assert.equal(need(s, '2026-01'), 0);
+  assert.equal(need(s, '2026-02'), 16000, '480 € over February to April');
+});
+
+test('paused months survive a backup; a wrong one is refused', () => {
+  const s = budget(goal({ pausedMonths: ['2026-02'] }));
+  const back = parseBackup(serializeBackup(createBackup(s, 'EUR')));
+  assert.ok(back.ok);
+  assert.deepEqual(back.backup.data.goals[0]!.pausedMonths, ['2026-02']);
+  assert.equal(parseBackup(serializeBackup(createBackup({ ...s, goals: [goal({ pausedMonths: ['Feb'] })] }, 'EUR'))).ok, false);
+});

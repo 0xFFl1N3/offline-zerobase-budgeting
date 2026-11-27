@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.12 – 2026-11-27
+
+### Added
+- "Pause this month" in the goal editor: in the month on screen the goal asks for nothing, so "Fund goals" leaves it out, and its line reads "paused this month" with a grey bar. "Resume this month" takes the pause back. Other months are unchanged: a monthly goal asks for its usual amount the next month, a goal with a due month spreads what is still missing over the months left, and "keep ready" tops up whatever is short next month. Paused months are part of the goal and of backups.
+
 ## 0.19.11 – 2026-11-27
 
 ### Changed

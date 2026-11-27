@@ -12,6 +12,7 @@ What changed for you in each release, newest first. The full technical list is i
 - Give a new category its goal right away: "Add goal" next to the name, then Enter creates both.
 - Collapse a budget group with the arrow in front of its name.
 - Tick categories or whole groups, and Auto-assign fills only those.
+- Pause a goal for a month: it then asks for nothing in that month.
 
 ## 0.18 – Maths in amount fields
 2026-11-27

@@ -283,7 +283,20 @@ function balanceGoalProgress(state: BudgetState, goal: Goal, target: Cents, mont
   return progress(available, monthly - addedThisMonth);
 }
 
+/** Whether the goal was paused for this month ("Pause this month"). */
+export const goalPaused = (goal: Goal, month: Month) => goal.pausedMonths?.includes(month) ?? false;
+
+/**
+ * A paused month asks for nothing; the bar still shows where the category stands. What a paused month leaves out
+ * is not made up for later, except where the goal itself works that way: a goal with a due month spreads what is
+ * missing over fewer months, and "keep ready" tops up whatever is short next month.
+ */
 export function goalProgress(state: BudgetState, goal: Goal, month: Month): GoalProgress {
+  const progress = unpausedProgress(state, goal, month);
+  return goalPaused(goal, month) ? { ...progress, neededThisMonth: 0, paused: true } : progress;
+}
+
+function unpausedProgress(state: BudgetState, goal: Goal, month: Month): GoalProgress {
   switch (goal.type) {
     case 'target_balance':
       return balanceGoalProgress(state, goal, goal.targetAmount ?? 0, month);

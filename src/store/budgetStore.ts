@@ -106,6 +106,8 @@ export interface BudgetStore {
   reconcileAccount: (accountId: string, statementBalance: Cents, adjustmentCategoryId: string | null) => Promise<void>;
   /** Sets the category's goal, replacing any existing one (one goal per category). */
   saveGoal: (goal: Goal) => Promise<void>;
+  /** "Pause this month" for the month on screen, or resume it. */
+  pauseGoal: (categoryId: string, paused: boolean) => Promise<void>;
   removeGoal: (categoryId: string) => Promise<void>;
   renameGroup: (id: string, name: string) => Promise<void>;
   renameCategory: (id: string, name: string) => Promise<void>;
@@ -460,6 +462,16 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set((s) => ({
         state: { ...s.state, goals: [...s.state.goals.filter((g) => g.categoryId !== goal.categoryId), goal] },
       }));
+    },
+
+    pauseGoal: async (categoryId, paused) => {
+      const { state, month } = get();
+      const goal = state.goals.find((g) => g.categoryId === categoryId);
+      if (!goal) return;
+      const others = (goal.pausedMonths ?? []).filter((m) => m !== month);
+      const pausedMonths = paused ? [...others, month].sort() : others;
+      const { pausedMonths: _old, ...rest } = goal;
+      await get().saveGoal(pausedMonths.length > 0 ? { ...rest, pausedMonths } : rest);
     },
 
     removeGoal: (categoryId) =>

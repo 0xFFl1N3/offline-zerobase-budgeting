@@ -514,3 +514,16 @@ test('a category can be created together with its goal, stored in one go', async
   await store.getState().addCategory(groupId, 'Rent');
   assert.equal(store.getState().state.goals.length, 1, 'without a goal, none is made');
 });
+
+test('a goal is paused for the month on screen and resumed again', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  await store.getState().addGroup('Living');
+  await store.getState().addCategory(store.getState().state.groups[0]!.id, 'Depot', { type: 'monthly_amount', monthlyAmount: 1000 });
+  const id = store.getState().state.categories[0]!.id;
+  await store.getState().pauseGoal(id, true);
+  assert.deepEqual(store.getState().state.goals[0]!.pausedMonths, ['2026-01']);
+  assert.deepEqual((await db.goals.toArray())[0]!.pausedMonths, ['2026-01'], 'stored');
+  await store.getState().pauseGoal(id, false);
+  assert.equal(store.getState().state.goals[0]!.pausedMonths, undefined);
+});
