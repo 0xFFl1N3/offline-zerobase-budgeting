@@ -593,6 +593,10 @@ export const en = {
 
   // Debts
   'debt.deleteKeepsCategory': "Its payment category \"{category}\" stays in your budget; archive or delete it there if you no longer need it.",
+
+  // Debts
+  'debt.group': 'Budget payments in',
+  'debt.newGroup': '{name} (new group)',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

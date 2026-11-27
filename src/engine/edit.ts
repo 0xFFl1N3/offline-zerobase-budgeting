@@ -89,8 +89,10 @@ export interface NewDebt {
   owed: Cents;
   /** Optional agreed minimum monthly payment (positive). */
   minimumPayment: Cents | null;
-  /** Name for the category group of debt payments, if it has to be created (in the user's language). */
+  /** Name of the default group for debt payments (in the user's language); used, or created, when no group is chosen. */
   groupName: string;
+  /** An existing group to put the payment category in; otherwise the group called `groupName` (made if needed). */
+  groupId?: string | null;
 }
 
 export interface DebtSetup {
@@ -103,8 +105,8 @@ export interface DebtSetup {
 }
 
 /**
- * Adds a debt account together with its payment category (in the group of existing debt payments, or a new
- * group) and, if a minimum payment is given, a monthly goal of that amount on the category.
+ * Adds a debt account together with its payment category (in the chosen group, else the debt payments group,
+ * made if needed) and, if a minimum payment is given, a monthly goal of that amount on the category.
  */
 export function addDebtAccount(state: BudgetState, input: NewDebt, newId: () => string): DebtSetup {
   const name = input.name.trim();
@@ -112,11 +114,10 @@ export function addDebtAccount(state: BudgetState, input: NewDebt, newId: () => 
   if (!(input.owed >= 0)) throw new RuleError('Enter what is still owed as a positive amount.');
   if (input.minimumPayment !== null && !(input.minimumPayment > 0)) throw new RuleError('Enter an amount greater than zero.');
 
-  // Reuse the group that holds the other debts' payment categories, if it is still in use.
-  const existing = state.accounts
-    .map((a) => state.categories.find((c) => c.id === a.paymentCategoryId)?.groupId)
-    .map((id) => state.groups.find((g) => g.id === id && !g.archived))
-    .find((g) => g !== undefined);
+  // The chosen group, else the debt payments group if there is one.
+  const chosen = input.groupId ? state.groups.find((g) => g.id === input.groupId && !g.archived) : undefined;
+  if (input.groupId && !chosen) throw new RuleError('Unknown group.');
+  const existing = chosen ?? state.groups.find((g) => !g.archived && g.name === input.groupName);
   const group: CategoryGroup = existing ?? {
     id: newId(),
     name: input.groupName,

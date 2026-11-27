@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.10.7 – 2026-11-27
+
+### Added
+- When adding a debt, choose the group its payment category goes into. "Debt payments" is the default and is created if it doesn't exist yet.
+
 ## 0.10.6 – 2026-11-27
 
 ### Fixed

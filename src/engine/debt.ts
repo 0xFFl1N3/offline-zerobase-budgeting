@@ -109,3 +109,4 @@ export function prepareTransaction<T extends Transaction>(state: BudgetState, t:
   checkDebtRules(state, prepared);
   return prepared;
 }
+

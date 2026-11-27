@@ -482,3 +482,20 @@ test('every way of saving applies the debt rules, reconciling included', async (
   assert.equal(readyToAssign(after, store.getState().month), before);
   assert.ok(after.transactions.every((t) => t.categoryId === null));
 });
+
+test('a debt can go into a group of your choosing', async () => {
+  const { store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  await store.getState().addGroup('Living');
+  const living = store.getState().state.groups[0]!;
+  await store.getState().addDebt({ name: 'Sofa', owed: 60000, minimumPayment: null, groupName: 'Debt payments', groupId: living.id });
+  const s = store.getState().state;
+  const sofa = s.accounts.find((a) => a.name === 'Sofa')!;
+  assert.equal(s.categories.find((c) => c.id === sofa.paymentCategoryId)!.groupId, living.id);
+  assert.equal(s.groups.length, 1, 'no extra group');
+  // Without a choice, the next one goes into "Debt payments", made for it.
+  await store.getState().addDebt({ name: 'Bike', owed: 30000, minimumPayment: null, groupName: 'Debt payments' });
+  const after = store.getState().state;
+  const bike = after.accounts.find((a) => a.name === 'Bike')!;
+  assert.equal(after.groups.find((g) => g.id === after.categories.find((c) => c.id === bike.paymentCategoryId)!.groupId)!.name, 'Debt payments');
+});

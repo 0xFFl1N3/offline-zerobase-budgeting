@@ -19,6 +19,11 @@ function AddAccountForm({ onDone }: { onDone: () => void }) {
   const [minimum, setMinimum] = useState('');
   const { run, error, setError } = useAction();
   const debt = type === 'debt';
+  const state = useBudgetStore((s) => s.state);
+  // Where the payment category goes: "Debt payments" by default (made if it doesn't exist yet), or any group.
+  const defaultGroup = state.groups.find((g) => !g.archived && g.name === t('debt.groupName'));
+  const [groupId, setGroupId] = useState<string>(defaultGroup?.id ?? '');
+  const groupName = groupId ? (state.groups.find((g) => g.id === groupId)?.name ?? '') : t('debt.groupName');
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -28,7 +33,7 @@ function AddAccountForm({ onDone }: { onDone: () => void }) {
     if (debt) {
       const min = minimum.trim() === '' ? null : parseMoney(minimum);
       if (minimum.trim() !== '' && (min === null || min <= 0)) return setError(t('debt.errorMinimum'));
-      const input = { name, owed: Math.abs(amount), minimumPayment: min, groupName: t('debt.groupName') };
+      const input = { name, owed: Math.abs(amount), minimumPayment: min, groupName: t('debt.groupName'), groupId: groupId || null };
       void run(() => addDebt(input)).then((ok) => ok && onDone());
     } else {
       void run(() => addAccount(name, type, amount)).then((ok) => ok && onDone());
@@ -57,7 +62,16 @@ function AddAccountForm({ onDone }: { onDone: () => void }) {
         <>
           <p className="text-xs text-slate-500">{t('debt.owedHint')}</p>
           <input value={minimum} onChange={(e) => setMinimum(e.target.value)} placeholder={t('debt.minimum')} aria-label={t('debt.minimum')} inputMode="decimal" className={field} />
-          <p className="text-xs text-slate-500">{t('debt.addHint', { name: name.trim() || '…', group: t('debt.groupName') })}</p>
+          <label className="block text-xs font-medium text-slate-600">
+            {t('debt.group')}
+            <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className={`${field} mt-1`}>
+              {!defaultGroup && <option value="">{t('debt.newGroup', { name: t('debt.groupName') })}</option>}
+              {state.groups.filter((g) => !g.archived).map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+          </label>
+          <p className="text-xs text-slate-500">{t('debt.addHint', { name: name.trim() || '…', group: groupName })}</p>
         </>
       )}
       {error && <p className="text-xs text-red-600">{error}</p>}

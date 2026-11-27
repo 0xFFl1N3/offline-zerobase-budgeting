@@ -590,4 +590,8 @@ export const de: Messages = {
 
   // Debts
   'debt.deleteKeepsCategory': 'Die Zahlungskategorie „{category}“ bleibt in deinem Budget; archiviere oder lösche sie dort, wenn du sie nicht mehr brauchst.',
+
+  // Debts
+  'debt.group': 'Raten budgetieren in',
+  'debt.newGroup': '{name} (neue Gruppe)',
 };
