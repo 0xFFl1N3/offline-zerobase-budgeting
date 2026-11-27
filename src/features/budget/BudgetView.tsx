@@ -216,7 +216,8 @@ export function BudgetView() {
           </button>
           {!reordering && <span>{t('budget.colAvailable')}</span>}
         </div>
-        <div className={`${COLUMNS} px-4 pb-2 text-xs font-medium uppercase tracking-wide text-slate-500`}>
+        {/* The column labels stay at the top of the window while the groups scroll under them. */}
+        <div className={`${COLUMNS} sticky top-0 z-10 border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium uppercase tracking-wide text-slate-500`}>
           {/* The names need no heading: groups and categories speak for themselves. */}
           <span />
           <span className="text-right">{t('budget.colAssigned')}</span>

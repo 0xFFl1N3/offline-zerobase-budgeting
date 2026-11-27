@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.13 – 2026-11-27
+
+### Changed
+- On wider screens the budget's column labels ("Assigned", "Activity", "Available") stay at the top of the window while scrolling, so the numbers further down can still be told apart.
+
 ## 0.19.12 – 2026-11-27
 
 ### Added
