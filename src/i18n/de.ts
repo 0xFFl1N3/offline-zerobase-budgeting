@@ -73,6 +73,20 @@ export const de: Messages = {
   'budget.hintZero': 'Jeder Euro hat eine Aufgabe',
   'budget.hintLeft': 'noch nicht verteilt',
   'budget.hintOver': 'zu viel verteilt',
+  'budget.openOverview': 'So setzt sich der Monat zusammen',
+  'summary.title': 'Überblick {month}',
+  'summary.howTitle': 'So kommt „Noch zuzuweisen“ zustande',
+  'summary.fromLast': 'Übrig aus {month}',
+  'summary.overspent': 'Im {month} überzogen',
+  'summary.overspentHint': 'Im {month} wurde in einigen Kategorien mehr ausgegeben als zugewiesen; dieses Geld wird diesen Monat von „Noch zuzuweisen“ abgezogen.',
+  'summary.income': 'Einnahmen im {month}',
+  'summary.assigned': 'Zugewiesen im {month}',
+  'summary.categoriesTitle': 'Kategorien im {month}',
+  'summary.spent': 'Ausgegeben',
+  'summary.available': 'Verfügbar in allen Kategorien',
+  'summary.goalsNeed': 'Ziele brauchen noch',
+  'summary.goalsDone': 'nichts',
+  'summary.netWorth': 'Vermögen am Monatsende',
   'budget.autoAssign': 'Zuweisen',
   'budget.autoAssignConfirm': 'Das weist {total} zu, also {over} mehr, als noch zuzuweisen ist. „Noch zuzuweisen“ wird negativ. Trotzdem fortfahren?',
   'budget.autoAssignDone': { one: '{amount} auf {count} Kategorie verteilt.', other: '{amount} auf {count} Kategorien verteilt.' },
@@ -473,7 +487,6 @@ export const de: Messages = {
   'recur.blockedCategory': 'Kann nicht gebucht werden: Die Kategorie ist archiviert. Überspringe sie oder stelle die Kategorie wieder her.',
 
   // Overspending
-  'budget.overspentLast': 'Um {amount} verringert, weil im {month} mehr ausgegeben als zugewiesen wurde.',
 
   // Storage
   'storage.title': 'Speicher auf diesem Gerät',

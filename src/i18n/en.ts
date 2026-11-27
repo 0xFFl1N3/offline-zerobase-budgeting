@@ -76,6 +76,20 @@ export const en = {
   'budget.hintZero': 'Every euro has a job',
   'budget.hintLeft': 'left to assign',
   'budget.hintOver': 'over-assigned',
+  'budget.openOverview': 'How this month adds up',
+  'summary.title': 'Overview {month}',
+  'summary.howTitle': 'How Ready to Assign adds up',
+  'summary.fromLast': 'Left over from {month}',
+  'summary.overspent': 'Overspent in {month}',
+  'summary.overspentHint': 'More was spent than assigned in some categories in {month}; that money is taken from Ready to Assign this month.',
+  'summary.income': 'Income in {month}',
+  'summary.assigned': 'Assigned in {month}',
+  'summary.categoriesTitle': 'Categories in {month}',
+  'summary.spent': 'Spent',
+  'summary.available': 'Available in all categories',
+  'summary.goalsNeed': 'Goals still need',
+  'summary.goalsDone': 'nothing',
+  'summary.netWorth': 'Net worth at the end of the month',
   'budget.autoAssign': 'Auto-assign',
   'budget.autoAssignConfirm': 'This assigns {total}, which is {over} more than you have left to assign. Ready to Assign will go negative. Continue?',
   'budget.autoAssignDone': { one: 'Assigned {amount} to {count} category.', other: 'Assigned {amount} to {count} categories.' },
@@ -476,7 +490,6 @@ export const en = {
   'recur.blockedCategory': "Can't be booked: its category is archived. Skip it, or restore the category.",
 
   // Overspending
-  'budget.overspentLast': 'Lowered by {amount} because more was spent than assigned in {month}.',
 
   // Storage
   'storage.title': 'Storage on this device',

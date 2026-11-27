@@ -2,6 +2,14 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.17.1 – 2026-11-27
+
+### Added
+- The Ready to Assign pill opens a month overview (it now has a small arrow to show it can be clicked). It shows how Ready to Assign adds up: left over from last month, last month's overspending, income this month and what was assigned. Below that: what was spent, what all categories hold, what goals still need (with "Fund goals" right there), and net worth at the end of the month. On phones it opens the same way.
+
+### Changed
+- The red note about last month's overspending moved from under the pill into the overview, with a line explaining it.
+
 ## 0.17.0 – 2026-11-27
 
 ### Added

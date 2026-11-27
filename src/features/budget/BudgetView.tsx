@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { accountBalance, touchesCategory, categoryActivity, categoryAssigned, categoryAvailable, overspentIn, readyToAssign } from '../../engine/budget.ts';
 import { ASSIGN_KINDS, assignPlan, type AssignKind } from '../../engine/autoassign.ts';
 import { AssignMenu } from './AssignMenu.tsx';
@@ -17,12 +17,14 @@ import { useNavigation } from '../../store/navigation.ts';
 import { useAction } from '../errors/useAction.ts';
 import { NameCell } from './NameCell.tsx';
 import { DueGoalActions, GoalProgress } from './GoalProgress.tsx';
+import { MonthOverview } from './MonthOverview.tsx';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 /** The desktop table layout; phones get MobileGroupRow and MobileCategoryRow instead. */
 const COLUMNS = 'hidden md:grid md:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_6.5rem] lg:grid-cols-[minmax(0,1fr)_8rem_8rem_8rem] items-center gap-2';
 
-function ReadyToAssignPill({ amount, currency, className = '' }: { amount: Cents; currency: 'EUR' | 'USD'; className?: string }) {
+/** Ready to Assign; a click opens the month overview, which explains the number. */
+function ReadyToAssignPill({ amount, currency, onOpen, className = '' }: { amount: Cents; currency: 'EUR' | 'USD'; onOpen: () => void; className?: string }) {
   const tone =
     amount === 0
       ? 'bg-emerald-100 text-emerald-800'
@@ -31,10 +33,21 @@ function ReadyToAssignPill({ amount, currency, className = '' }: { amount: Cents
         : 'bg-red-100 text-red-800';
   const hint = t(amount === 0 ? 'budget.hintZero' : amount > 0 ? 'budget.hintLeft' : 'budget.hintOver');
   return (
-    <div className={`rounded-full px-4 py-2 text-sm font-medium ${tone} ${className}`}>
-      {t('budget.readyToAssign')}: <span className="tabular-nums">{formatMoney(amount, currency)}</span>
-      <span className="ml-2 hidden font-normal sm:inline">{hint}</span>
-    </div>
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-haspopup="dialog"
+      title={t('budget.openOverview')}
+      className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium hover:brightness-95 ${tone} ${className}`}
+    >
+      <span>
+        {t('budget.readyToAssign')}: <span className="tabular-nums">{formatMoney(amount, currency)}</span>
+        <span className="ml-2 hidden font-normal sm:inline">{hint}</span>
+      </span>
+      <svg viewBox="0 0 12 12" className="h-3 w-3 shrink-0 opacity-70" aria-hidden="true">
+        <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
   );
 }
 
@@ -75,6 +88,8 @@ export function BudgetView() {
     setEditingGoal(id);
   };
   const [autoMessage, setAutoMessage] = useState<{ month: string; text: string } | null>(null);
+  const [overview, setOverview] = useState(false);
+  const closeOverview = useCallback(() => setOverview(false), []);
   const [renaming, setRenaming] = useState<string | null>(null);
   /** On phones: the group or category whose details and actions are open. */
   const [open, setOpen] = useState<string | null>(null);
@@ -113,8 +128,6 @@ export function BudgetView() {
   const archivedCategories = state.categories.filter((c) => c.archived && !archivedGroups.some((g) => g.id === c.groupId));
   const archivedCount = archivedGroups.length + archivedCategories.length;
   const rta = readyToAssign(state, month);
-  // Last month's overspending was taken from Ready to Assign this month; say so, or the drop looks unexplained.
-  const overspentBefore = overspentIn(state, addMonths(month, -1));
   const plans = Object.fromEntries(ASSIGN_KINDS.map((kind) => [kind, assignPlan(state, month, kind)])) as Record<AssignKind, ReturnType<typeof assignPlan>>;
   const autoAssign = useBudgetStore((s) => s.autoAssign);
   const runAutoAssign = async (kind: AssignKind) => {
@@ -141,12 +154,19 @@ export function BudgetView() {
         {/* "contents": on phones the button sits next to the month and the pill gets its own full-width line. */}
         <div className="contents md:flex md:items-center md:gap-3">
           <AssignMenu plans={plans} format={fmt} onPick={(kind) => void runAutoAssign(kind)} />
-          <ReadyToAssignPill amount={rta} currency={currency} className="w-full text-center md:w-auto" />
+          <ReadyToAssignPill amount={rta} currency={currency} onOpen={() => setOverview(true)} className="w-full text-center md:w-auto" />
         </div>
       </div>
 
-      {overspentBefore < 0 && (
-        <p className="mt-2 text-right text-xs text-red-700">{t('budget.overspentLast', { amount: fmt(-overspentBefore), month: formatMonth(addMonths(month, -1)) })}</p>
+      {overview && (
+        <MonthOverview
+          state={state}
+          month={month}
+          currency={currency}
+          goalsNeed={plans.goals.total}
+          onFundGoals={() => void runAutoAssign('goals')}
+          onClose={closeOverview}
+        />
       )}
       {autoMessage?.month === month && <p className="mt-3 text-sm text-emerald-700" role="status">{autoMessage.text}</p>}
 
