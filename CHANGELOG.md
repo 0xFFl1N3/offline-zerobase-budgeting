@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.17.0 – 2026-11-27
+
+### Added
+- The month summary is worked out for any month: what was left to assign last month, last month's overspending, money that came in this month, what was assigned, and what was spent and is still available in the categories. Not on screen yet. A test checks that the parts always add up to Ready to Assign, in every month of the sample data and with archived categories, overspending and money moving out of an investment.
+
 ## 0.16.3 – 2026-11-27
 
 ### Changed

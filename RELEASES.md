@@ -2,6 +2,11 @@
 
 What changed for you in each release, newest first. The full technical list is in CHANGELOG.md.
 
+## 0.17 – Month overview
+2026-11-27
+
+- A click on "Ready to Assign" explains the month: what was left from last month, what came in, what you assigned and spent.
+
 ## 0.16 – Investments
 2026-11-27
 

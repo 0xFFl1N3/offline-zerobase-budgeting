@@ -138,6 +138,57 @@ export function readyToAssign(state: BudgetState, month: Month): Cents {
   return total;
 }
 
+/** How one month's Ready to Assign comes about, and what happened in the categories. */
+export interface MonthSummary {
+  /** Ready to Assign at the end of last month: what was not assigned then. */
+  fromLastMonth: Cents;
+  /** Last month's overspending, taken from Ready to Assign this month (0 or negative). */
+  overspentLastMonth: Cents;
+  /** Money that came into budget accounts this month without going to a category: income, money back from a debt or investment. */
+  income: Cents;
+  /** Assigned to categories this month. */
+  assigned: Cents;
+  /** The four above added up. */
+  readyToAssign: Cents;
+  /** Spent from categories this month (negative). */
+  spent: Cents;
+  /** What all categories hold at the end of the month. */
+  available: Cents;
+}
+
+/**
+ * The month overview. The parts are worked out on their own (not as the difference to the total), so a test can
+ * check that they always add up to Ready to Assign.
+ */
+export function monthSummary(state: BudgetState, month: Month): MonthSummary {
+  const archived = archivedCategoryIds(state);
+  const active = state.categories.filter((c) => !archived.has(c.id)).map((c) => c.id);
+  const activeIds = new Set(active);
+  const inBudget = new Set(budgetAccounts(state).map((a) => a.id));
+  let flow = 0; // what moved into or out of budget accounts this month
+  let spent = 0; // the part of it booked to active categories
+  for (const t of state.transactions) {
+    if (monthOf(t.date) !== month) continue;
+    if (inBudget.has(t.accountId)) flow += t.amount;
+    if (t.transferAccountId !== null && inBudget.has(t.transferAccountId)) flow -= t.amount;
+    for (const part of categoryParts(t)) if (activeIds.has(part.categoryId)) spent += part.amount;
+  }
+  const previous = addMonths(month, -1);
+  const fromLastMonth = readyToAssign(state, previous);
+  const overspentLastMonth = overspentIn(state, previous);
+  const income = flow - spent;
+  const assigned = active.reduce((sum, id) => sum + categoryAssigned(state, id, month), 0);
+  return {
+    fromLastMonth,
+    overspentLastMonth,
+    income,
+    assigned,
+    readyToAssign: fromLastMonth + overspentLastMonth + income - assigned,
+    spent,
+    available: active.reduce((sum, id) => sum + categoryAvailable(state, id, month), 0),
+  };
+}
+
 /** How much active categories were overspent at the end of `month` (a negative amount, or 0). */
 export function overspentIn(state: BudgetState, month: Month): Cents {
   const archived = archivedCategoryIds(state);
