@@ -12,6 +12,7 @@ import { reconcile, withCleared } from '../engine/reconcile.ts';
 import type { Account, AccountType, BudgetState, Cents, ClearedStatus, Frequency, Goal, Month, Transaction } from '../engine/types.ts';
 import { RuleError } from '../engine/ruleError.ts';
 import { classify, markReported, type Problem } from '../i18n/errors.ts';
+import { connectTabs } from './tabSync.ts';
 
 const emptyState = (): BudgetState => ({
   accounts: [],
@@ -44,6 +45,8 @@ export interface BudgetStore {
   undoDelete: () => Promise<void>;
   dismissUndo: () => void;
   load: () => Promise<void>;
+  /** The budget as saved in the database (not this tab's copy), e.g. for backups. */
+  readSaved: () => Promise<{ state: BudgetState; currency: Currency }>;
   completeSetup: (input: { accountName: string; initialBalance: Cents; currency: Currency }) => Promise<void>;
   addAccount: (name: string, type: AccountType, openingBalance: Cents) => Promise<void>;
   /** Changes an account's name, type or opening balance. */
@@ -216,6 +219,11 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set({ state: entry.before, undo: null });
     },
     dismissUndo: () => set({ undo: null }),
+
+    readSaved: async () => {
+      const { state, settings } = await repo.loadAll(db);
+      return { state, currency: settings.currency };
+    },
 
     load: async () => {
       const { state, settings } = await repo.loadAll(db);
@@ -488,5 +496,15 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
   return store;
 }
 
+const appDb = createDb();
 /** The app's store, backed by the browser's IndexedDB. */
-export const useBudgetStore = createBudgetStore(createDb());
+export const useBudgetStore = createBudgetStore(appDb);
+connectTabs(useBudgetStore);
+
+// A newer version of the app opened in another tab wants to change how the data is stored. Let it (close this
+// connection, without reopening), and ask for a reload rather than saving with outdated code.
+appDb.on('versionchange', () => {
+  appDb.close({ disableAutoOpen: true });
+  useBudgetStore.getState().reportProblem({ kind: 'storage', message: 'error.updatedElsewhere', detail: '', reload: true });
+  return false;
+});

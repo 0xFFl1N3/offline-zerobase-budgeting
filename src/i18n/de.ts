@@ -513,4 +513,7 @@ export const de: Messages = {
   'error.close': 'Schließen',
   'error.loadFailed': 'Dein Budget konnte nicht geöffnet werden.',
   'error.details': 'Details: {detail}',
+
+  // Errors
+  'error.updatedElsewhere': 'Die App wurde in einem anderen Tab aktualisiert. Lade diese Seite neu, um weiterzumachen.',
 };

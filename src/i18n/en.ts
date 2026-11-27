@@ -516,6 +516,9 @@ export const en = {
   'error.close': 'Close',
   'error.loadFailed': "Your budget couldn't be opened.",
   'error.details': 'Details: {detail}',
+
+  // Errors
+  'error.updatedElsewhere': 'The app was updated in another tab. Reload this page to continue.',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

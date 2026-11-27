@@ -15,12 +15,22 @@ import {
   type FolderHandle,
 } from './autoBackup.ts';
 
+/** Runs `fn` unless another tab is already backing up (Web Locks; without them, just runs it). */
+async function withBackupLock(fn: () => Promise<void>) {
+  const locks = (navigator as Navigator & { locks?: LockManager }).locks;
+  if (!locks) return fn();
+  await locks.request('budget-auto-backup', { ifAvailable: true }, async (lock) => {
+    if (lock) await fn();
+  });
+}
+
 /** How often the open app checks whether a backup is due. */
 const CHECK_EVERY_MS = 30 * 60 * 1000;
 
 /** Writes today's backup into the folder and remembers it. Returns false if it could not. */
 async function backUpTo(folder: FolderHandle): Promise<boolean> {
-  const { state, currency, markBackedUp } = useBudgetStore.getState();
+  // What is saved, not this tab's copy, which could be behind if another tab just changed something.
+  const { state, currency } = await useBudgetStore.getState().readSaved();
   if (state.accounts.length === 0) return false;
   const today = toISODate();
   try {
@@ -29,7 +39,7 @@ async function backUpTo(folder: FolderHandle): Promise<boolean> {
     return false;
   }
   await saveLastDate(today);
-  await markBackedUp();
+  await useBudgetStore.getState().markBackedUp();
   return true;
 }
 
@@ -38,17 +48,20 @@ export function useAutoBackup(enabled: boolean) {
   useEffect(() => {
     if (!enabled || !autoBackupSupported()) return;
     let stopped = false;
-    const check = async () => {
-      try {
-        const { folder, lastDate } = await loadAutoBackup();
-        if (stopped || !folder || !isBackupDue(lastDate, toISODate())) return;
-        // Without a click the browser cannot ask again, so only write when access is still granted.
-        if ((await folderPermission(folder, false)) !== 'granted') return;
-        await backUpTo(folder);
-      } catch {
-        // Nothing to do: Settings shows the state.
-      }
-    };
+    const check = () =>
+      // With several tabs open, one at a time; the others skip this round. The check runs inside the lock,
+      // so a tab that waited sees the backup the other one just wrote.
+      withBackupLock(async () => {
+        try {
+          const { folder, lastDate } = await loadAutoBackup();
+          if (stopped || !folder || !isBackupDue(lastDate, toISODate())) return;
+          // Without a click the browser cannot ask again, so only write when access is still granted.
+          if ((await folderPermission(folder, false)) !== 'granted') return;
+          await backUpTo(folder);
+        } catch {
+          // Nothing to do: Settings shows the state.
+        }
+      });
     void check();
     const timer = window.setInterval(() => void check(), CHECK_EVERY_MS);
     return () => {

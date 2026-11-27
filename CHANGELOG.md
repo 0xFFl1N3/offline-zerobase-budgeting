@@ -2,6 +2,13 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.9.3 – 2026-11-27
+
+### Fixed
+- With the app open in several tabs, a change in one now shows up in the others right away. Before, Undo, importing a backup or the automatic backup in one tab could overwrite changes made in another.
+- Only one tab runs the automatic backup, and it saves what is actually stored.
+- If a newer version of the app is opened in another tab, older tabs ask you to reload instead of saving with old code.
+
 ## 0.9.2 – 2026-11-27
 
 ### Fixed
