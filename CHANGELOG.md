@@ -2,6 +2,21 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.6 – 2026-11-27
+
+### Changed
+- Went through every German text and reworded the ones that were hard to understand at first glance (English adjusted where it had the same problem):
+  - "Anfangsbestand" is now "Kontostand beim Anlegen", matching "Restschuld beim Anlegen" for debts.
+  - The running balance column and the reconcile panel say "Kontostand" instead of "Saldo".
+  - Reconciling: "Der Kontoauszug zeigt 30,00 € mehr als der bestätigte Kontostand." instead of a sentence without a subject.
+  - The red note under Ready to Assign now says why it is lower: "Um 40,00 € verringert, weil im Oktober mehr ausgegeben als zugewiesen wurde."
+  - The income choice in the category list reads "Einnahme (geht an „Noch zuzuweisen“)" instead of using an arrow.
+  - The recurrence field is labelled "Wiederholung", and the make-recurring form starts with "… regelmäßig buchen ab …", matching the row action.
+  - The payee placeholder shows an example ("z. B. Bäcker") instead of just "Wer".
+  - Debt messages no longer use the term "Budgetkonto"; they say "normales Konto (Girokonto, Bargeld, Sparkonto)".
+  - Debt plan: "Einmalige Sondertilgung", "abbezahlt im März 2027", "noch 5 Raten, die letzte über 80,00 € im März 2027", and the group picker reads "Raten-Kategorie anlegen in".
+  - Smaller fixes: the restore question lists counts without "Konto/Konten", unlocking a reconciled transaction explains what happens, the age-of-money hint reads more smoothly, "Startdatum" instead of "erstes Datum", clearer CSV import hints, and consistent spacing before "…".
+
 ## 0.11.5 – 2026-11-27
 
 ### Changed

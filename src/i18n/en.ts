@@ -135,8 +135,8 @@ export const en = {
   'account.balancePlaceholder': 'Balance',
   'account.name': 'Name',
   'account.type': 'Type',
-  'account.opening': 'Opening balance',
-  'account.openingHint': 'The opening balance counts toward Ready to Assign; changing it changes that amount.',
+  'account.opening': 'Balance when added',
+  'account.openingHint': 'This amount counts toward Ready to Assign. Changing it changes Ready to Assign too.',
   'account.errorName': 'An account needs a name.',
   'account.errorOpening': 'Enter the opening balance as a number.',
   'account.errorGeneric': 'Something went wrong.',
@@ -145,7 +145,7 @@ export const en = {
   'account.closeBalance': 'Balance is {amount}; move it to another account first.',
   'account.delete': 'Delete account',
   'account.deleteConfirm': 'Delete {name}?',
-  'account.deleteOpening': 'Its opening balance of {amount} is removed from Ready to Assign.',
+  'account.deleteOpening': 'Its balance when added ({amount}) is removed from Ready to Assign.',
   'account.heading': 'Accounts',
   'account.editName': 'Edit {name}',
   'account.clickToEdit': 'Click to edit',
@@ -172,7 +172,7 @@ export const en = {
   'backup.file': 'Backup file',
   'backup.downloaded': 'Backup downloaded.',
   'backup.restored': 'Backup restored.',
-  'backup.confirm': 'Replace ALL current data with this backup{when}?\n\nIt contains {accounts} account(s) and {transactions} transaction(s). This cannot be undone, so export a backup of your current data first if you need it.',
+  'backup.confirm': 'Replace ALL current data with this backup{when}?\n\nIn the backup: accounts: {accounts}, transactions: {transactions}. This cannot be undone, so export a backup of your current data first if you need it.',
   'backup.from': ' from {date}',
 
   // Transactions
@@ -190,7 +190,7 @@ export const en = {
   'tx.errorCategory': 'Pick a category for this outflow.',
   'tx.transferPayee': 'Transfer',
   'tx.confirmEditReconciled': 'This transaction is reconciled. Edit it anyway? Changing the amount or date will make the account differ from the reconciled statement.',
-  'tx.confirmUnlock': 'This transaction is reconciled. Unlock it and mark it as cleared?',
+  'tx.confirmUnlock': 'This transaction is reconciled and therefore locked. Unlock it? It stays marked as cleared.',
   'tx.confirmDeleteReconciled': 'This transaction is reconciled. Delete it anyway? The account will no longer match the reconciled statement.',
   'tx.confirmDelete': 'Delete this transaction?',
   'tx.filters': 'Filters',
@@ -209,12 +209,12 @@ export const en = {
   'tx.toAccount': 'To account',
   'tx.choose': 'Choose…',
   'tx.payee': 'Payee',
-  'tx.payeePlaceholder': 'Who',
+  'tx.payeePlaceholder': 'e.g. Bakery',
   'tx.category': 'Category',
   'tx.single': 'Cancel split',
   'tx.split': 'Split…',
   'tx.splitAcross': 'Split across categories',
-  'tx.income': 'Income (Ready to Assign)',
+  'tx.income': 'Income (goes to Ready to Assign)',
   'tx.chooseCategory': 'Choose a category…',
   'tx.memo': 'Memo',
   'tx.optional': 'Optional',
@@ -278,14 +278,14 @@ export const en = {
   'rec.doneAdjustment': '. An adjustment of {amount} was added',
   'rec.cleared': 'Cleared',
   'rec.uncleared': 'Uncleared',
-  'rec.working': 'Working balance',
+  'rec.working': 'Current balance',
   'rec.last': 'Last reconciled {date}',
   'rec.never': 'Never reconciled',
   'rec.reconcile': 'Reconcile',
   'rec.statement': 'Balance on your bank statement',
   'rec.matches': 'Matches the cleared balance.',
-  'rec.more': '{amount} more than the cleared balance.',
-  'rec.less': '{amount} less than the cleared balance.',
+  'rec.more': 'Your statement shows {amount} more than the cleared balance.',
+  'rec.less': 'Your statement shows {amount} less than the cleared balance.',
   'rec.tickHint': "Tick the circle on each transaction below that appears on your statement, and untick any that doesn't. If it still differs, finishing adds an adjustment of {amount}.",
   'rec.adjustmentCategory': 'Adjustment category',
   'rec.finishAdjust': 'Add adjustment and finish',
@@ -306,7 +306,7 @@ export const en = {
   'recur.skip': 'Skip',
   'recur.dueLabel': 'Due recurring transactions',
   'recur.dueTitle': { one: '{count} recurring transaction is due', other: '{count} recurring transactions are due' },
-  'recur.repeatFrom': 'Repeat {name} from {date}:',
+  'recur.repeatFrom': 'Make {name} recurring from {date}:',
   'recur.thisTransaction': 'this transaction',
   'recur.every': 'Every',
   'recur.frequency': 'Repeat frequency',
@@ -331,7 +331,7 @@ export const en = {
   'error.reorderGroup': 'Categories can only be reordered within their group.',
   'error.adjustmentCategory': 'An adjustment that lowers the balance needs a category.',
   'error.recurringEnded': 'This recurring transaction has ended.',
-  'error.endBeforeStart': 'The end date cannot be before the first date.',
+  'error.endBeforeStart': 'The end date cannot be before the start date.',
   'error.backupNotJson': 'This is not a valid backup file (it is not JSON).',
   'error.backupOtherApp': 'This file was not created by this app.',
   'error.backupVersion': 'The backup has no valid version.',
@@ -355,7 +355,7 @@ export const en = {
   'import.categoryFor': 'Category for {name}',
   'import.rowN': 'row {n}',
   'import.already': 'Already imported',
-  'import.updateTitle': 'Imported earlier while pending; importing updates that transaction instead of adding a new one',
+  'import.updateTitle': 'Already imported while pending. Importing updates that transaction instead of adding a new one.',
   'import.updatesPending': 'Updates the pending one',
   'import.nowBooked': 'Now booked: updates the pending one',
   'import.likelyTitle': 'A transaction with the same amount within three days is already in this account',
@@ -385,10 +385,10 @@ export const en = {
   'import.payeeFor': 'Payee for row {n}',
   'import.bankBalance': 'The file gives a bank balance of {amount}',
   'import.bankBalanceOn': ' on {date}',
-  'import.after': ". After this import the account's working balance would be {amount}.",
+  'import.after': ". After this import the account's current balance would be {amount}.",
   'import.button': { one: 'Import {count} transaction', other: 'Import {count} transactions' },
   'import.missing': { one: '{count} outflow needs a category first.', other: '{count} outflows need a category first.' },
-  'import.newTotal': 'New: {amount}. ',
+  'import.newTotal': 'New transactions total {amount}. ',
   'import.clearedNote': 'Booked rows come in as cleared, pending ones as not cleared.',
   'import.tick': 'Tick the rows to import.',
 
@@ -443,11 +443,11 @@ export const en = {
   // Recurring series and closing or archiving
   'account.closePauses': { one: 'Its recurring transaction {names} will be paused.', other: 'Its {count} recurring transactions ({names}) will be paused.' },
   'budget.archivePauses': { one: 'The recurring transaction {names} that uses it will be paused.', other: 'The {count} recurring transactions that use it ({names}) will be paused.' },
-  'recur.blockedAccount': "Can't be booked: its account is closed. Skip it, or edit or delete the series.",
+  'recur.blockedAccount': "Can't be booked: its account is closed. Skip it, or edit or delete the recurring transaction.",
   'recur.blockedCategory': "Can't be booked: its category is archived. Skip it, or restore the category.",
 
   // Overspending
-  'budget.overspentLast': 'Includes {amount} overspent in {month}.',
+  'budget.overspentLast': 'Lowered by {amount} because more was spent than assigned in {month}.',
 
   // Storage
   'storage.title': 'Storage on this device',
@@ -477,7 +477,7 @@ export const en = {
 
   // Analytics
   'analytics.ageOfMoney': 'Age of money',
-  'analytics.ageHint': 'How long your money sat in your accounts before you spent it, over your last 10 payments. 30 days or more means you live on last month’s income.',
+  'analytics.ageHint': 'How long your money sat in your accounts on average before you spent it, measured over your last 10 payments. 30 days or more means you live on last month’s income.',
   'analytics.ageDays': { one: '{count} day', other: '{count} days' },
   'analytics.ageTick': '{count} d',
   'analytics.ageNotYet': 'Shows once there are at least 10 payments.',
@@ -539,8 +539,8 @@ export const en = {
   'debt.errorMinimum': 'Enter the minimum payment as an amount greater than zero, or leave it empty.',
 
   // Errors
-  'error.debtSpending': 'Spending from a category has to come from a budget account, not from a debt.',
-  'error.debtTransferCategory': 'Only a payment from a budget account to a debt can have a category.',
+  'error.debtSpending': 'Spending with a category has to come from a regular account (checking, cash, savings), not from a debt.',
+  'error.debtTransferCategory': 'A transfer can only have a category if it is a payment from a regular account to a debt.',
 
   // Errors
   'error.debtSplit': "A debt payment can't be part of a split.",
@@ -556,11 +556,11 @@ export const en = {
   'debt.paidOff': 'Paid off',
   'debt.overpaid': 'Paid off, {amount} overpaid',
   'debt.withPlan': 'At {amount} a month:',
-  'debt.forecast': { one: '1 more payment of {amount} in {month}.', other: '{count} more payments; the last, {amount}, in {month}.' },
+  'debt.forecast': { one: '1 more payment of {amount} in {month}.', other: '{count} more payments, the last of {amount} in {month}.' },
   'debt.noPlan': 'Give its category a monthly goal, or the debt a minimum payment, to see when it is paid off.',
   'debt.tryTitle': 'Try another amount',
   'debt.tryMonthly': 'Each month',
-  'debt.tryExtra': 'Once, extra',
+  'debt.tryExtra': 'One-off extra payment',
   'debt.tryInvalid': 'Enter a monthly amount greater than zero.',
   'debt.sooner': { one: '1 month sooner.', other: '{count} months sooner.' },
   'debt.later': { one: '1 month later.', other: '{count} months later.' },
@@ -595,7 +595,7 @@ export const en = {
   'debt.deleteKeepsCategory': "Its payment category \"{category}\" stays in your budget; archive or delete it there if you no longer need it.",
 
   // Debts
-  'debt.group': 'Budget payments in',
+  'debt.group': 'Create payment category in',
   'debt.newGroup': '{name} (new group)',
 
   // Errors
