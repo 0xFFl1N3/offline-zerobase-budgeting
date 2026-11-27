@@ -505,19 +505,20 @@ export function TransactionsView() {
       )}
 
       <div className="mt-2 hidden overflow-x-auto rounded-lg bg-white shadow-sm md:block">
+        {/* Long names may break inside a word, so the table fits the width instead of scrolling sideways. */}
         <table className="w-full text-sm">
           <thead className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <tr>
               <th className="w-8 py-2 pl-4"><span className="sr-only">{tr('tx.colCleared')}</span></th>
-              <th className="px-4 py-2">{tr('tx.date')}</th>
-              <th className="px-4 py-2">{tr('tx.account')}</th>
-              <th className="px-4 py-2">{tr('tx.payee')}</th>
-              <th className="px-4 py-2">{tr('tx.category')}</th>
-              <th className="px-4 py-2">{tr('tx.memo')}</th>
-              <th className="px-4 py-2 text-right">{tr('tx.colOutflow')}</th>
-              <th className="px-4 py-2 text-right">{tr('tx.colInflow')}</th>
-              {balances && <th className="px-4 py-2 text-right">{tr('tx.colBalance')}</th>}
-              <th className="px-4 py-2" />
+              <th className="px-3 py-2">{tr('tx.date')}</th>
+              <th className="px-3 py-2">{tr('tx.account')}</th>
+              <th className="px-3 py-2">{tr('tx.payee')}</th>
+              <th className="px-3 py-2">{tr('tx.category')}</th>
+              <th className="px-3 py-2">{tr('tx.memo')}</th>
+              <th className="px-3 py-2 text-right">{tr('tx.colOutflow')}</th>
+              <th className="px-3 py-2 text-right">{tr('tx.colInflow')}</th>
+              {balances && <th className="px-3 py-2 text-right">{tr('tx.colBalance')}</th>}
+              <th className="px-3 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -533,20 +534,19 @@ export function TransactionsView() {
                 <Fragment key={t.id}>
                 <tr className="border-b border-slate-100 last:border-b-0">
                   <td className="py-2 pl-4"><ClearedToggle status={status} onToggle={toggle} /></td>
-                  <td className="px-4 py-2 whitespace-nowrap">{formatDate(t.date)}</td>
-                  <td className="px-4 py-2">{accountName(t.accountId)}</td>
-                  <td className="px-4 py-2">{t.payee}</td>
-                  <td className="px-4 py-2">{categoryLabel(state, t)}</td>
-                  <td className="px-4 py-2 text-slate-600">{t.memo}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{amount < 0 ? formatMoney(-amount, currency) : ''}</td>
-                  <td className="px-4 py-2 text-right tabular-nums text-emerald-700">{amount > 0 ? formatMoney(amount, currency) : ''}</td>
-                  {balances && <td className="px-4 py-2 text-right tabular-nums text-slate-600">{formatMoney(balances.get(t.id) ?? 0, currency)}</td>}
-                  <td className="px-4 py-2 whitespace-nowrap text-right">
-                    <button type="button" onClick={() => startEdit(t)} className="text-sky-700 hover:underline">{tr('common.edit')}</button>
-                    <button type="button" onClick={() => setRepeatingId(repeatingId === t.id ? null : t.id)} className="ml-3 text-sky-700 hover:underline">{tr('tx.repeatAction')}</button>
-                    <button type="button" onClick={remove} className="ml-3 text-red-600 hover:underline">
-                      {tr('common.delete')}
-                    </button>
+                  <td className="px-3 py-2 whitespace-nowrap">{formatDate(t.date)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{accountName(t.accountId)}</td>
+                  <td className="[overflow-wrap:anywhere] px-3 py-2">{t.payee}</td>
+                  <td className="[overflow-wrap:anywhere] px-3 py-2">{categoryLabel(state, t)}</td>
+                  <td className="[overflow-wrap:anywhere] px-3 py-2 text-slate-600">{t.memo}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{amount < 0 ? formatMoney(-amount, currency) : ''}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-emerald-700">{amount > 0 ? formatMoney(amount, currency) : ''}</td>
+                  {balances && <td className="px-3 py-2 text-right tabular-nums text-slate-600">{formatMoney(balances.get(t.id) ?? 0, currency)}</td>}
+                  {/* Small icons instead of three words, so the table fits without scrolling sideways. */}
+                  <td className="py-1 pr-3 pl-1 whitespace-nowrap text-right">
+                    <RowAction label={tr('common.edit')} onClick={() => startEdit(t)} icon="edit" />
+                    <RowAction label={tr('tx.repeatAction')} onClick={() => setRepeatingId(repeatingId === t.id ? null : t.id)} icon="repeat" />
+                    <RowAction label={tr('common.delete')} onClick={remove} icon="delete" />
                   </td>
                 </tr>
                 {repeatingId === t.id && (
@@ -610,5 +610,29 @@ export function TransactionsView() {
         )}
       </div>
     </section>
+  );
+}
+
+const ICONS = {
+  edit: 'M3 13.5V16h2.5l7.4-7.4-2.5-2.5L3 13.5Zm11.8-6.8a.7.7 0 0 0 0-1l-1.5-1.5a.7.7 0 0 0-1 0l-1.2 1.2 2.5 2.5 1.2-1.2Z',
+  repeat: 'M4 9a5 5 0 0 1 8.5-3.5M16 11a5 5 0 0 1-8.5 3.5M12.5 2.5v3h-3M7.5 17.5v-3h3',
+  delete: 'M4 5.5h12M8 5.5V4h4v1.5M5.5 5.5l.7 10.5h7.6l.7-10.5M8.5 8.5v5M11.5 8.5v5',
+} as const;
+
+/** An icon button in a transaction row; the name shows on hover and is read out by screen readers. */
+function RowAction({ label, onClick, icon }: { label: string; onClick: () => void; icon: keyof typeof ICONS }) {
+  const filled = icon === 'edit';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`rounded p-1.5 text-slate-400 ${icon === 'delete' ? 'hover:bg-red-50 hover:text-red-600' : 'hover:bg-sky-50 hover:text-sky-700'}`}
+    >
+      <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true">
+        <path d={ICONS[icon]} fill={filled ? 'currentColor' : 'none'} stroke={filled ? 'none' : 'currentColor'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
   );
 }

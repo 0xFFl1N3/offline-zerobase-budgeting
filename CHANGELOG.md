@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.15 – 2026-11-27
+
+### Changed
+- The transactions table fits a normal laptop screen without scrolling sideways. Edit, Repeat and Delete are small icons at the end of each row (the name shows on hover), the columns are a little narrower, and long payees, categories and notes wrap when space is short.
+
 ## 0.19.14 – 2026-11-27
 
 ### Changed
