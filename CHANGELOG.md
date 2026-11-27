@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.8 – 2026-11-27
+
+### Changed
+- Under a goal's bar, "assign … more" (or "funded") now sits at the right end of the bar, so it lines up from one category to the next. On narrow screens it moves to its own line, still on the right.
+
 ## 0.19.7 – 2026-11-27
 
 ### Changed
