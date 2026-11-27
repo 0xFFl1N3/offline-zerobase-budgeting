@@ -1,6 +1,11 @@
 # Changelog
 
-All notable changes to the budgeting app. Newest first.
+All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
+
+## 0.10.9 – 2026-11-27
+
+### Changed
+- "What changed" (the version number) now shows short release notes per release from RELEASES.md instead of this full changelog. The "New" tag only appears when the notes change, not on every update.
 
 ## 0.10.8 – 2026-11-27
 

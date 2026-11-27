@@ -1,9 +1,10 @@
-import { Fragment, useMemo, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Dialog } from '../../components/Dialog.tsx';
-import changelogText from '../../../CHANGELOG.md?raw';
+import releasesText from '../../../RELEASES.md?raw';
+import { formatDate } from '../../engine/months.ts';
 import { t } from '../../i18n/i18n.ts';
 import { APP_VERSION } from '../../version.ts';
-import { compareVersions, markSeen, parseChangelog, seenVersion } from './changelog.ts';
+import { loadSeen, minorOf, parseReleases, saveSeen, unseenReleases, type Release } from './releases.ts';
 
 /** `code` spans become <code>, the rest stays text. */
 function inline(text: string): ReactNode {
@@ -16,22 +17,19 @@ function inline(text: string): ReactNode {
   );
 }
 
-/** The version number, as a button that opens the changelog. Shows a dot until the changelog of a new version is opened. */
+/** The version number, as a button that opens the release notes. Shows "New" while some notes haven't been seen. */
 export function VersionButton({ className = '' }: { className?: string }) {
+  const releases = useMemo(() => parseReleases(releasesText), []);
   const [open, setOpen] = useState(false);
-  // On a first visit there is nothing new to point at: remember the current version quietly.
-  const [lastSeen, setLastSeen] = useState(() => {
-    const seen = seenVersion();
-    if (seen === null) markSeen(APP_VERSION);
-    return seen ?? APP_VERSION;
-  });
-  const isNew = compareVersions(APP_VERSION, lastSeen) > 0;
-
-  const close = () => {
+  // On a first visit there is nothing new to point at: remember the notes as they are, quietly.
+  const [seen, setSeen] = useState(() => loadSeen() ?? saveSeen(releases));
+  const unseen = useMemo(() => unseenReleases(releases, seen), [releases, seen]);
+  const isNew = unseen.size > 0;
+  // Remembered when closing, so the tags inside stay visible while the notes are open.
+  const close = useCallback(() => {
     setOpen(false);
-    markSeen(APP_VERSION);
-    setLastSeen(APP_VERSION);
-  };
+    setSeen(saveSeen(releases));
+  }, [releases]);
 
   return (
     <>
@@ -47,39 +45,31 @@ export function VersionButton({ className = '' }: { className?: string }) {
           <span className="rounded-full bg-sky-600 px-1.5 py-px text-[10px] font-semibold text-white no-underline">{t('changelog.new')}</span>
         )}
       </button>
-      {open && <ChangelogDialog since={lastSeen} onClose={close} />}
+      {open && <ReleasesDialog releases={releases} unseen={unseen} onClose={close} />}
     </>
   );
 }
 
-/** The changelog over a blurred page. Versions newer than `since` are marked as new. */
-function ChangelogDialog({ since, onClose }: { since: string; onClose: () => void }) {
-  const entries = useMemo(() => parseChangelog(changelogText), []);
+/** The release notes over a blurred page, newest first; releases with new or changed notes are marked. */
+function ReleasesDialog({ releases, unseen, onClose }: { releases: Release[]; unseen: Set<string>; onClose: () => void }) {
+  const current = minorOf(APP_VERSION);
   return (
     <Dialog title={t('changelog.title')} onClose={onClose}>
-      {entries.map((entry) => {
-        const isNew = compareVersions(entry.version, since) > 0;
-        return (
-          <section key={entry.version} className="mb-5 last:mb-0">
-            <h3 className="flex flex-wrap items-baseline gap-2 font-semibold">
-              {entry.version}
-              {entry.version === APP_VERSION && <span className="text-xs font-normal text-slate-500">{t('changelog.current')}</span>}
-              {isNew && <span className="rounded-full bg-sky-600 px-1.5 py-px text-[10px] font-semibold text-white">{t('changelog.new')}</span>}
-              {entry.date && <span className="ml-auto text-xs font-normal text-slate-500 tabular-nums">{entry.date}</span>}
-            </h3>
-            {entry.sections.map((section, i) => (
-              <div key={i} className="mt-1.5">
-                {section.title && <h4 className="text-xs font-medium uppercase tracking-wide text-slate-500">{section.title}</h4>}
-                <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
-                  {section.items.map((item, j) => (
-                    <li key={j}>{inline(item)}</li>
-                  ))}
-                </ul>
-              </div>
+      {releases.map((release) => (
+        <section key={release.version} className="mb-5 last:mb-0">
+          <h3 className="flex flex-wrap items-baseline gap-2 font-semibold">
+            <span>{release.title ? `${release.version} – ${release.title}` : release.version}</span>
+            {release.version === current && <span className="text-xs font-normal text-slate-500">{t('changelog.current')}</span>}
+            {unseen.has(release.version) && <span className="rounded-full bg-sky-600 px-1.5 py-px text-[10px] font-semibold text-white">{t('changelog.new')}</span>}
+            {release.date && <span className="ml-auto text-xs font-normal text-slate-500 tabular-nums">{formatDate(release.date)}</span>}
+          </h3>
+          <ul className="mt-1.5 list-disc space-y-1 pl-5 text-slate-700">
+            {release.items.map((item, i) => (
+              <li key={i}>{inline(item)}</li>
             ))}
-          </section>
-        );
-      })}
+          </ul>
+        </section>
+      ))}
     </Dialog>
   );
 }
