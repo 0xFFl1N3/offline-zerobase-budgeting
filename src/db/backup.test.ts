@@ -51,6 +51,7 @@ test('invalid files are rejected with a message', () => {
     ['missing category ref', text((o) => (o.data.monthlyBudgets[0].categoryId = 'zzz'))],
     ['duplicate ids', text((o) => o.data.accounts.push({ ...o.data.accounts[0] }))],
     ['unknown account type', text((o) => (o.data.accounts[0].type = 'crypto'))],
+    ['two assignments for one category and month', text((o) => o.data.monthlyBudgets.push({ ...o.data.monthlyBudgets[0], assigned: 1 }))],
   ];
   for (const [name, content] of bad) {
     const r = parseBackup(content);

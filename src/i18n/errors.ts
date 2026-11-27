@@ -28,6 +28,7 @@ const EXACT: Record<string, MessageKey> = {
   'The backup has no valid version.': 'error.backupVersion',
   'This backup was made by a newer version of the app. Update the app first.': 'error.backupNewer',
   'The backup file could not be read.': 'error.backupUnreadable',
+  'The file assigns money to the same category twice in one month.': 'error.backupDuplicateAssignment',
 };
 
 const PATTERNS: [RegExp, (m: RegExpMatchArray) => string][] = [

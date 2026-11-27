@@ -597,6 +597,9 @@ export const en = {
   // Debts
   'debt.group': 'Budget payments in',
   'debt.newGroup': '{name} (new group)',
+
+  // Errors
+  'error.backupDuplicateAssignment': 'The file assigns money to the same category twice in one month.',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

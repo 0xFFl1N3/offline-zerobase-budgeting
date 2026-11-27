@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.10.11 – 2026-11-27
+
+### Fixed
+- Importing a backup that assigns money to the same category twice in one month is refused with a message. Before, one of the two amounts was silently dropped. Backups made by the app never contain this; only hand-made files could.
+
 ## 0.10.10 – 2026-11-27
 
 ### Changed

@@ -220,6 +220,10 @@ function parseData(raw: unknown): BudgetState {
   unique(goals.map((g) => g.id), 'goal');
   unique(transactions.map((t) => t.id), 'transaction');
   unique(recurring.map((r) => r.id), 'recurring transaction');
+  // The database keeps one assignment per category and month; a second one would be lost without a word.
+  if (new Set(monthlyBudgets.map((b) => `${b.categoryId}|${b.month}`)).size !== monthlyBudgets.length) {
+    throw new RuleError('The file assigns money to the same category twice in one month.');
+  }
 
   const accountIds = new Set(accounts.map((a) => a.id));
   const groupIds = new Set(groups.map((g) => g.id));

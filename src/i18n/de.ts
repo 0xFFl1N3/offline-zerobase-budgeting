@@ -594,4 +594,7 @@ export const de: Messages = {
   // Debts
   'debt.group': 'Raten budgetieren in',
   'debt.newGroup': '{name} (neue Gruppe)',
+
+  // Errors
+  'error.backupDuplicateAssignment': 'Die Datei weist derselben Kategorie in einem Monat zweimal Geld zu.',
 };
