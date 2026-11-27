@@ -7,6 +7,7 @@ What changed for you in each release, newest first. The full technical list is i
 
 - Money you have already assigned to a later month is no longer shown as free in this month, so you cannot hand it out twice.
 - "Today" takes the budget back to the current month from any other month.
+- Trying the app with sample data? "Reload sample data" starts over with a fresh copy, up to today.
 
 ## 0.18 – Maths in amount fields
 2026-11-27

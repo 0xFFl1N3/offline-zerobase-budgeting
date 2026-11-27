@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.3 – 2026-11-27
+
+### Added
+- "Reload sample data" in the sample-data bar: after a confirmation it replaces the sample data with a fresh copy from the current version of the app, up to today and in the language now in use. Changes made to the sample data are lost; cancelling keeps them.
+
 ## 0.19.2 – 2026-11-27
 
 ### Added

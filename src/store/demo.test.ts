@@ -65,3 +65,16 @@ test('on the sample data each way of assigning does what it says', async () => {
   }
   for (const c of active()) assert.ok(categoryAvailable(store.getState().state, c.id, month) >= 0, `${c.name} is still red`);
 });
+
+test('reloading the sample data replaces changes made to it', async () => {
+  const { store } = fresh();
+  await store.getState().startDemo('en');
+  const count = store.getState().state.transactions.length;
+  const first = store.getState().state.transactions[0]!;
+  await store.getState().removeTransaction(first.id);
+  assert.equal(store.getState().state.transactions.length, count - 1);
+  await store.getState().startDemo('de');
+  assert.equal(store.getState().state.transactions.length, count);
+  assert.equal(store.getState().demo, true);
+  assert.equal(store.getState().state.accounts[0]!.name, 'Girokonto', 'in the language now in use');
+});

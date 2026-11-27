@@ -44,6 +44,8 @@ export const de: Messages = {
   'demo.notice': 'Du siehst Beispieldaten.',
   'demo.leave': 'Eigenes Budget anlegen',
   'demo.leaveConfirm': 'Die Beispieldaten löschen und zur Einrichtung gehen?',
+  'demo.reload': 'Beispieldaten neu laden',
+  'demo.reloadConfirm': 'Frische Beispieldaten bis heute laden? Deine Änderungen an den Beispieldaten gehen verloren.',
   'autoBackup.demoOff': 'Aus, solange du die App mit Beispieldaten ausprobierst.',
   'setup.errorName': 'Gib dem Konto einen Namen.',
   'setup.errorBalance': 'Gib den aktuellen Kontostand ein, z. B. 1500 oder 1.500,00.',
