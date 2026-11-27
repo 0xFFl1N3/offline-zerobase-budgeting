@@ -25,5 +25,8 @@ export function categoryLabel(state: BudgetState, t: Pick<Transaction, 'accountI
     const archived = category.archived || state.groups.find((g) => g.id === category.groupId)?.archived;
     return archived ? tr('label.archived', { name: category.name }) : category.name;
   }
+  // Inside a debt or tracking account nothing has a category: it only changes what is owed or worth.
+  const account = state.accounts.find((a) => a.id === t.accountId);
+  if (account?.type === 'debt' || account?.type === 'tracking') return tr('label.offBudget');
   return t.amount > 0 ? tr('tx.incomeLabel') : tr('tx.needsCategory');
 }

@@ -2,6 +2,15 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.16.2 – 2026-11-27
+
+### Added
+- The sample data has an ETF portfolio outside the budget: 100 € a month from an "ETF savings plan" category (with a monthly goal), and a change in value every three months.
+
+### Changed
+- Bookings inside a debt or an investment (a correction, a change in value) are labelled "Outside the budget" instead of "No category" or "Income", and no longer show up under the "Income" and "No category" filters.
+- Restoring a backup checks debts and investments with the same rules as saving does, instead of a separate copy of them.
+
 ## 0.16.1 – 2026-11-27
 
 ### Added

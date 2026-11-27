@@ -1,4 +1,4 @@
-import { categoryParts } from '../../engine/budget.ts';
+import { categoryParts, isOffBudget } from '../../engine/budget.ts';
 import type { BudgetState, Transaction } from '../../engine/types.ts';
 
 /**
@@ -27,6 +27,8 @@ function matchesCategory(state: BudgetState, t: Transaction, filter: string): bo
   // Other filters see a debt payment (a transfer with a category) by its category, and no other transfer.
   if (t.transferAccountId !== null && t.categoryId === null) return false;
   const parts = categoryParts(t);
+  // A booking inside a debt or tracking account (a correction, a change in value) is neither income nor missing a category.
+  if ((filter === 'income' || filter === 'uncategorised') && state.accounts.some((a) => a.id === t.accountId && isOffBudget(a))) return false;
   if (filter === 'income') return parts.length === 0 && t.amount > 0;
   if (filter === 'uncategorised') return parts.length === 0 && t.amount <= 0;
   // A split transaction matches when any of its parts does.

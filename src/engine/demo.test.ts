@@ -70,6 +70,16 @@ test('the demo has yearly goals whose due month lines up with their bills', () =
   }
 });
 
+test('the demo has an investment outside the budget, paid from its category', () => {
+  for (const { today, language } of cases) {
+    const state = buildDemo(today, language);
+    const etf = state.accounts.find((a) => a.type === 'tracking')!;
+    assert.ok(accountBalance(state, etf.id) > etf.openingBalance, today);
+    const into = state.transactions.filter((t) => t.transferAccountId === etf.id);
+    assert.ok(into.length >= 23 && into.every((t) => t.categoryId === 'cat-etf'), today);
+  }
+});
+
 test('the demo is the same every time and named in the chosen language', () => {
   assert.deepEqual(buildDemo('2026-11-27', 'en'), buildDemo('2026-11-27', 'en'));
   const de = buildDemo('2026-11-27', 'de');

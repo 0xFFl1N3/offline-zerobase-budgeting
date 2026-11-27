@@ -82,3 +82,15 @@ test('a split transaction matches the filters of each of its categories', () => 
   assert.deepEqual(run({ search: 'electricity' }), ['t2']);
   assert.deepEqual(run({ search: 'games' }), ['sp', 't3']);
 });
+
+test('bookings inside a debt or tracking account are neither income nor missing a category', () => {
+  const s: BudgetState = {
+    ...state,
+    accounts: [...state.accounts, { id: 'etf', name: 'ETF', type: 'tracking', openingBalance: 0, sortOrder: 2, closed: false }],
+    transactions: [...state.transactions, tx('v1', { accountId: 'etf', payee: 'Change in value', amount: 3000 }), tx('v2', { accountId: 'etf', payee: 'Change in value', amount: -800 })],
+  };
+  const of = (category: string) => filterTransactions(s, { ...NO_FILTERS, category }).map((t) => t.id);
+  assert.ok(!of('income').includes('v1'));
+  assert.ok(!of('uncategorised').includes('v2'));
+  assert.ok(filterTransactions(s, { ...NO_FILTERS, accountId: 'etf' }).length === 2, 'still listed for the account');
+});

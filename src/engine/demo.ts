@@ -15,6 +15,7 @@ export type DemoLanguage = 'en' | 'de';
 const NAMES = {
   en: {
     checking: 'Checking', card: 'Credit card', cash: 'Cash', savings: 'Savings account', tv: 'TV financing', anna: 'Loan from Anna',
+    etf: 'ETF portfolio', etfPlan: 'ETF savings plan', valueChange: 'Change in value',
     groups: ['Living', 'Food', 'Transport', 'Fun', 'Savings', 'Debt payments'],
     rent: 'Rent', power: 'Electricity', net: 'Internet & Phone', ins: 'Insurance', groc: 'Groceries', eat: 'Eating out',
     fuel: 'Fuel', ticket: 'Public transport', stream: 'Streaming', hobby: 'Hobbies', gifts: 'Gifts', emerg: 'Emergency fund', hol: 'Holidays',
@@ -24,6 +25,7 @@ const NAMES = {
   },
   de: {
     checking: 'Girokonto', card: 'Kreditkarte', cash: 'Bargeld', savings: 'Tagesgeld', tv: 'Fernseher-Finanzierung', anna: 'Darlehen von Anna',
+    etf: 'ETF-Depot', etfPlan: 'ETF-Sparplan', valueChange: 'Wertänderung',
     groups: ['Wohnen', 'Essen', 'Mobilität', 'Freizeit', 'Sparen', 'Ratenzahlungen'],
     rent: 'Miete', power: 'Strom', net: 'Internet & Telefon', ins: 'Versicherungen', groc: 'Lebensmittel', eat: 'Auswärts essen',
     fuel: 'Tanken', ticket: 'Bus & Bahn', stream: 'Streaming', hobby: 'Hobbys', gifts: 'Geschenke', emerg: 'Notgroschen', hol: 'Urlaub',
@@ -65,6 +67,8 @@ export function buildDemo(today: string, language: DemoLanguage): BudgetState {
     { id: 'acc-save', name: N.savings, type: 'savings', openingBalance: 300000, sortOrder: 3, closed: false },
     { id: 'acc-tv', name: N.tv, type: 'debt', openingBalance: -180000, sortOrder: 4, closed: false, paymentCategoryId: 'cat-tv', minimumPayment: 5000 },
     { id: 'acc-anna', name: N.anna, type: 'debt', openingBalance: -50000, sortOrder: 5, closed: false, paymentCategoryId: 'cat-anna' },
+    // Outside the budget: counts towards net worth only.
+    { id: 'acc-etf', name: N.etf, type: 'tracking', openingBalance: 500000, sortOrder: 6, closed: false },
   ];
   const groups: CategoryGroup[] = N.groups.map((name, i) => ({ id: `grp-${i}`, name, sortOrder: i, archived: false }));
   const cat = (key: string, name: string, g: number, sortOrder: number): Category => ({ id: `cat-${key}`, groupId: `grp-${g}`, name, sortOrder, archived: false });
@@ -73,7 +77,7 @@ export function buildDemo(today: string, language: DemoLanguage): BudgetState {
     cat('groc', N.groc, 1, 0), cat('eat', N.eat, 1, 1),
     cat('fuel', N.fuel, 2, 0), cat('ticket', N.ticket, 2, 1),
     cat('stream', N.stream, 3, 0), cat('hobby', N.hobby, 3, 1), cat('gifts', N.gifts, 3, 2),
-    cat('emerg', N.emerg, 4, 0), cat('hol', N.hol, 4, 1),
+    cat('emerg', N.emerg, 4, 0), cat('hol', N.hol, 4, 1), cat('etf', N.etfPlan, 4, 2),
     cat('tv', N.tv, 5, 0), cat('anna', N.anna, 5, 1),
   ];
   // Goals of every kind: funded each month, saving towards a date (on track and behind), and an open target.
@@ -86,13 +90,14 @@ export function buildDemo(today: string, language: DemoLanguage): BudgetState {
     { id: 'goal-emerg', categoryId: 'cat-emerg', type: 'target_balance', targetAmount: 900000 },
     { id: 'goal-hol', categoryId: 'cat-hol', type: 'target_balance', targetAmount: 200000, targetDate: addMonths(current, 7) },
     { id: 'goal-tv', categoryId: 'cat-tv', type: 'monthly_amount', monthlyAmount: 5000 },
+    { id: 'goal-etf', categoryId: 'cat-etf', type: 'monthly_amount', monthlyAmount: 10000 },
   ];
 
   // Assigned each month (cents).
   const plan: Record<string, number> = {
     'cat-rent': 95000, 'cat-power': 8500, 'cat-net': 4500, 'cat-ins': 4000, 'cat-groc': 42000, 'cat-eat': 9000,
     'cat-fuel': 10000, 'cat-ticket': 4900, 'cat-stream': 2600, 'cat-hobby': 6000, 'cat-gifts': 2500,
-    'cat-emerg': 40000, 'cat-hol': 20000, 'cat-tv': 5000,
+    'cat-emerg': 40000, 'cat-hol': 20000, 'cat-tv': 5000, 'cat-etf': 10000,
   };
   const monthlyBudgets: MonthlyBudget[] = [];
   for (const m of months) for (const [categoryId, assigned] of Object.entries(plan)) monthlyBudgets.push({ categoryId, month: m, assigned });
@@ -134,6 +139,9 @@ export function buildDemo(today: string, language: DemoLanguage): BudgetState {
     }
     transfer(dayIn(m, 28), 'acc-giro', 'acc-save', N.saving, 30000);
     if (i % 3 === 2) add(dayIn(m, 26), 'acc-save', N.interest, 1400 + i * 100, null);
+    // The ETF savings plan: 100 a month from its category into the portfolio; its value is updated every quarter.
+    transfer(dayIn(m, 5), 'acc-giro', 'acc-etf', N.etfPlan, 10000, { categoryId: 'cat-etf' });
+    if (i % 3 === 1) add(dayIn(m, 28), 'acc-etf', N.valueChange, between(-60, 240), null);
   });
   // One-offs
   for (const december of decembers) {
@@ -183,6 +191,7 @@ export function buildDemo(today: string, language: DemoLanguage): BudgetState {
     series('netflix', 'Netflix.com', streamDay),
     series('tv', N.tv, 15, addMonthsClamped(dayIn(current, 15), 12)),
     series('save', N.saving, 28),
+    series('etf', N.etfPlan, 5),
   ];
 
   let state: BudgetState = { accounts, groups, categories, goals, monthlyBudgets, transactions, recurring };

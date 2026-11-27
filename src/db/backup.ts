@@ -15,6 +15,7 @@ import type {
   TransactionSplit,
 } from '../engine/types.ts';
 import { RuleError } from '../engine/ruleError.ts';
+import { checkDebtRules } from '../engine/debt.ts';
 import { REPEAT_MONTHS } from '../engine/types.ts';
 
 export const BACKUP_APP = 'budgeting-app';
@@ -239,17 +240,16 @@ function parseData(raw: unknown): BudgetState {
   for (const c of categories) if (!groupIds.has(c.groupId)) throw new RuleError(`Category "${c.name}" points to a missing group.`);
   for (const g of goals) if (!categoryIds.has(g.categoryId)) throw new RuleError('A goal points to a missing category.');
   for (const b of monthlyBudgets) if (!categoryIds.has(b.categoryId)) throw new RuleError('An assignment points to a missing category.');
-  const debtIds = new Set(accounts.filter((a) => a.type === 'debt').map((a) => a.id));
   for (const a of accounts) if (a.paymentCategoryId !== undefined && !categoryIds.has(a.paymentCategoryId)) throw new RuleError('A debt points to a missing category.');
   for (const t of transactions) {
     if (!accountIds.has(t.accountId)) throw new RuleError('A transaction points to a missing account.');
-    if (t.transferAccountId !== null && t.categoryId !== null && (debtIds.has(t.accountId) || !debtIds.has(t.transferAccountId))) {
-      throw new RuleError('A transfer with a category must be a payment from a budget account to a debt.');
-    }
     if (t.transferAccountId !== null && !accountIds.has(t.transferAccountId)) throw new RuleError('A transfer points to a missing account.');
     if (t.categoryId !== null && !categoryIds.has(t.categoryId)) throw new RuleError('A transaction points to a missing category.');
     for (const part of t.splits ?? []) if (!categoryIds.has(part.categoryId)) throw new RuleError('A split points to a missing category.');
   }
+  // The same rules the app applies when saving: what may have a category in and out of debts and tracking accounts.
+  const state = { accounts, groups, categories, goals, monthlyBudgets, transactions, recurring };
+  for (const t of transactions) if (t.transferAccountId === null || accountIds.has(t.transferAccountId)) checkDebtRules(state, t);
   for (const r of recurring) {
     const t = r.template;
     if (!accountIds.has(t.accountId)) throw new RuleError('A recurring transaction points to a missing account.');

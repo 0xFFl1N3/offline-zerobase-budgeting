@@ -585,6 +585,7 @@ export const de: Messages = {
   // Debts
   'label.payment': 'Rate: {to}',
   'label.intoTracking': '{category} → {to}',
+  'label.offBudget': 'Außerhalb des Budgets',
 
   // Debts
   'debt.recordPayment': 'Rate buchen',

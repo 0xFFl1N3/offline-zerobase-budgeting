@@ -588,6 +588,7 @@ export const en = {
   // Debts
   'label.payment': 'Payment: {to}',
   'label.intoTracking': '{category} → {to}',
+  'label.offBudget': 'Outside the budget',
 
   // Debts
   'debt.recordPayment': 'Record payment',
