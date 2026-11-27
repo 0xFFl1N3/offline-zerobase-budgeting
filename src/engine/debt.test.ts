@@ -143,3 +143,26 @@ test('owing more and corrections stay inside the debt; overpayment is measured a
   assert.equal(overpayment(s, 'tv', -70000), 5000);
   assert.equal(overpayment(s, 'tv', -70000, 'p1'), 0, 'editing p1: its old amount does not count');
 });
+
+test('reconciling a debt never touches the budget', async () => {
+  const { reconcile } = await import('./reconcile.ts');
+  const s = state([payment('p1', '2026-03-10', 200)]);
+  const before = readyToAssign(s, '2026-03');
+  // The lender's figure is lower, then higher, than the app's; a category was even passed. Neither may reach the budget.
+  for (const statement of [-79000, -85000]) {
+    const r = reconcile(s, 'tv', statement, { today: '2026-03-27', adjustmentId: 'adj', categoryId: 'tvpay' });
+    assert.equal(r.adjustment!.categoryId, null);
+    assert.equal(readyToAssign(r.state, '2026-03'), before);
+  }
+});
+
+test('accounts and debts are reordered among their own kind', async () => {
+  const { moveAccount, moveAccountTo } = await import('./edit.ts');
+  const base = state([]);
+  // Order: giro, tv (debt), savings: moving savings up skips past the debt to giro.
+  const s: BudgetState = { ...base, accounts: [...base.accounts, { id: 'sav', name: 'Savings', type: 'savings', openingBalance: 0, sortOrder: 2, closed: false }] };
+  const up = moveAccount(s, 'sav', -1);
+  const order = (st: BudgetState) => st.accounts.filter((a) => a.type !== 'debt').sort((a, b) => a.sortOrder - b.sortOrder).map((a) => a.id);
+  assert.deepEqual(order(up), ['sav', 'giro']);
+  assert.deepEqual(moveAccountTo(s, 'sav', 'tv', 'before').accounts, s.accounts, 'dropping onto the other list does nothing');
+});

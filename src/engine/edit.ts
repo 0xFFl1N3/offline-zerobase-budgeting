@@ -198,9 +198,15 @@ function moveAmong<T extends Ordered>(items: T[], id: string, delta: -1 | 1, isS
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
+/** Budget accounts and debts are listed separately, so each is ordered among its own kind. */
+const sameKind = (state: BudgetState, id: string) => {
+  const debt = state.accounts.find((a) => a.id === id)?.type === 'debt';
+  return (a: { type: AccountType }) => (a.type === 'debt') === debt;
+};
+
 export const moveAccount = (state: BudgetState, id: string, delta: -1 | 1): BudgetState => ({
   ...state,
-  accounts: moveAmong(state.accounts, id, delta, () => true, (a) => !a.closed),
+  accounts: moveAmong(state.accounts, id, delta, sameKind(state, id), (a) => !a.closed),
 });
 
 export const moveGroup = (state: BudgetState, id: string, delta: -1 | 1): BudgetState => ({
@@ -234,7 +240,10 @@ function placeAmong<T extends Ordered>(items: T[], id: string, targetId: string,
 
 export const moveAccountTo = (state: BudgetState, id: string, targetId: string, place: 'before' | 'after'): BudgetState => ({
   ...state,
-  accounts: placeAmong(state.accounts, id, targetId, place, () => true),
+  // Dropping onto the other list does nothing.
+  accounts: sameKind(state, id)(state.accounts.find((a) => a.id === targetId) ?? { type: 'checking' })
+    ? placeAmong(state.accounts, id, targetId, place, sameKind(state, id))
+    : state.accounts,
 });
 
 export const moveGroupTo = (state: BudgetState, id: string, targetId: string, place: 'before' | 'after'): BudgetState => ({

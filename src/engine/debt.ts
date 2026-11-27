@@ -99,3 +99,13 @@ export function overpayment(state: BudgetState, debtId: string, payment: Cents, 
   const owed = -accountBalance(others, debtId);
   return Math.max(0, Math.abs(payment) - Math.max(0, owed));
 }
+
+/**
+ * The one step every transaction goes through before it is saved: an outflow on a debt's category becomes a
+ * payment to that debt, then the debt rules are checked. The store calls this for everything it writes.
+ */
+export function prepareTransaction<T extends Transaction>(state: BudgetState, t: T): T {
+  const prepared = asDebtPayment(state, t);
+  checkDebtRules(state, prepared);
+  return prepared;
+}

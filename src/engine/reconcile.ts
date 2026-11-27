@@ -91,7 +91,10 @@ export interface ReconcileResult {
  */
 export function reconcile(state: BudgetState, accountId: string, statementBalance: Cents, options: ReconcileOptions): ReconcileResult {
   const difference = statementBalance - accountBalances(state, accountId).cleared;
-  if (difference < 0 && options.categoryId === null) throw new RuleError('An adjustment that lowers the balance needs a category.');
+  // On a debt the difference only changes what is owed; it is outside the budget, so it has no category.
+  const debt = state.accounts.find((a) => a.id === accountId)?.type === 'debt';
+  const categoryId = debt ? null : options.categoryId;
+  if (difference < 0 && categoryId === null && !debt) throw new RuleError('An adjustment that lowers the balance needs a category.');
   const adjustment: Transaction | null =
     difference === 0
       ? null
@@ -100,7 +103,7 @@ export function reconcile(state: BudgetState, accountId: string, statementBalanc
           accountId,
           date: options.today,
           payee: ADJUSTMENT_PAYEE,
-          categoryId: options.categoryId,
+          categoryId,
           memo: '',
           amount: difference,
           transferAccountId: null,

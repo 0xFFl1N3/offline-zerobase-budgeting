@@ -196,7 +196,7 @@ export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg
   const owed = debts.reduce((sum, a) => sum + accountBalance(state, a.id), 0);
 
   /** One list of accounts: reorder buttons, the edit form, or name and balance. */
-  const accountList = (list: typeof open) => (
+  const accountList = (list: typeof open, dragGroup: string) => (
     <ul className="mt-3 space-y-1">
       {list.map((a, i) =>
         reordering ? (
@@ -209,7 +209,7 @@ export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg
             <EditAccountForm account={a} onDone={() => setEditing(null)} />
           </li>
         ) : (
-          <li key={a.id} {...dnd.rowProps(a.id, 'accounts')} className="group flex items-center gap-2 text-sm">
+          <li key={a.id} {...dnd.rowProps(a.id, dragGroup)} className="group flex items-center gap-2 text-sm">
             <button
               type="button"
               onClick={() => setEditing(a.id)}
@@ -219,7 +219,7 @@ export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg
             >
               {a.name}
             </button>
-            {dnd.handle(a.id, a.name, 'accounts')}
+            {dnd.handle(a.id, a.name, dragGroup)}
             {a.type === 'debt' && accountBalance(state, a.id) >= 0 ? (
               <span className="ml-auto text-emerald-700">{t('debt.paidOff')}</span>
             ) : (
@@ -245,7 +245,7 @@ export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg
           </button>
         )}
       </div>
-      {accountList(accounts)}
+      {accountList(accounts, 'accounts')}
       <div className="mt-3 flex justify-between border-t border-slate-200 pt-2 text-sm font-medium">
         <span>{t('account.total')}</span>
         <span className="tabular-nums">{formatMoney(total, currency)}</span>
@@ -253,7 +253,7 @@ export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg
       {debts.length > 0 && (
         <>
           <h2 className="mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">{t('debt.heading')}</h2>
-          {accountList(debts)}
+          {accountList(debts, 'debts')}
           <div className="mt-3 flex justify-between border-t border-slate-200 pt-2 text-sm font-medium">
             <span>{t('debt.totalOwed')}</span>
             <span className="tabular-nums">{formatMoney(owed, currency)}</span>

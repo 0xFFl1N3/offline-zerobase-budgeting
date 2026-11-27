@@ -24,6 +24,8 @@ export function ReconcilePanel({ accountId }: { accountId: string }) {
   const account = state.accounts.find((a) => a.id === accountId);
   if (!account) return null;
   const balances = accountBalances(state, accountId);
+  // A debt is outside the budget: its difference only changes what is owed, without a category.
+  const debt = account.type === 'debt';
   const statement = parseMoney(statementText);
   const difference = statement === null ? null : statement - balances.cleared;
 
@@ -37,9 +39,9 @@ export function ReconcilePanel({ accountId }: { accountId: string }) {
   const finish = (e: FormEvent) => {
     e.preventDefault();
     if (statement === null || difference === null) return setError(t('rec.errorStatement'));
-    if (difference < 0 && !categoryId) return setError(t('rec.errorCategory'));
+    if (difference < 0 && !categoryId && !debt) return setError(t('rec.errorCategory'));
     const locked = balances.clearedCount;
-    void run(() => reconcileAccount(accountId, statement, difference === 0 ? null : categoryId || null)).then((ok) => {
+    void run(() => reconcileAccount(accountId, statement, difference === 0 || debt ? null : categoryId || null)).then((ok) => {
       if (!ok) return;
       setDone(
         t('rec.doneBase', { name: account.name, amount: fmt(statement) }) +
@@ -107,6 +109,9 @@ export function ReconcilePanel({ accountId }: { accountId: string }) {
               <p>
                 {t('rec.tickHint')} <span className="font-semibold tabular-nums">{fmt(difference)}</span>.
               </p>
+              {debt ? (
+                <p className="mt-2 text-xs">{t('rec.debtAdjustment')}</p>
+              ) : (
               <label className="mt-2 block text-xs font-medium">
                 {t('rec.adjustmentCategory')}
                 <select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setError(null); }} className={`${field} mt-1 block`}>
@@ -120,6 +125,7 @@ export function ReconcilePanel({ accountId }: { accountId: string }) {
                   ))}
                 </select>
               </label>
+              )}
             </div>
           )}
 

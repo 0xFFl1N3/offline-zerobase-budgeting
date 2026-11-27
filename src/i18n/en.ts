@@ -587,6 +587,9 @@ export const en = {
   'debt.errorOwedAmount': 'Enter the amount owed (0 or more).',
   'debt.overpayConfirm': 'This pays {amount} more than is still owed on {name}. Save it anyway?',
   'debt.saved': 'Saved.',
+
+  // Debts
+  'rec.debtAdjustment': 'The difference is booked on the debt and only changes what is owed; your budget stays as it is.',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

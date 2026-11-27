@@ -104,7 +104,11 @@ export function TransactionsView() {
       if (amounts.some((a) => a === null)) return setError(tr('tx.errorSplitAmount'));
       splits = splitRows.map((r, i) => ({ categoryId: r.categoryId || null, amount: Math.abs(amounts[i] as number) }));
     }
-    const result = buildTransaction({ ...form, payment: isPayment, amount: Math.abs(parsed), splits }, editingId ?? crypto.randomUUID());
+    // The transfer form has no payee field: a new payment is named after the debt it pays; an edited one
+    // (e.g. imported with the bank's payee) keeps its payee.
+    const debtName = isPayment ? state.accounts.find((a) => a.id === form.transferAccountId)?.name : undefined;
+    const payee = form.payee.trim() || debtName || '';
+    const result = buildTransaction({ ...form, payee, payment: isPayment, amount: Math.abs(parsed), splits }, editingId ?? crypto.randomUUID());
     if (!result.ok) return setError(result.error);
     // Paying more than is owed is allowed (there can be a reason), but should not happen by mistake.
     if (isPayment && form.transferAccountId) {
@@ -134,14 +138,16 @@ export function TransactionsView() {
   // Totals of what is listed; transfers are left out because they only move money between accounts,
   // except debt payments (transfers with a category), which are spending.
   const shown = rows.filter((t) => t.transferAccountId === null || t.categoryId !== null);
-  const totalOut = shown.filter((t) => t.amount < 0).reduce((sum, t) => sum - t.amount, 0);
-  const totalIn = shown.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+  // For the destination account of a transfer, the money comes in: shown (and counted) as an inflow.
+  const mirroredFor = (t: Transaction) => filterAccount !== 'all' && t.transferAccountId === filterAccount && t.accountId !== filterAccount;
+  const signed = (t: Transaction) => (mirroredFor(t) ? -t.amount : t.amount);
+  const totalOut = shown.filter((t) => signed(t) < 0).reduce((sum, t) => sum - signed(t), 0);
+  const totalIn = shown.filter((t) => signed(t) > 0).reduce((sum, t) => sum + signed(t), 0);
 
   /** What each listed transaction shows, for the table and for the phone list. */
   const items = rows.map((t) => {
-    // For the destination account of a transfer, show the money as an inflow.
-    const mirrored = filterAccount !== 'all' && t.transferAccountId === filterAccount && t.accountId !== filterAccount;
-    const amount = mirrored ? -t.amount : t.amount;
+    const mirrored = mirroredFor(t);
+    const amount = signed(t);
     // The status shown is the selected account's side; with all accounts, the sending side.
     const side = mirrored ? filterAccount : t.accountId;
     const status = clearedStatus(t, side);

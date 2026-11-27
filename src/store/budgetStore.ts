@@ -4,7 +4,7 @@ import type { BackupFile } from '../db/backup.ts';
 import * as repo from '../db/repository.ts';
 import type { Currency } from '../engine/money.ts';
 import { addDebtAccount, type NewDebt } from '../engine/edit.ts';
-import { asDebtPayment, checkDebtRules } from '../engine/debt.ts';
+import { prepareTransaction } from '../engine/debt.ts';
 import { moveAccount, moveAccountTo, moveCategory, moveCategoryTo, moveGroup, moveGroupTo, removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from '../engine/edit.ts';
 import { autoAssignPlan, planAssignments } from '../engine/autoassign.ts';
 import { addMonths } from '../engine/months.ts';
@@ -196,6 +196,12 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set({ state: next });
     };
 
+    /**
+     * Every transaction the store saves goes through here (see prepareTransaction): a debt payment is
+     * recognised and the debt rules are checked before anything is written.
+     */
+    const prepared = <T extends Transaction>(t: T): T => prepareTransaction(get().state, t);
+
     /** Persists the accounts, groups and categories whose sort order changed, then updates the state. */
     const applyOrder = async (next: BudgetState) => {
       const prev = get().state;
@@ -327,8 +333,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     },
 
     startRecurringSeries: async (input, frequency, endDate) => {
-      const t = asDebtPayment(get().state, input);
-      checkDebtRules(get().state, t);
+      const t = prepared(input);
       const { transaction, recurring } = startRecurring(t, frequency, endDate, toISODate(), crypto.randomUUID());
       await repo.saveRecurringBooking(db, recurring, transaction);
       set((s) => ({
@@ -339,7 +344,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     makeRecurring: async (transactionId, frequency, endDate) => {
       const t = get().state.transactions.find((x) => x.id === transactionId);
       if (!t) throw new RuleError('Unknown transaction.');
-      const recurring = recurringFrom(t, frequency, endDate, crypto.randomUUID());
+      const recurring = recurringFrom(prepared(t), frequency, endDate, crypto.randomUUID());
       await repo.saveRecurring(db, recurring);
       set((s) => ({ state: { ...s.state, recurring: [...s.state.recurring, recurring] } }));
     },
@@ -347,7 +352,9 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     confirmRecurring: async (id, amount) => {
       const rec = get().state.recurring.find((r) => r.id === id);
       if (!rec) throw new RuleError('Unknown recurring transaction.');
-      const { transaction, recurring } = bookNext(rec, crypto.randomUUID(), amount);
+      const booked = bookNext(rec, crypto.randomUUID(), amount);
+      const transaction = prepared(booked.transaction);
+      const recurring = booked.recurring;
       await repo.saveRecurringBooking(db, recurring, transaction);
       set((s) => ({
         state: { ...s.state, recurring: s.state.recurring.map((r) => (r.id === id ? recurring : r)), transactions: [...s.state.transactions, transaction] },
@@ -386,8 +393,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       }),
 
     saveTransaction: async (input) => {
-      const t = asDebtPayment(get().state, input);
-      checkDebtRules(get().state, t);
+      const t = prepared(input);
       await repo.saveTransaction(db, t);
       set((s) => ({
         state: { ...s.state, transactions: [...s.state.transactions.filter((x) => x.id !== t.id), t] },
@@ -395,8 +401,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     },
 
     importTransactions: async (input) => {
-      const transactions = input.map((t) => asDebtPayment(get().state, t));
-      for (const t of transactions) checkDebtRules(get().state, t);
+      const transactions = input.map(prepared);
       await repo.saveTransactions(db, transactions);
       const ids = new Set(transactions.map((t) => t.id));
       set((s) => ({ state: { ...s.state, transactions: [...s.state.transactions.filter((t) => !ids.has(t.id)), ...transactions] } }));
@@ -405,7 +410,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     setCleared: async (transactionId, accountId, status) => {
       const t = get().state.transactions.find((x) => x.id === transactionId);
       if (!t) return;
-      const next = withCleared(t, accountId, status);
+      const next = prepared(withCleared(t, accountId, status));
       await repo.saveTransaction(db, next);
       set((s) => ({ state: { ...s.state, transactions: s.state.transactions.map((x) => (x.id === next.id ? next : x)) } }));
     },
@@ -416,8 +421,10 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
         adjustmentId: crypto.randomUUID(),
         categoryId: adjustmentCategoryId,
       });
-      await repo.saveReconciliation(db, result.account, result.changed);
-      set({ state: result.state });
+      // What is saved and what is shown must be the same, so the prepared versions replace the originals.
+      const changed = new Map(result.changed.map(prepared).map((t) => [t.id, t]));
+      await repo.saveReconciliation(db, result.account, [...changed.values()]);
+      set({ state: { ...result.state, transactions: result.state.transactions.map((t) => changed.get(t.id) ?? t) } });
     },
 
     removeTransaction: (id) =>

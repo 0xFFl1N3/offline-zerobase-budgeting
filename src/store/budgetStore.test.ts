@@ -464,3 +464,21 @@ test('adding a debt creates its payment category and goal, and protects the cate
   await reloaded.getState().load();
   assert.deepEqual(reloaded.getState().state.accounts.find((a) => a.id === tv.id), tv);
 });
+
+test('every way of saving applies the debt rules, reconciling included', async () => {
+  const { store } = fresh();
+  await store.getState().load();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  await store.getState().addGroup('Fun');
+  await store.getState().addCategory(store.getState().state.groups[0]!.id, 'Games');
+  await store.getState().addDebt({ name: 'Loan', owed: 50000, minimumPayment: null, groupName: 'Debt payments' });
+  const s = store.getState().state;
+  const loan = s.accounts.find((a) => a.type === 'debt')!;
+  const games = s.categories.find((c) => c.name === 'Games')!;
+  const before = readyToAssign(s, store.getState().month);
+  await store.getState().reconcileAccount(loan.id, -52000, games.id);
+  const after = store.getState().state;
+  assert.equal(accountBalance(after, loan.id), -52000);
+  assert.equal(readyToAssign(after, store.getState().month), before);
+  assert.ok(after.transactions.every((t) => t.categoryId === null));
+});

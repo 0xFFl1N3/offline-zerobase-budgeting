@@ -2,6 +2,14 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.10.5 – 2026-11-27
+
+### Fixed
+- Reconciling a debt could change Ready to Assign. The difference now only changes what is owed, and no category is asked for.
+- Debt payments made in the app were listed with the payee "Transfer"; they are now named after the debt.
+- On phones, moving an account up or down sometimes did nothing when debts were listed. Accounts and debts now move within their own list.
+- With a debt selected in Transactions, payments were counted as outflow in the totals line; they now count as inflow, as in the list.
+
 ## 0.10.4 – 2026-11-27
 
 ### Added

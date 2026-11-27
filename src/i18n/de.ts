@@ -584,4 +584,7 @@ export const de: Messages = {
   'debt.errorOwedAmount': 'Gib den offenen Betrag ein (0 oder mehr).',
   'debt.overpayConfirm': 'Damit zahlst du {amount} mehr, als bei {name} noch offen ist. Trotzdem speichern?',
   'debt.saved': 'Gespeichert.',
+
+  // Debts
+  'rec.debtAdjustment': 'Die Differenz wird auf die Schuld gebucht und ändert nur den offenen Betrag; dein Budget bleibt, wie es ist.',
 };
