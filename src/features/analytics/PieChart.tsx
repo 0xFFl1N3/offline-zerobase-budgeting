@@ -1,8 +1,21 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Slice } from '../../engine/analytics.ts';
 import { formatMoney, formatPercent, type Currency } from '../../engine/money.ts';
 import { t } from '../../i18n/i18n.ts';
 import { OTHER_COLOR } from './colors.ts';
+import { useTween } from './morph.ts';
+
+type Amounts = [string, number][];
+
+/** Slice sizes on the way from `a` to `b`: shared slices resize, new ones grow from nothing, gone ones shrink away at the end. */
+function mixAmounts(a: Amounts, b: Amounts, p: number): Amounts {
+  const from = new Map(a);
+  const ids = new Set(b.map(([id]) => id));
+  return [
+    ...b.map(([id, v]): [string, number] => [id, (from.get(id) ?? 0) + (v - (from.get(id) ?? 0)) * p]),
+    ...a.filter(([id, v]) => !ids.has(id) && v > 0).map(([id, v]): [string, number] => [id, v * (1 - p)]),
+  ];
+}
 
 interface Props {
   slices: Slice[];
@@ -33,15 +46,29 @@ export function PieChart({ slices: raw, total, currency, colors, label, onPick }
   // The combined slice is named in the current language.
   const slices = raw.map((s) => (s.isOther ? { ...s, label: t('analytics.other') } : s));
   const [active, setActive] = useState<string | null>(null);
-  const colorOf = (s: Slice) => (s.isOther ? OTHER_COLOR : (colors.get(s.id) ?? OTHER_COLOR));
+  const colorOf = (s: Slice) => (s.isOther ? OTHER_COLOR : (colors.get(s.id) ?? knownColor.current.get(s.id) ?? OTHER_COLOR));
   const fmt = (c: number) => formatMoney(c, currency);
 
+  // Slices remembered by id, so one that is gone can still be drawn while it shrinks away.
+  const known = useRef(new Map<string, Slice>());
+  const knownColor = useRef(new Map<string, string>());
+  for (const s of slices) {
+    known.current.set(s.id, s);
+    knownColor.current.set(s.id, s.isOther ? OTHER_COLOR : (colors.get(s.id) ?? OTHER_COLOR));
+  }
+  const target: Amounts = slices.map((s) => [s.id, total > 0 ? s.amount / total : 0]);
+  const shown = useTween(target, target.map(([id, v]) => `${id}=${v}`).join(';'), mixAmounts);
+  const shownTotal = shown.reduce((sum, [, v]) => sum + v, 0) || 1;
+  const settled = shown === target || shown.length === slices.length;
+
   let angle = -Math.PI / 2; // start at 12 o'clock, go clockwise
-  const arcs = slices.map((s) => {
-    const sweep = (s.amount / total) * 2 * Math.PI;
-    const arc = { slice: s, from: angle, to: angle + sweep };
+  const arcs = shown.flatMap(([id, v]) => {
+    const slice = known.current.get(id);
+    if (!slice || v <= 0) return [];
+    const sweep = (v / shownTotal) * 2 * Math.PI;
+    const arc = { slice, from: angle, to: angle + sweep };
     angle += sweep;
-    return arc;
+    return [arc];
   });
 
   const describe = (s: Slice) => `${s.label}: ${fmt(s.amount)}, ${formatPercent(s.percent)}`;
@@ -66,6 +93,7 @@ export function PieChart({ slices: raw, total, currency, colors, label, onPick }
               strokeWidth={2}
               strokeLinejoin="round"
               opacity={active === null || active === slice.id ? 1 : 0.45}
+              pointerEvents={settled ? undefined : 'none'}
               tabIndex={0}
               role={pickable(slice) ? 'button' : 'img'}
               aria-label={pickable(slice) ? `${describe(slice)}. ${t('analytics.showTransactions', { name: slice.label })}` : describe(slice)}

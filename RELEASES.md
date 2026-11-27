@@ -8,6 +8,7 @@ What changed for you in each release, newest first. The full technical list is i
 - Overhauled look: the budget and the recurring transactions are tidier and easier to scan.
 - Clearer wording: buttons and texts say plainly what they do, especially in German.
 - Long transaction lists load faster: the newest 100 show first, and more are a click away.
+- Charts move smoothly when you switch the time period or the grouping.
 
 ## 0.10 – Debts
 2026-11-27

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { formatMoney, type Currency } from '../../engine/money.ts';
 import { formatMonth } from '../../engine/months.ts';
 import type { IncomeSpendingRow } from '../../engine/reports.ts';
-import { ChartFrame, ChartReadout, DataTable, Legend, PAD, barPath, plotWidth, useChartWidth, yOf } from './ChartFrame.tsx';
+import { ChartFrame, ChartReadout, DataTable, Legend, barPath, layoutOf, monthsOf, useChartWidth } from './ChartFrame.tsx';
+import { useMorph, viewOf } from './morph.ts';
 import { SERIES_COLORS } from './colors.ts';
 import { niceScale } from './scale.ts';
 import { t } from '../../i18n/i18n.ts';
@@ -15,10 +16,12 @@ export function IncomeSpendingChart({ rows, currency }: { rows: IncomeSpendingRo
   const fmt = (c: number) => formatMoney(c, currency);
   const scale = niceScale(rows.flatMap((r) => [r.income, r.spending]));
   const [box, width] = useChartWidth();
-  const col = plotWidth(width) / rows.length;
+  // What is drawn follows the data with a short transition (see morph.ts).
+  const view = useMorph(viewOf(rows.map((r) => r.month), [rows.map((r) => r.income), rows.map((r) => r.spending)], scale.min, scale.max));
+  const { col, left, y } = layoutOf(view, width);
   const group = Math.min(col * 0.7, 58);
   const bar = (group - 2) / 2; // 2px surface gap between the pair
-  const base = yOf(0, scale);
+  const base = y(0);
 
   const totals = rows.reduce((t, r) => ({ income: t.income + r.income, spending: t.spending + r.spending }), { income: 0, spending: 0 });
   const describe = (i: number) => {
@@ -41,13 +44,13 @@ export function IncomeSpendingChart({ rows, currency }: { rows: IncomeSpendingRo
         </div>
       </dl>
       <div ref={box} className="mt-3">
-        <ChartFrame width={width} months={rows.map((r) => r.month)} scale={scale} currency={currency} label={t('analytics.incomeLabel')} active={active} onActive={setActive} describe={describe}>
-          {rows.map((r, i) => {
-            const x = PAD.left + i * col + (col - group) / 2;
+        <ChartFrame width={width} months={rows.map((r) => r.month)} scale={scale} view={view} currency={currency} label={t('analytics.incomeLabel')} active={active} onActive={setActive} describe={describe}>
+          {monthsOf(view).map(([m, [income, spending]]) => {
+            const x = left(m) + (col - group) / 2;
             return (
-              <g key={r.month} pointerEvents="none">
-                <path d={barPath(x, bar, base, yOf(r.income, scale))} fill={INCOME} />
-                <path d={barPath(x + bar + 2, bar, base, yOf(r.spending, scale))} fill={SPENDING} />
+              <g key={m} pointerEvents="none">
+                <path d={barPath(x, bar, base, y(income!))} fill={INCOME} />
+                <path d={barPath(x + bar + 2, bar, base, y(spending!))} fill={SPENDING} />
               </g>
             );
           })}

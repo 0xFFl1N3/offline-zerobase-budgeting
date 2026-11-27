@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.10 – 2026-11-27
+
+### Added
+- Charts move smoothly to their new state instead of jumping. On a new time period the months slide to their place, the axis rescales, and months that come or go move in or out at the edge. Pie slices change size in place; slices that are no longer there shrink away. The change takes about a third of a second.
+- With "reduce motion" turned on in the system settings, charts change instantly as before.
+
 ## 0.11.9 – 2026-11-27
 
 ### Changed

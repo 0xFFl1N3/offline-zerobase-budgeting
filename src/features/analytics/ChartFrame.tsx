@@ -1,6 +1,7 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { Currency } from '../../engine/money.ts';
 import { t } from '../../i18n/i18n.ts';
+import { ordinal, type View } from './morph.ts';
 import { formatCompact, labelEvery, monthTick, type Scale } from './scale.ts';
 
 /**
@@ -28,13 +29,30 @@ export function useChartWidth() {
   return [ref, width] as const;
 }
 
-export const yOf = (value: number, scale: Scale) => PAD.top + PLOT_H - ((value - scale.min) / (scale.max - scale.min)) * PLOT_H;
+/** Where things go for a view at a given width: the column width, a month's left edge, a value's height. */
+export interface Layout {
+  col: number;
+  left: (month: number) => number;
+  y: (value: number) => number;
+}
+
+export function layoutOf(view: View, width: number): Layout {
+  const col = plotWidth(width) / Math.max(view.hi - view.lo, 1e-6);
+  const span = view.max - view.min || 1;
+  return { col, left: (m) => PAD.left + (m - view.lo) * col, y: (v) => PAD.top + PLOT_H - ((v - view.min) / span) * PLOT_H };
+}
+
+/** Months in the view, oldest first, with their values; used by the charts to draw their marks. */
+export const monthsOf = (view: View) => [...view.values.entries()].sort((a, b) => a[0] - b[0]);
 
 interface Props {
   /** From useChartWidth. */
   width: number;
   months: string[];
+  /** The target's scale, for the tick values. */
   scale: Scale;
+  /** What is on screen (see useMorph); positions follow it, so axes and labels move with the marks. */
+  view: View;
   currency: Currency;
   label: string;
   /** Index of the hovered month, or null. */
@@ -48,42 +66,45 @@ interface Props {
 }
 
 /** Axes, gridlines, month labels and one hover/focus column per month. The marks go in `children`. */
-export function ChartFrame({ width, months, scale, currency, label, active, onActive, describe, children, formatTick }: Props) {
+export function ChartFrame({ width, months, scale, view, currency, label, active, onActive, describe, children, formatTick }: Props) {
   const W = width;
-  const col = plotWidth(W) / months.length;
+  const { col, left, y } = layoutOf(view, W);
   const every = labelEvery(months.length, plotWidth(W));
+  const clip = `plot${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  // While the view moves, ticks and labels that are outside the plot are left out.
+  const inPlotY = (v: number) => y(v) >= PAD.top - 0.5 && y(v) <= PAD.top + PLOT_H + 0.5;
+  const inPlotX = (x: number) => x >= PAD.left - 0.5 && x <= W - PAD.right + 0.5;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="group" aria-label={label}>
-      {scale.ticks.map((t) => (
+      <defs>
+        <clipPath id={clip}>
+          <rect x={PAD.left} y={0} width={plotWidth(W)} height={H} />
+        </clipPath>
+      </defs>
+      {scale.ticks.filter(inPlotY).map((t) => (
         <g key={t}>
-          <line
-            x1={PAD.left}
-            x2={W - PAD.right}
-            y1={yOf(t, scale)}
-            y2={yOf(t, scale)}
-            className={t === 0 ? 'stroke-slate-400' : 'stroke-slate-200'}
-            strokeWidth={1}
-          />
-          <text x={PAD.left - 6} y={yOf(t, scale)} dy="0.32em" textAnchor="end" className="fill-slate-500 text-[11px] tabular-nums">
+          <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} className={t === 0 ? 'stroke-slate-400' : 'stroke-slate-200'} strokeWidth={1} />
+          <text x={PAD.left - 6} y={y(t)} dy="0.32em" textAnchor="end" className="fill-slate-500 text-[11px] tabular-nums">
             {formatTick ? formatTick(t) : formatCompact(t, currency)}
           </text>
         </g>
       ))}
-      {active !== null && (
-        <rect x={PAD.left + active * col} y={PAD.top} width={col} height={PLOT_H} className="fill-slate-100" />
+      {active !== null && months[active] !== undefined && (
+        <rect x={left(ordinal(months[active]))} y={PAD.top} width={col} height={PLOT_H} className="fill-slate-100" />
       )}
-      {children}
-      {months.map((m, i) =>
-        i % every === 0 ? (
-          <text key={m} x={PAD.left + (i + 0.5) * col} y={H - 8} textAnchor="middle" className="fill-slate-500 text-[11px]">
+      <g clipPath={`url(#${clip})`}>{children}</g>
+      {months.map((m, i) => {
+        const x = left(ordinal(m)) + col / 2;
+        return i % every === 0 && inPlotX(x) ? (
+          <text key={m} x={x} y={H - 8} textAnchor="middle" className="fill-slate-500 text-[11px]">
             {monthTick(m, i === 0)}
           </text>
-        ) : null,
-      )}
+        ) : null;
+      })}
       {months.map((m, i) => (
         <rect
           key={m}
-          x={PAD.left + i * col}
+          x={left(ordinal(m))}
           y={PAD.top}
           width={col}
           height={PLOT_H}
