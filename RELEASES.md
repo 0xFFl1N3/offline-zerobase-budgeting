@@ -6,6 +6,7 @@ What changed for you in each release, newest first. The full technical list is i
 2026-11-27
 
 - New budgets can start from suggested groups and categories: tick what fits you instead of typing every name. The suggestions stay available under "+ Add from suggestions".
+- Starting in the middle of a month? Setup now asks, and explains in three points what to assign first.
 
 ## 0.19 – Planning ahead
 2026-11-27

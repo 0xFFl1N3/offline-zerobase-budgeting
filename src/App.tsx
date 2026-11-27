@@ -6,6 +6,7 @@ import { SettingsView } from './features/settings/SettingsView.tsx';
 import { Setup } from './features/setup/Setup.tsx';
 import { StartChoice } from './features/setup/StartChoice.tsx';
 import { Suggestions } from './features/setup/Suggestions.tsx';
+import { MidMonth } from './features/setup/MidMonth.tsx';
 import { DemoBar } from './features/demo/DemoBar.tsx';
 import { TransactionsView } from './features/transactions/TransactionsView.tsx';
 import { AnalyticsIcon, BudgetIcon, CloseIcon, MenuIcon, SettingsIcon, TransactionsIcon } from './components/icons.tsx';
@@ -100,7 +101,7 @@ export default function App() {
   if (start) {
     return (
       <div key={language} className="min-h-screen bg-slate-50 text-slate-900">
-        {start.step === 'choose' ? <StartChoice /> : <Suggestions firstRun={start.firstRun} />}
+        {start.step === 'choose' ? <StartChoice /> : start.step === 'midMonth' ? <MidMonth /> : <Suggestions firstRun={start.firstRun} />}
         <ErrorBar />
       </div>
     );

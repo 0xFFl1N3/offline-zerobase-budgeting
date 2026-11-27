@@ -15,7 +15,7 @@ export function StartChoice() {
           <span className="block font-medium text-slate-900">{t('start.suggested')}</span>
           <span className="mt-0.5 block text-sm text-slate-600">{t('start.suggestedHint')}</span>
         </button>
-        <button type="button" onClick={() => setStart(null)} className={choice}>
+        <button type="button" onClick={() => setStart({ step: 'midMonth', firstRun: true })} className={choice}>
           <span className="block font-medium text-slate-900">{t('start.own')}</span>
           <span className="mt-0.5 block text-sm text-slate-600">{t('start.ownHint')}</span>
         </button>

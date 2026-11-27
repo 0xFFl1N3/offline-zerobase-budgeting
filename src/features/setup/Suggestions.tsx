@@ -44,7 +44,8 @@ export function Suggestions({ firstRun }: { firstRun: boolean }) {
 
   const picks: GroupPick[] = list.filter((g) => open.has(g.id)).map((g) => ({ group: g.name, categories: tickedIn(g.id) }));
   const count = planSuggestions(state, picks).groups.reduce((n, g) => n + g.categories.length, 0);
-  const create = () => void run(() => addSuggestions(picks)).then((ok) => ok && setStart(null));
+  // Right after setup, the mid-month question comes next; from the budget it goes straight back.
+  const create = () => void run(() => addSuggestions(picks)).then((ok) => ok && setStart(firstRun ? { step: 'midMonth', firstRun: true } : null));
 
   return (
     <main className="mx-auto max-w-2xl px-3 pt-8 pb-28 md:pt-16">

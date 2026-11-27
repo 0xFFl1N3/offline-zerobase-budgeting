@@ -18,7 +18,8 @@ export type Tab = 'budget' | 'transactions' | 'analytics' | 'settings';
  * (Back on the suggestions returns to the choice); otherwise the suggestions were opened from the budget.
  */
 export interface StartStep {
-  step: 'choose' | 'suggestions';
+  /** midMonth: the last question after setup, "Are you starting in the middle of the month?". */
+  step: 'choose' | 'suggestions' | 'midMonth';
   firstRun: boolean;
 }
 

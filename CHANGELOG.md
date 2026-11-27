@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.20.1 – 2026-11-27
+
+### Added
+- The last step after setup asks "Are you starting in the middle of the month?". "Yes" shows three short points before the budget opens: the balance is today's, assign only what is still coming this month, and give the rest to next month. "No" opens the budget. Nothing about the answer is stored.
+
 ## 0.20.0 – 2026-11-27
 
 ### Added
