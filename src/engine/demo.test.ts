@@ -5,6 +5,7 @@ import { accountBalance, readyToAssign } from './budget.ts';
 import { buildDemo } from './demo.ts';
 import { addMonths, monthOf } from './months.ts';
 import { dueItems } from './recurring.ts';
+import { autoAssignPlan } from './autoassign.ts';
 
 // Month ends, February, New Year's Eve and the first of a month, in both languages.
 const TODAYS = ['2026-11-27', '2026-12-31', '2027-01-01', '2027-02-28', '2028-02-29', '2027-07-15'];
@@ -48,6 +49,14 @@ test('one recurring transaction is due, and accounts end up believable', () => {
     assert.deepEqual(dueItems(state.recurring, today).map((d) => d.recurringId), ['rec-netflix'], today);
     assert.ok(accountBalance(state, 'acc-giro') > 0, `${today}: checking account is overdrawn`);
     assert.ok(accountBalance(state, 'acc-tv') < 0, `${today}: the TV financing is paid off already`);
+  }
+});
+
+test('Auto-assign has one goal to fund in the demo, and the money for it', () => {
+  for (const { today, language } of cases) {
+    const plan = autoAssignPlan(buildDemo(today, language), monthOf(today));
+    assert.deepEqual(plan.steps, [{ categoryId: 'cat-groc', add: 12000 }], today);
+    assert.ok(plan.readyAfter >= 0, today);
   }
 });
 

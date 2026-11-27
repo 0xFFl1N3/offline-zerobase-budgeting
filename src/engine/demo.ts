@@ -97,6 +97,8 @@ export function buildDemo(today: string, language: DemoLanguage): BudgetState {
   for (const m of months) for (const [categoryId, assigned] of Object.entries(plan)) monthlyBudgets.push({ categoryId, month: m, assigned });
   for (const i of [18, 21]) monthlyBudgets.push({ categoryId: 'cat-anna', month: months[i]!, assigned: 10000 });
   for (const december of decembers) monthlyBudgets.find((b) => b.categoryId === 'cat-gifts' && b.month === december)!.assigned += 25000; // Christmas, on top of the plan
+  // Groceries are not fully funded yet this month, so there is something for Auto-assign to do.
+  monthlyBudgets.find((b) => b.categoryId === 'cat-groc' && b.month === current)!.assigned = 30000;
 
   const transactions: Transaction[] = [];
   const add = (date: string, accountId: string, payee: string, cents: number, categoryId: string | null, extra: Partial<Transaction> = {}) => {

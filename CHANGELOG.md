@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.12.4 – 2026-11-27
+
+### Fixed
+- In the sample data every goal was already met this month, so Auto-assign had nothing to do and stayed grey. Groceries now get €300 of their €420 this month, so Auto-assign can fill the missing €120.
+
 ## 0.12.3 – 2026-11-27
 
 ### Changed
