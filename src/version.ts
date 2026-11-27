@@ -1,4 +1,4 @@
 /**
  * Shown at the bottom left of the app. Bumped with every commit (the patch number).
  */
-export const APP_VERSION = '0.12.5';
+export const APP_VERSION = '0.13.0';

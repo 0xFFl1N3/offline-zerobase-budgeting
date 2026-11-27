@@ -2,6 +2,11 @@
 
 What changed for you in each release, newest first. The full technical list is in CHANGELOG.md.
 
+## 0.13 – More ways to assign
+2026-11-27
+
+- Auto-assign has a menu now: fund your goals, cover overspending, or assign the same as last month. Each shows how much it would assign before you pick it.
+
 ## 0.12 – Try it with sample data
 2026-11-27
 

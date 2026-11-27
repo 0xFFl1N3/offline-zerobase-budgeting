@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { autoAssignPlan, planAssignments } from './autoassign.ts';
+import { assignPlan, autoAssignPlan, lastMonthPlan, overspendingPlan, planAssignments } from './autoassign.ts';
 import { categoryAvailable, goalProgress, readyToAssign } from './budget.ts';
 import type { BudgetState } from './types.ts';
 
@@ -57,4 +57,33 @@ test('the plan can exceed Ready to Assign, which shows as a negative result', ()
   const s = state();
   s.accounts[0]!.openingBalance = 50000;
   assert.ok(autoAssignPlan(s, M).readyAfter < 0);
+});
+
+const spend = (id: string, categoryId: string, amount: number, date = `${M}-10`) => ({
+  id, accountId: 'a', date, payee: 'Shop', categoryId, memo: '', amount, transferAccountId: null,
+});
+
+test('covering overspending brings each red category back to zero, and only those', () => {
+  const s = state();
+  s.monthlyBudgets.push({ categoryId: 'none', month: M, assigned: 1000 });
+  s.transactions.push(spend('t1', 'none', -1940), spend('t2', 'fun', -2000), spend('t3', 'old', -500));
+  const plan = overspendingPlan(s, M);
+  assert.deepEqual(plan.steps, [{ categoryId: 'none', add: 940 }]); // fun still has 30.00; old is archived
+  const after = { ...s, monthlyBudgets: [...s.monthlyBudgets.filter((b) => b.categoryId !== 'none'), ...planAssignments(s, plan, M).map((a) => ({ ...a, month: M }))] };
+  assert.equal(categoryAvailable(after, 'none', M), 0);
+});
+
+test('same as last month copies last month into categories with nothing assigned yet', () => {
+  const s = state();
+  const prev = '2025-12';
+  s.monthlyBudgets.push({ categoryId: 'rent', month: prev, assigned: 90000 }, { categoryId: 'fun', month: prev, assigned: 7000 }, { categoryId: 'old', month: prev, assigned: 300 });
+  // fun already has money this month, old is archived, pc got nothing last month.
+  assert.deepEqual(lastMonthPlan(s, M).steps, [{ categoryId: 'rent', add: 90000 }]);
+});
+
+test('each kind reports nothing to do when there is nothing to do', () => {
+  const s = state();
+  s.monthlyBudgets = [];
+  s.goals = [];
+  for (const kind of ['goals', 'overspending', 'lastMonth'] as const) assert.equal(assignPlan(s, M, kind).steps.length, 0, kind);
 });

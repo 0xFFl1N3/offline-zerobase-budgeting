@@ -31,6 +31,7 @@
 
 .dark .text-sky-700 { color: #38bdf8; }
 .dark .hover\:bg-sky-50:hover { background-color: #082f49; }
+.dark .focus\:bg-sky-50:focus { background-color: #082f49; }
 
 .dark .text-red-600 { color: #f87171; }
 .dark .text-red-700 { color: #fca5a5; }

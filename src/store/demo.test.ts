@@ -51,3 +51,17 @@ test('a backup of the demo comes back as the demo; a normal backup ends it', asy
   await other.getState().importBackup(plainBackup.backup);
   assert.equal(other.getState().demo, false);
 });
+
+test('on the sample data each way of assigning does what it says', async () => {
+  const { store } = fresh();
+  await store.getState().startDemo('en');
+  const { month } = store.getState();
+  const { categoryAvailable } = await import('../engine/budget.ts');
+  const { assignPlan } = await import('../engine/autoassign.ts');
+  const active = () => store.getState().state.categories.filter((c) => !c.archived);
+  for (const kind of ['goals', 'overspending', 'lastMonth'] as const) {
+    await store.getState().autoAssign(kind);
+    assert.equal(assignPlan(store.getState().state, month, kind).steps.length, 0, `${kind} left something to do`);
+  }
+  for (const c of active()) assert.ok(categoryAvailable(store.getState().state, c.id, month) >= 0, `${c.name} is still red`);
+});

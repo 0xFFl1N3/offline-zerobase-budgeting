@@ -7,7 +7,7 @@ import type { Currency } from '../engine/money.ts';
 import { addDebtAccount, type NewDebt } from '../engine/edit.ts';
 import { prepareTransaction } from '../engine/debt.ts';
 import { moveAccount, moveAccountTo, moveCategory, moveCategoryTo, moveGroup, moveGroupTo, removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from '../engine/edit.ts';
-import { autoAssignPlan, planAssignments } from '../engine/autoassign.ts';
+import { assignPlan, planAssignments, type AssignKind } from '../engine/autoassign.ts';
 import { addMonths } from '../engine/months.ts';
 import { activeSeriesUsing, bookNext, pauseSeries, recurringFrom, setRecurringPaused, skipNext, startRecurring, updateRecurring, type RecurringChanges } from '../engine/recurring.ts';
 import { toISODate } from '../engine/months.ts';
@@ -77,7 +77,8 @@ export interface BudgetStore {
   /** Sets this month's Assigned amount for a category. */
   assign: (categoryId: string, assigned: Cents) => Promise<void>;
   /** Adds to each category what its goal still needs this month. Returns how many categories were funded. */
-  autoAssign: () => Promise<number>;
+  /** Fills categories the chosen way (goals by default); returns how many categories changed. */
+  autoAssign: (kind?: AssignKind) => Promise<number>;
   /**
    * Starts a recurring series from a transaction just entered: it is booked now if its date has come,
    * otherwise it becomes the first due occurrence.
@@ -331,9 +332,9 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       });
     },
 
-    autoAssign: async () => {
+    autoAssign: async (kind = 'goals') => {
       const { state, month } = get();
-      const assignments = planAssignments(state, autoAssignPlan(state, month), month);
+      const assignments = planAssignments(state, assignPlan(state, month, kind), month);
       if (assignments.length === 0) return 0;
       await repo.setAssignedMany(db, month, assignments);
       const changed = new Set(assignments.map((a) => a.categoryId));

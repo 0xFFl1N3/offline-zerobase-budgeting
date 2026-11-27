@@ -2,6 +2,19 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.13.0 – 2026-11-27
+
+### Added
+- Auto-assign is now a menu with three ways to fill categories, each showing up front how much it would assign:
+  - Fund goals: what the button did before, gives each goal what it needs this month.
+  - Cover overspending: brings every red category back to zero, with or without a goal.
+  - Same as last month: categories with nothing assigned yet this month get what they got last month.
+- An entry with nothing to do says why in the menu itself ("No category is in the minus."), instead of only in a tooltip. If an entry would assign more than is left, it asks first.
+- The menu works with the keyboard (arrow keys, Escape) and closes on a click elsewhere.
+
+### Changed
+- In German the button is now called "Zuweisen"; "Ziele auffüllen" is one of its entries.
+
 ## 0.12.5 – 2026-11-27
 
 ### Fixed
