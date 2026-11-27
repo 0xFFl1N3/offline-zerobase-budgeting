@@ -2,6 +2,13 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.20.0 – 2026-11-27
+
+### Added
+- After setup, a second screen asks how to start: "Suggest categories" or "I'll create my own" (the empty budget, as before).
+- "Suggest categories" opens a list of nine groups (Living, Transport, Insurance, Savings, Lifestyle, Exercise, Subscriptions, Self-improvement, Giving) in the app's language. Ticking a group opens its categories with the usual ones already ticked; each group takes own categories too. One button creates everything ticked, in one go.
+- The list stays reachable: "Show suggestions" on the empty budget, and "+ Add from suggestions" next to "+ Add group". Groups and categories already in the budget show ticked and greyed out, and only new ticks are created; a group with the same name is filled up instead of added twice.
+
 ## 0.19.15 – 2026-11-27
 
 ### Changed

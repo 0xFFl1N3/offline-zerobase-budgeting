@@ -12,7 +12,8 @@ import { addMonths } from '../engine/months.ts';
 import { activeSeriesUsing, bookNext, pauseSeries, recurringFrom, setRecurringPaused, skipNext, startRecurring, updateRecurring, type RecurringChanges } from '../engine/recurring.ts';
 import { toISODate } from '../engine/months.ts';
 import { reconcile, withCleared } from '../engine/reconcile.ts';
-import type { Account, AccountType, BudgetState, Cents, ClearedStatus, Frequency, Goal, GoalDraft, Month, Transaction } from '../engine/types.ts';
+import type { Account, AccountType, BudgetState, Category, CategoryGroup, Cents, ClearedStatus, Frequency, Goal, GoalDraft, Month, Transaction } from '../engine/types.ts';
+import { planSuggestions, type GroupPick } from '../engine/suggestions.ts';
 import { RuleError } from '../engine/ruleError.ts';
 import { classify, markReported, type Problem } from '../i18n/errors.ts';
 import { connectTabs } from './tabSync.ts';
@@ -75,6 +76,8 @@ export interface BudgetStore {
   addGroup: (name: string) => Promise<void>;
   /** With `goal`, the category is created together with that goal. */
   addCategory: (groupId: string, name: string, goal?: GoalDraft) => Promise<void>;
+  /** Creates what was picked from the suggestions (see planSuggestions); returns how many categories were added. */
+  addSuggestions: (picks: GroupPick[]) => Promise<number>;
   /** Sets this month's Assigned amount for a category. */
   assign: (categoryId: string, assigned: Cents) => Promise<void>;
   /** Adds to each category what its goal still needs this month. Returns how many categories were funded. */
@@ -328,6 +331,27 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       set((s) => ({
         state: { ...s.state, categories: [...s.state.categories, category], goals: goal ? [...s.state.goals, goal] : s.state.goals },
       }));
+    },
+
+    addSuggestions: async (picks) => {
+      const state = get().state;
+      const plan = planSuggestions(state, picks);
+      let groupOrder = state.groups.reduce((max, g) => Math.max(max, g.sortOrder + 1), 0);
+      const groups: CategoryGroup[] = [];
+      const categories: Category[] = [];
+      for (const pick of plan.groups) {
+        let groupId = pick.existingId;
+        if (!groupId) {
+          groupId = crypto.randomUUID();
+          groups.push({ id: groupId, name: pick.name, sortOrder: groupOrder++, archived: false });
+        }
+        let order = state.categories.filter((c) => c.groupId === groupId).reduce((max, c) => Math.max(max, c.sortOrder + 1), 0);
+        for (const name of pick.categories) categories.push({ id: crypto.randomUUID(), groupId, name, sortOrder: order++, archived: false });
+      }
+      if (categories.length === 0) return 0;
+      await repo.addGroupsAndCategories(db, groups, categories);
+      set((s) => ({ state: { ...s.state, groups: [...s.state.groups, ...groups], categories: [...s.state.categories, ...categories] } }));
+      return categories.length;
     },
 
     assign: async (categoryId, assigned) => {

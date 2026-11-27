@@ -527,3 +527,16 @@ test('a goal is paused for the month on screen and resumed again', async () => {
   await store.getState().pauseGoal(id, false);
   assert.equal(store.getState().state.goals[0]!.pausedMonths, undefined);
 });
+
+test('picked suggestions are created in one go, and picking again adds only what is new', async () => {
+  const { db, store } = fresh();
+  await store.getState().completeSetup({ accountName: 'Checking', initialBalance: 100000, currency: 'EUR' });
+  const n = await store.getState().addSuggestions([{ group: 'Living', categories: ['Rent', 'Groceries'] }, { group: 'Giving', categories: ['Birthdays'] }]);
+  assert.equal(n, 3);
+  const { groups, categories } = store.getState().state;
+  assert.deepEqual(groups.map((g) => g.name), ['Living', 'Giving']);
+  assert.deepEqual(categories.map((c) => [groups.find((g) => g.id === c.groupId)!.name, c.name, c.sortOrder]), [['Living', 'Rent', 0], ['Living', 'Groceries', 1], ['Giving', 'Birthdays', 0]]);
+  assert.equal((await db.categories.count()), 3);
+  assert.equal(await store.getState().addSuggestions([{ group: 'Living', categories: ['Rent', 'Internet'] }]), 1);
+  assert.deepEqual(store.getState().state.groups.map((g) => g.name), ['Living', 'Giving'], 'no second Living');
+});

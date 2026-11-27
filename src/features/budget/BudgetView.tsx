@@ -65,6 +65,8 @@ export function BudgetView() {
   const addGroup = useBudgetStore((s) => s.addGroup);
   const { run } = useAction();
   const openDebt = useNavigation((s) => s.openDebt);
+  const setStart = useNavigation((s) => s.setStart);
+  const showSuggestions = () => setStart({ step: 'suggestions', firstRun: false });
 
   const renameGroup = useBudgetStore((s) => s.renameGroup);
   const renameCategory = useBudgetStore((s) => s.renameCategory);
@@ -232,9 +234,12 @@ export function BudgetView() {
         </div>
 
         {groups.length === 0 && (
-          <p className="rounded-lg bg-white px-4 py-6 text-sm text-slate-500 shadow-sm">
-            {t('budget.empty')}
-          </p>
+          <div className="rounded-lg bg-white px-4 py-6 text-sm text-slate-500 shadow-sm">
+            <p>{t('budget.empty')}</p>
+            <button type="button" onClick={showSuggestions} className="mt-3 rounded border border-sky-600 px-3 py-1.5 font-medium text-sky-700 hover:bg-sky-50">
+              {t('suggest.show')}
+            </button>
+          </div>
         )}
 
         {groups.map((group, groupIndex) => {
@@ -410,8 +415,13 @@ export function BudgetView() {
           );
         })}
 
-        <div className="px-3 py-2 md:px-4">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-3 py-2 md:px-4">
           <InlineAdd label={t('budget.addGroup')} placeholder={t('budget.groupName')} onAdd={(name) => run(() => addGroup(name))} />
+          {groups.length > 0 && (
+            <button type="button" onClick={showSuggestions} className="text-sm text-sky-700 hover:underline">
+              + {t('suggest.addFrom')}
+            </button>
+          )}
         </div>
 
         {archivedCount > 0 && (

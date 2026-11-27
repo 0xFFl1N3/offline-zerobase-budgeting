@@ -4,6 +4,8 @@ import { AccountsSidebar } from './features/accounts/AccountsSidebar.tsx';
 import { BudgetView } from './features/budget/BudgetView.tsx';
 import { SettingsView } from './features/settings/SettingsView.tsx';
 import { Setup } from './features/setup/Setup.tsx';
+import { StartChoice } from './features/setup/StartChoice.tsx';
+import { Suggestions } from './features/setup/Suggestions.tsx';
 import { DemoBar } from './features/demo/DemoBar.tsx';
 import { TransactionsView } from './features/transactions/TransactionsView.tsx';
 import { AnalyticsIcon, BudgetIcon, CloseIcon, MenuIcon, SettingsIcon, TransactionsIcon } from './components/icons.tsx';
@@ -43,6 +45,7 @@ export default function App() {
   const active = useNavigation((s) => s.tab);
   const setActive = useNavigation((s) => s.setTab);
   const debtDialog = useNavigation((s) => s.debtDialog);
+  const start = useNavigation((s) => s.start);
   const openDebt = useNavigation((s) => s.openDebt);
   const closeDebt = useCallback(() => openDebt(null), [openDebt]);
   /** The accounts drawer on phones. */
@@ -89,6 +92,16 @@ export default function App() {
           <VersionButton />
         </p>
         {version}
+      </div>
+    );
+  }
+
+  // Right after setup, or opened from the budget: how to start and the suggested categories, in place of the app.
+  if (start) {
+    return (
+      <div key={language} className="min-h-screen bg-slate-50 text-slate-900">
+        {start.step === 'choose' ? <StartChoice /> : <Suggestions firstRun={start.firstRun} />}
+        <ErrorBar />
       </div>
     );
   }

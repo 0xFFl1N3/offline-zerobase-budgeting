@@ -2,6 +2,11 @@
 
 What changed for you in each release, newest first. The full technical list is in CHANGELOG.md.
 
+## 0.20 – An easier start
+2026-11-27
+
+- New budgets can start from suggested groups and categories: tick what fits you instead of typing every name. The suggestions stay available under "+ Add from suggestions".
+
 ## 0.19 – Planning ahead
 2026-11-27
 

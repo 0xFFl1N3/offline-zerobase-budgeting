@@ -1,3 +1,4 @@
+import { useNavigation } from '../../store/navigation.ts';
 import { useState } from 'react';
 import { type Currency } from '../../engine/money.ts';
 import { parseAmountInput } from '../../engine/amountInput.ts';
@@ -24,6 +25,8 @@ export function Setup() {
     if (!accountName.trim()) return setError(t('setup.errorName'));
     if (initialBalance === null) return setError(t('setup.errorBalance'));
     setError(null);
+    // Next comes the choice how to start (shown as soon as the account exists).
+    useNavigation.getState().setStart({ step: 'choose', firstRun: true });
     void completeSetup({ accountName, initialBalance, currency });
   };
 

@@ -13,6 +13,15 @@ export interface PendingTransaction {
 
 export type Tab = 'budget' | 'transactions' | 'analytics' | 'settings';
 
+/**
+ * The pages between setup and the budget: how to start, the suggested categories. `firstRun`: right after setup
+ * (Back on the suggestions returns to the choice); otherwise the suggestions were opened from the budget.
+ */
+export interface StartStep {
+  step: 'choose' | 'suggestions';
+  firstRun: boolean;
+}
+
 interface Navigation {
   tab: Tab;
   /** Filters for the Transactions tab to start with, set when another tab links to it. Taken once. */
@@ -25,6 +34,9 @@ interface Navigation {
   /** Opens the Transactions tab with the entry form filled in. */
   newTransaction: (prefill: PendingTransaction) => void;
   takePendingTransaction: () => PendingTransaction | null;
+  /** A page shown instead of the app, see StartStep; null for the app itself. Not stored. */
+  start: StartStep | null;
+  setStart: (start: StartStep | null) => void;
   /** The debt whose payoff plan is open, if any. */
   debtDialog: string | null;
   openDebt: (id: string | null) => void;
@@ -35,6 +47,8 @@ export const useNavigation = create<Navigation>((set, get) => ({
   pendingFilters: null,
   pendingTransaction: null,
   debtDialog: null,
+  start: null,
+  setStart: (start) => set({ start }),
   openDebt: (id) => set({ debtDialog: id }),
   newTransaction: (prefill) => set({ tab: 'transactions', pendingTransaction: prefill }),
   takePendingTransaction: () => {

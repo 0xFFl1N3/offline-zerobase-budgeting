@@ -77,6 +77,13 @@ export const saveReconciliation = (db: BudgetDB, account: Account, transactions:
 export const deleteAccount = (db: BudgetDB, id: string) => db.accounts.delete(id);
 export const saveGroup = (db: BudgetDB, g: CategoryGroup) => db.groups.put(g);
 export const saveCategory = (db: BudgetDB, c: Category) => db.categories.put(c);
+/** Groups and categories picked from the suggestions, all or nothing. */
+export const addGroupsAndCategories = (db: BudgetDB, groups: CategoryGroup[], categories: Category[]) =>
+  db.transaction('rw', db.groups, db.categories, async () => {
+    await db.groups.bulkPut(groups);
+    await db.categories.bulkPut(categories);
+  });
+
 /** A new category together with its goal, all or nothing. */
 export const addCategoryWithGoal = (db: BudgetDB, c: Category, g: Goal) =>
   db.transaction('rw', db.categories, db.goals, async () => {
