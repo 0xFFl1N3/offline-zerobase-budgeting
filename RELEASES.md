@@ -11,6 +11,7 @@ What changed for you in each release, newest first. The full technical list is i
 - The payoff plan shows what's left and when the last payment is due. Try a higher monthly amount or a one-off extra payment to see how much sooner you'd be done.
 - Owe more on an existing debt, or correct it to what the lender says.
 - "What changed" now shows a short summary per release.
+- Tidier Budget: categories without a goal show just their name; "Set goal" appears when you point at the row.
 - Fixed: reconciling a debt could change Ready to Assign.
 
 ## 0.9 – Safer saving

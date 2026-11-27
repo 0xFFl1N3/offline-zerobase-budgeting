@@ -283,18 +283,15 @@ export function BudgetView() {
                         }}
                         onCancelRename={() => setRenaming(null)}
                         handle={categoryDnd.handle(cat.id, cat.name, group.id)}
+                        extraAction={goal ? undefined : { label: t('budget.setGoal'), onClick: () => setEditingGoal(cat.id) }}
                         actionLabel={hasTransactions([cat.id]) ? t('budget.archive') : t('common.delete')}
                         onAction={() =>
                           removeOrArchive(t('budget.categoryLabel', { name: cat.name }), [cat.id], () => void deleteCategory(cat.id), () => void archiveCategory(cat.id))
                         }
                       />
-                      {goal ? (
+                      {goal && (
                         <button type="button" aria-label={t('budget.editGoalFor', { name: cat.name })} onClick={() => setEditingGoal(cat.id)} className="block w-full text-left">
                           <GoalProgress state={state} goal={goal} month={month} currency={currency} />
-                        </button>
-                      ) : (
-                        <button type="button" onClick={() => setEditingGoal(cat.id)} className="text-xs text-sky-700 hover:underline">
-                          {t('budget.setGoal')}
                         </button>
                       )}
                       {debt && (

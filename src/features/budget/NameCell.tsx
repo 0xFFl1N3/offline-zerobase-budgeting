@@ -12,10 +12,12 @@ interface Props {
   onAction: () => void;
   /** Drag handle for reordering (see useReorder). */
   handle: ReactNode;
+  /** Optional extra action shown with the others on hover or keyboard focus, e.g. "Set goal". */
+  extraAction?: { label: string; onClick: () => void };
 }
 
 /** A group or category name: click it to rename in place. An Archive or Delete action appears on hover or keyboard focus. */
-export function NameCell({ name, renaming, onStartRename, onRename, onCancelRename, actionLabel, onAction, handle }: Props) {
+export function NameCell({ name, renaming, onStartRename, onRename, onCancelRename, actionLabel, onAction, handle, extraAction }: Props) {
   if (renaming) {
     return (
       <input
@@ -43,6 +45,16 @@ export function NameCell({ name, renaming, onStartRename, onRename, onCancelRena
       >
         {name}
       </button>
+      {extraAction && (
+        <button
+          type="button"
+          onClick={extraAction.onClick}
+          aria-label={`${extraAction.label}: ${name}`}
+          className="invisible text-xs font-normal text-sky-700 hover:underline group-hover:visible group-focus-within:visible"
+        >
+          {extraAction.label}
+        </button>
+      )}
       <button
         type="button"
         onClick={onAction}

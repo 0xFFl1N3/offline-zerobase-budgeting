@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.10.10 – 2026-11-27
+
+### Changed
+- Budget: categories without a goal show just their name. "Set goal" appears next to Archive/Delete when you point at the row, instead of sitting at a different spot on every row.
+
 ## 0.10.9 – 2026-11-27
 
 ### Changed
