@@ -85,6 +85,8 @@ export const en = {
   'summary.overspentHint': 'More was spent than assigned in some categories in {month}; that money is taken from Ready to Assign this month.',
   'summary.income': 'Income in {month}',
   'summary.assigned': 'Assigned in {month}',
+  'summary.plannedLater': 'Assigned to later months',
+  'summary.plannedLaterHint': 'Money you have already assigned to a later month is no longer free here.',
   'summary.categoriesTitle': 'Categories in {month}',
   'summary.spent': 'Spent',
   'summary.available': 'Available in all categories',

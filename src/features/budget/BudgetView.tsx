@@ -1,5 +1,5 @@
 import { useCallback, useState, type ReactNode } from 'react';
-import { accountBalance, touchesCategory, categoryActivity, categoryAssigned, categoryAvailable, overspentIn, readyToAssign } from '../../engine/budget.ts';
+import { accountBalance, availableToAssign, touchesCategory, categoryActivity, categoryAssigned, categoryAvailable } from '../../engine/budget.ts';
 import { ASSIGN_KINDS, assignPlan, type AssignKind } from '../../engine/autoassign.ts';
 import { AssignMenu } from './AssignMenu.tsx';
 import { activeSeriesUsing } from '../../engine/recurring.ts';
@@ -127,8 +127,10 @@ export function BudgetView() {
   const archivedGroups = state.groups.filter((g) => g.archived);
   const archivedCategories = state.categories.filter((c) => c.archived && !archivedGroups.some((g) => g.id === c.groupId));
   const archivedCount = archivedGroups.length + archivedCategories.length;
-  const rta = readyToAssign(state, month);
-  const plans = Object.fromEntries(ASSIGN_KINDS.map((kind) => [kind, assignPlan(state, month, kind)])) as Record<AssignKind, ReturnType<typeof assignPlan>>;
+  // Today's month: from here on, money already assigned to later months is not free any more (see availableToAssign).
+  const currentMonth = toISODate().slice(0, 7);
+  const rta = availableToAssign(state, month, currentMonth);
+  const plans = Object.fromEntries(ASSIGN_KINDS.map((kind) => [kind, assignPlan(state, month, kind, currentMonth)])) as Record<AssignKind, ReturnType<typeof assignPlan>>;
   const autoAssign = useBudgetStore((s) => s.autoAssign);
   const runAutoAssign = async (kind: AssignKind) => {
     const plan = plans[kind];
@@ -162,6 +164,7 @@ export function BudgetView() {
         <MonthOverview
           state={state}
           month={month}
+          currentMonth={currentMonth}
           currency={currency}
           goalsNeed={plans.goals.total}
           onFundGoals={() => void runAutoAssign('goals')}

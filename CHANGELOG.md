@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.1 – 2026-11-27
+
+### Changed
+- Ready to Assign in the current month and later months no longer counts money already assigned to a later month as free: with 180 € left in November and 100 € assigned to December's rent, November shows 80 €. Past months show what they always did. Auto-assign compares against this number too.
+- The month overview has a line "Assigned to later months" with a sentence explaining it, so a lower or red pill is never unexplained.
+
 ## 0.19.0 – 2026-11-27
 
 ### Added

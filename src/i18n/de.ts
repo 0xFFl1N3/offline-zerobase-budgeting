@@ -82,6 +82,8 @@ export const de: Messages = {
   'summary.overspentHint': 'Im {month} wurde in einigen Kategorien mehr ausgegeben als zugewiesen; dieses Geld wird diesen Monat von „Noch zuzuweisen“ abgezogen.',
   'summary.income': 'Einnahmen im {month}',
   'summary.assigned': 'Zugewiesen im {month}',
+  'summary.plannedLater': 'Für spätere Monate zugewiesen',
+  'summary.plannedLaterHint': 'Geld, das du schon einem späteren Monat zugewiesen hast, ist hier nicht mehr frei.',
   'summary.categoriesTitle': 'Kategorien im {month}',
   'summary.spent': 'Ausgegeben',
   'summary.available': 'Verfügbar in allen Kategorien',

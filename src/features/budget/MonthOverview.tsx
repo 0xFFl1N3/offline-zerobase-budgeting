@@ -10,6 +10,8 @@ import { t } from '../../i18n/i18n.ts';
 interface Props {
   state: BudgetState;
   month: Month;
+  /** Today's month: from it on, money assigned to later months is shown as no longer free. */
+  currentMonth: Month;
   currency: Currency;
   /** What Fund goals would assign this month. */
   goalsNeed: number;
@@ -18,8 +20,8 @@ interface Props {
 }
 
 /** What makes up this month's Ready to Assign, and what happened in the categories. Opened from the pill. */
-export function MonthOverview({ state, month, currency, goalsNeed, onFundGoals, onClose }: Props) {
-  const s = monthSummary(state, month);
+export function MonthOverview({ state, month, currentMonth, currency, goalsNeed, onFundGoals, onClose }: Props) {
+  const s = monthSummary(state, month, currentMonth);
   const fmt = (c: number) => formatMoney(c, currency);
   const signed = (c: number) => (c > 0 ? `+${fmt(c)}` : fmt(c));
   const last = formatMonth(addMonths(month, -1));
@@ -38,12 +40,14 @@ export function MonthOverview({ state, month, currency, goalsNeed, onFundGoals, 
         {s.overspentLastMonth < 0 && row(t('summary.overspent', { month: last }), fmt(s.overspentLastMonth), 'text-red-600')}
         {row(t('summary.income', { month: now }), signed(s.income))}
         {row(t('summary.assigned', { month: now }), signed(-s.assigned))}
+        {s.plannedLater !== 0 && row(t('summary.plannedLater'), signed(-s.plannedLater))}
         <div className="mt-1 flex items-baseline justify-between gap-4 border-t border-slate-200 pt-2 font-semibold">
           <dt>{t('budget.readyToAssign')}</dt>
           <dd className={`tabular-nums ${s.readyToAssign < 0 ? 'text-red-600' : ''}`}>{fmt(s.readyToAssign)}</dd>
         </div>
       </dl>
       {s.overspentLastMonth < 0 && <p className="mt-1 text-xs text-slate-500">{t('summary.overspentHint', { month: last })}</p>}
+      {s.plannedLater !== 0 && <p className="mt-1 text-xs text-slate-500">{t('summary.plannedLaterHint')}</p>}
 
       <h3 className="mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">{t('summary.categoriesTitle', { month: now })}</h3>
       <dl className="mt-1">
