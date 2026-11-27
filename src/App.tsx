@@ -103,12 +103,14 @@ export default function App() {
   const current = TABS.find((tab) => tab.id === active)!;
 
   return (
-    <div key={language} className="flex min-h-screen bg-slate-50 text-slate-900">
-      <div className="hidden md:flex">
+    // Wider screens: the window itself does not scroll. The accounts and the page scroll each on their own, so the
+    // tabs, the sidebar and the budget's month bar stay in view.
+    <div key={language} className="flex min-h-screen bg-slate-50 text-slate-900 md:h-screen md:overflow-hidden">
+      <div className="hidden md:flex md:overflow-y-auto">
         <AccountsSidebar />
       </div>
 
-      <div className="min-w-0 flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+      <div className="min-w-0 flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:flex md:flex-col md:pb-0">
         <DemoBar />
         {/* Desktop: tabs along the top. */}
         <nav className="hidden gap-2 border-b border-slate-200 bg-white px-4 md:flex">
@@ -144,8 +146,10 @@ export default function App() {
           </button>
         </header>
 
+        <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
         <div className="mx-auto max-w-6xl">
           {active === 'budget' ? <BudgetView /> : active === 'transactions' ? <TransactionsView /> : active === 'analytics' ? <AnalyticsView /> : <SettingsView />}
+        </div>
         </div>
       </div>
 

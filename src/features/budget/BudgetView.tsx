@@ -159,6 +159,11 @@ export function BudgetView() {
 
   return (
     <section className="p-3 md:p-6">
+      {/*
+        * Wider screens: the month bar and the column labels stay at the top while the groups scroll under them.
+        * Phones: "contents", so the month bar alone stays pinned under the top bar (its own sticky below).
+        */}
+      <div className="contents md:sticky md:top-0 md:z-10 md:-mx-6 md:-mt-6 md:block md:border-b md:border-slate-200 md:bg-slate-50 md:px-6 md:pt-6">
       {/* On phones this bar stays pinned under the top bar while the categories scroll. */}
       <div className="sticky top-14 z-10 -mx-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-slate-200 bg-slate-50 px-3 py-2 md:static md:mx-0 md:border-0 md:p-0">
         <div className="flex items-center gap-2">
@@ -200,9 +205,18 @@ export function BudgetView() {
         />
       )}
       {autoMessage?.month === month && <p className="mt-3 text-sm text-emerald-700" role="status">{autoMessage.text}</p>}
+        {/* The column labels, above the groups. */}
+        <div className={`${COLUMNS} mt-4 px-4 pb-2 text-xs font-medium uppercase tracking-wide text-slate-500`}>
+          {/* The names need no heading: groups and categories speak for themselves. */}
+          <span />
+          <span className="text-right">{t('budget.colAssigned')}</span>
+          <span className="text-right">{t('budget.colActivity')}</span>
+          <span className="text-right">{t('budget.colAvailable')}</span>
+        </div>
+      </div>
 
       {/* Each group is a card of its own; the column labels sit above them as plain text. */}
-      <div className="mt-3 md:mt-6">
+      <div className="mt-3 md:mt-4">
         <div className="flex items-center gap-3 px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 md:hidden">
           <button
             type="button"
@@ -215,14 +229,6 @@ export function BudgetView() {
             {reordering ? t('common.done') : t('budget.reorder')}
           </button>
           {!reordering && <span>{t('budget.colAvailable')}</span>}
-        </div>
-        {/* The column labels stay at the top of the window while the groups scroll under them. */}
-        <div className={`${COLUMNS} sticky top-0 z-10 border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium uppercase tracking-wide text-slate-500`}>
-          {/* The names need no heading: groups and categories speak for themselves. */}
-          <span />
-          <span className="text-right">{t('budget.colAssigned')}</span>
-          <span className="text-right">{t('budget.colActivity')}</span>
-          <span className="text-right">{t('budget.colAvailable')}</span>
         </div>
 
         {groups.length === 0 && (

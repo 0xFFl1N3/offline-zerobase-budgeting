@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.14 – 2026-11-27
+
+### Changed
+- On wider screens the window no longer scrolls as a whole: the tabs (and the sample-data bar) stay at the top, the accounts list on the left scrolls on its own, and in the budget the month, Auto-assign, Ready to Assign and the column labels stay in view while the groups scroll under them. Phones are unchanged.
+
 ## 0.19.13 – 2026-11-27
 
 ### Changed
