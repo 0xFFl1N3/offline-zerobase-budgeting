@@ -28,7 +28,10 @@ export function MoneyField({ value, onCommit, ariaLabel, className = '', boxed =
     setText(null);
   };
 
+  // The span keeps anything a browser extension puts next to the field (a password manager's icon) inside this
+  // cell, so it cannot push the row's other cells out of place.
   return (
+    <span className="relative flex min-w-0 justify-end">
     <input {...NO_AUTOFILL}
       inputMode="decimal"
       aria-label={ariaLabel}
@@ -48,5 +51,6 @@ export function MoneyField({ value, onCommit, ariaLabel, className = '', boxed =
         }
       }}
     />
+    </span>
   );
 }

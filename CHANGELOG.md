@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.13 – 2026-11-27
+
+### Fixed
+- LastPass still offered passwords in amount fields: newer versions are reported to ignore their own "ignore" marker. Fields now also carry a name LastPass is reported to skip.
+- When a password manager put its icon next to an assigned amount in the budget, the row's Activity and Available moved one place over and onto a second line. Each amount field now has its own box, so such icons stay inside it.
+
 ## 0.11.12 – 2026-11-27
 
 ### Fixed
