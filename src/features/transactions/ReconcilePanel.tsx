@@ -26,8 +26,8 @@ export function ReconcilePanel({ accountId }: { accountId: string }) {
   const account = state.accounts.find((a) => a.id === accountId);
   if (!account) return null;
   const balances = accountBalances(state, accountId);
-  // A debt is outside the budget: its difference only changes what is owed, without a category.
-  const debt = account.type === 'debt';
+  // A debt or tracking account is outside the budget: its difference only changes what is owed or worth, without a category.
+  const debt = account.type === 'debt' || account.type === 'tracking';
   const statement = parseMoney(statementText);
   const difference = statement === null ? null : statement - balances.cleared;
 

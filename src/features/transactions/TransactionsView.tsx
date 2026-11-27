@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { archivedCategoryIds, runningBalances } from '../../engine/budget.ts';
+import { archivedCategoryIds, isOffBudget, runningBalances } from '../../engine/budget.ts';
 import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
 import { formatDate, toISODate } from '../../engine/months.ts';
 import { clearedStatus, isReconciled, keepCleared } from '../../engine/reconcile.ts';
@@ -28,7 +28,7 @@ const blankForm = (accounts: Account[], kind: TxKind = 'outflow'): TxForm => ({
   kind,
   date: toISODate(),
   // Spending and income happen in budget accounts; a debt is only reached by a transfer.
-  accountId: (kind === 'transfer' ? accounts : accounts.filter((a) => a.type !== 'debt'))[0]?.id ?? '',
+  accountId: (kind === 'transfer' ? accounts : accounts.filter((a) => !isOffBudget(a)))[0]?.id ?? '',
   payee: '',
   categoryId: null,
   transferAccountId: null,
@@ -50,7 +50,7 @@ export function TransactionsView() {
   const setCleared = useBudgetStore((s) => s.setCleared);
 
   const accounts = state.accounts.filter((a) => !a.closed);
-  const budgetAccounts = accounts.filter((a) => a.type !== 'debt');
+  const budgetAccounts = accounts.filter((a) => !isOffBudget(a));
   /** A transfer from a budget account to a debt is a payment, spent from the debt's category. */
   const paymentCategoryFor = (fromId: string, toId: string | null): string | null => {
     const to = state.accounts.find((a) => a.id === toId);
@@ -61,8 +61,9 @@ export function TransactionsView() {
   // "Record payment" on the Budget tab opens this tab with the form filled in.
   const [prefill] = useState(() => useNavigation.getState().pendingTransaction);
   const [form, setForm] = useState<TxForm>(() => (prefill ? { ...blankForm(accounts, 'transfer'), ...prefill, amount: 0 } : blankForm(accounts)));
+  // Money leaving the budget (a debt payment, or money into a tracking account) is spent from a category.
   const isPayment =
-    form.kind === 'transfer' && budgetAccounts.some((a) => a.id === form.accountId) && state.accounts.some((a) => a.id === form.transferAccountId && a.type === 'debt');
+    form.kind === 'transfer' && budgetAccounts.some((a) => a.id === form.accountId) && state.accounts.some((a) => a.id === form.transferAccountId && isOffBudget(a));
   const [amountText, setAmountText] = useState(() => (prefill && prefill.amount > 0 ? toAmountInput(prefill.amount) : ''));
   /** Repeat choice for a new transaction; '' = just once. */
   const [repeat, setRepeat] = useState<Frequency | ''>('');
@@ -121,10 +122,13 @@ export function TransactionsView() {
     // (e.g. imported with the bank's payee) keeps its payee.
     const debtName = isPayment ? state.accounts.find((a) => a.id === form.transferAccountId)?.name : undefined;
     const payee = form.payee.trim() || debtName || '';
+    const intoTracking = isPayment && state.accounts.find((a) => a.id === form.transferAccountId)?.type === 'tracking';
+    if (intoTracking && !form.categoryId) return setError(tr('error.trackingCategory'));
     const result = buildTransaction({ ...form, payee, payment: isPayment, amount: Math.abs(parsed), splits }, editingId ?? crypto.randomUUID());
     if (!result.ok) return setError(result.error);
-    // Paying more than is owed is allowed (there can be a reason), but should not happen by mistake.
-    if (isPayment && form.transferAccountId) {
+    // Paying more than is owed is allowed (there can be a reason), but should not happen by mistake. It is only a
+    // question for a debt; a tracking account owes nothing.
+    if (isPayment && form.transferAccountId && state.accounts.find((a) => a.id === form.transferAccountId)?.type === 'debt') {
       const over = overpayment(state, form.transferAccountId, result.transaction.amount, editingId ?? undefined);
       const name = state.accounts.find((a) => a.id === form.transferAccountId)?.name ?? '';
       if (over > 0 && !window.confirm(tr('debt.overpayConfirm', { amount: formatMoney(over, currency), name }))) return;
@@ -296,7 +300,8 @@ export function TransactionsView() {
             </label>
           ) : null}
           {isPayment && (
-            // A payment to a debt is spent from a category: the debt's own, unless another is chosen.
+            // Money leaving the budget is spent from a category: for a debt its own, unless another is chosen; for a
+            // tracking account one has to be chosen.
             <label className="text-xs font-medium text-slate-600">
               {tr('tx.category')}
               <select value={form.categoryId ?? ''} onChange={(e) => update({ categoryId: e.target.value || null })} className={`${field} mt-1 block`}>

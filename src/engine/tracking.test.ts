@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { accountBalance, categoryAvailable, readyToAssign } from './budget.ts';
-import { checkDebtRules, prepareTransaction } from './debt.ts';
+import { checkDebtRules, prepareTransaction, valueUpdate } from './debt.ts';
 import { updateAccount } from './edit.ts';
 import { reconcile } from './reconcile.ts';
 import { incomeVsSpending, netWorth } from './reports.ts';
@@ -86,4 +86,10 @@ test('fixed on the way: a debt correction is not income either', () => {
   const raised = save(s, tx({ accountId: 'loan', amount: -10000, payee: 'Erhöhung' }));
   assert.equal(incomeVsSpending(corrected, [M])[0]!.income, 0);
   assert.equal(spendingReport(raised, 'month', M, 'category').uncategorizedCount, 0);
+});
+
+test('updating the value books the difference to the new value', () => {
+  const s = save(state(), valueUpdate('etf', 1000000, 1085000, `${M}-27`, 'Wertänderung', 'v'));
+  assert.equal(accountBalance(s, 'etf'), 1085000);
+  assert.equal(s.transactions[0]!.categoryId, null);
 });

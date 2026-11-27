@@ -7,7 +7,7 @@ import { Setup } from './features/setup/Setup.tsx';
 import { DemoBar } from './features/demo/DemoBar.tsx';
 import { TransactionsView } from './features/transactions/TransactionsView.tsx';
 import { AnalyticsIcon, BudgetIcon, CloseIcon, MenuIcon, SettingsIcon, TransactionsIcon } from './components/icons.tsx';
-import { accountBalance } from './engine/budget.ts';
+import { accountBalance, budgetAccounts } from './engine/budget.ts';
 import { formatMoney } from './engine/money.ts';
 import { dueItems } from './engine/recurring.ts';
 import { toISODate } from './engine/months.ts';
@@ -99,7 +99,7 @@ export default function App() {
     </span>
   );
   // Money in budget accounts; debts are listed separately in the accounts drawer.
-  const total = state.accounts.filter((a) => !a.closed && a.type !== 'debt').reduce((sum, a) => sum + accountBalance(state, a.id), 0);
+  const total = budgetAccounts(state).filter((a) => !a.closed).reduce((sum, a) => sum + accountBalance(state, a.id), 0);
   const current = TABS.find((tab) => tab.id === active)!;
 
   return (

@@ -556,6 +556,15 @@ export const en = {
 
   // Debts
   'debt.type': 'Debt (loan, financing)',
+  'tracking.type': 'Investment (not in budget)',
+  'tracking.heading': 'Investments',
+  'tracking.hint': 'Counts towards net worth, not towards Ready to Assign. Money you move into it is planned in a category.',
+  'tracking.value': 'Current value',
+  'tracking.valueAtStart': 'Value when added',
+  'tracking.update': 'Update value',
+  'tracking.updateHint': 'Enter what it is worth today; the difference is booked as a change in value.',
+  'tracking.valuePayee': 'Change in value',
+  'tracking.errorValue': 'Enter the value as an amount.',
   'debt.owed': 'Still to pay back',
   'debt.owedHint': 'The total you still owe, interest included.',
   'debt.owedAtStart': 'Owed when added',
@@ -578,6 +587,7 @@ export const en = {
 
   // Debts
   'label.payment': 'Payment: {to}',
+  'label.intoTracking': '{category} → {to}',
 
   // Debts
   'debt.recordPayment': 'Record payment',

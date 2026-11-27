@@ -5,8 +5,13 @@ import { t as tr } from '../../i18n/i18n.ts';
 export function categoryLabel(state: BudgetState, t: Pick<Transaction, 'accountId' | 'transferAccountId' | 'splits' | 'categoryId' | 'amount'>): string {
   if (t.transferAccountId) {
     const to = state.accounts.find((a) => a.id === t.transferAccountId)?.name ?? '?';
-    // A debt payment shows where it went; its category is the debt's, named after it.
-    if (t.categoryId !== null) return tr('label.payment', { to });
+    // Money leaving the budget shows where it went: a debt payment as a payment (its category is named after the
+    // debt), money into a tracking account with the category it came from.
+    if (t.categoryId !== null) {
+      const target = state.accounts.find((a) => a.id === t.transferAccountId);
+      if (target?.type !== 'tracking') return tr('label.payment', { to });
+      return tr('label.intoTracking', { category: state.categories.find((c) => c.id === t.categoryId)?.name ?? tr('label.unknownCategory'), to });
+    }
     const from = state.accounts.find((a) => a.id === t.accountId)?.name ?? '?';
     return tr('label.transfer', { from, to });
   }

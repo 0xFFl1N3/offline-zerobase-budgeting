@@ -553,6 +553,15 @@ export const de: Messages = {
 
   // Debts
   'debt.type': 'Schuld (Kredit, Finanzierung)',
+  'tracking.type': 'Geldanlage (nicht im Budget)',
+  'tracking.heading': 'Geldanlagen',
+  'tracking.hint': 'Zählt zum Vermögen, nicht zu „Noch zuzuweisen“. Geld, das du hierher überweist, planst du in einer Kategorie.',
+  'tracking.value': 'Aktueller Wert',
+  'tracking.valueAtStart': 'Wert beim Anlegen',
+  'tracking.update': 'Wert aktualisieren',
+  'tracking.updateHint': 'Gib ein, was sie heute wert ist; die Differenz wird als Wertänderung gebucht.',
+  'tracking.valuePayee': 'Wertänderung',
+  'tracking.errorValue': 'Gib den Wert als Betrag ein.',
   'debt.owed': 'Restschuld',
   'debt.owedHint': 'Was du insgesamt noch zurückzahlen musst, Zinsen eingerechnet.',
   'debt.owedAtStart': 'Restschuld beim Anlegen',
@@ -575,6 +584,7 @@ export const de: Messages = {
 
   // Debts
   'label.payment': 'Rate: {to}',
+  'label.intoTracking': '{category} → {to}',
 
   // Debts
   'debt.recordPayment': 'Rate buchen',

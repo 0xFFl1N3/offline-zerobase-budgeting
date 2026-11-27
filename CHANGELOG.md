@@ -2,6 +2,16 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.16.1 – 2026-11-27
+
+### Added
+- "Investment (not in budget)" when adding an account, with a short note on what it means. Such accounts get their own section in the accounts list ("Investments") with a total, and are left out of the accounts total and of Ready to Assign.
+- Editing an investment account has "Current value" with "Update value": the difference to today's value is booked as a change in value.
+- A transfer from a budget account into an investment asks for the category the money comes from, and is refused without one ("Choose the category the money comes from …"). In the list it shows as "Category → Investment".
+
+### Changed
+- Investment accounts are not offered for expenses, income or the bank import, like debts.
+
 ## 0.16.0 – 2026-11-27
 
 ### Added

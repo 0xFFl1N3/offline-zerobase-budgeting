@@ -2,6 +2,7 @@ import { useMemo, useState, type ChangeEvent } from 'react';
 import { parseCsv } from '../../engine/csv.ts';
 import { findMatches, findTable, guessMapping, readRows, toTransactions, updateFromRow, type ColumnMapping, type CsvTable, type DateFormat, type ImportRow } from '../../engine/csvImport.ts';
 import { payeeMemory, suggestCategory } from '../../engine/payees.ts';
+import { isOffBudget } from '../../engine/budget.ts';
 import { formatMoney } from '../../engine/money.ts';
 import { accountBalances } from '../../engine/reconcile.ts';
 import { categoryLabel } from '../transactions/labels.ts';
@@ -56,7 +57,8 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
   const fmt = (c: number) => formatMoney(c, currency);
 
   // Bank files belong to budget accounts; a debt changes through payments to it.
-  const accounts = state.accounts.filter((a) => !a.closed && a.type !== 'debt');
+  // Bank files are for budget accounts: their rows need categories.
+  const accounts = state.accounts.filter((a) => !a.closed && !isOffBudget(a));
   const [accountId, setAccountId] = useState(defaultAccountId && accounts.some((a) => a.id === defaultAccountId) ? defaultAccountId : (accounts[0]?.id ?? ''));
   const [fileName, setFileName] = useState('');
   const [table, setTable] = useState<CsvTable | null>(null);

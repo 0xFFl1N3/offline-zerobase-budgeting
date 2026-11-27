@@ -101,6 +101,11 @@ export function debtChange(debtId: string, change: Cents, date: string, payee: s
   return { id, accountId: debtId, date, payee, categoryId: null, memo, amount: -change, transferAccountId: null };
 }
 
+/** The booking that brings a tracking account from its balance to a new value: a gain or a loss, without a category. */
+export function valueUpdate(accountId: string, balance: Cents, value: Cents, date: string, payee: string, id: string): Transaction {
+  return { id, accountId, date, payee, categoryId: null, memo: '', amount: value - balance, transferAccountId: null };
+}
+
 /** How much a payment to a debt would pay beyond what is owed (0 if it does not). `ignoreId` leaves out a payment being edited. */
 export function overpayment(state: BudgetState, debtId: string, payment: Cents, ignoreId?: string): Cents {
   const others = ignoreId ? { ...state, transactions: state.transactions.filter((t) => t.id !== ignoreId) } : state;

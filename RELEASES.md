@@ -5,6 +5,8 @@ What changed for you in each release, newest first. The full technical list is i
 ## 0.16 – Investments
 2026-11-27
 
+- Track investments, a pension or other money outside your budget: they count towards your net worth, not towards Ready to Assign. Money you move into them comes from a category, so saving and investing are planned like everything else.
+- Update an investment's value from time to time; the change is booked for you.
 - Statistics: correcting or raising a debt no longer shows up as income or as spending without a category.
 
 ## 0.15 – Bills that come back

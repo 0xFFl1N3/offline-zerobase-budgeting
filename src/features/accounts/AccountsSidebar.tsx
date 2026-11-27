@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { accountBalance } from '../../engine/budget.ts';
+import { accountBalance, isOffBudget } from '../../engine/budget.ts';
+import { valueUpdate } from '../../engine/debt.ts';
+import { toISODate } from '../../engine/months.ts';
 import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
 import type { Account, AccountType } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
@@ -21,6 +23,7 @@ function AddAccountForm({ onDone }: { onDone: () => void }) {
   const [minimum, setMinimum] = useState('');
   const { run, error, setError } = useAction();
   const debt = type === 'debt';
+  const tracking = type === 'tracking';
   const state = useBudgetStore((s) => s.state);
   // Where the payment category goes: "Debt payments" by default (made if it doesn't exist yet), or any group.
   const defaultGroup = state.groups.find((g) => !g.archived && g.name === t('debt.groupName'));
@@ -50,12 +53,14 @@ function AddAccountForm({ onDone }: { onDone: () => void }) {
         <option value="cash">{t('account.cash')}</option>
         <option value="savings">{t('account.savings')}</option>
         <option value="debt">{t('debt.type')}</option>
+        <option value="tracking">{t('tracking.type')}</option>
       </select>
+      {tracking && <p className="text-xs text-slate-500">{t('tracking.hint')}</p>}
       <input {...NO_AUTOFILL}
         value={balance}
         onChange={(e) => setBalance(e.target.value)}
-        placeholder={t(debt ? 'debt.owed' : 'account.balancePlaceholder')}
-        aria-label={t(debt ? 'debt.owed' : 'account.balancePlaceholder')}
+        placeholder={t(debt ? 'debt.owed' : tracking ? 'tracking.value' : 'account.balancePlaceholder')}
+        aria-label={t(debt ? 'debt.owed' : tracking ? 'tracking.value' : 'account.balancePlaceholder')}
         inputMode="decimal"
         className={field}
       />
@@ -93,6 +98,9 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
   const [name, setName] = useState(account.name);
   const [type, setType] = useState<AccountType>(account.type);
   const debt = account.type === 'debt';
+  const tracking = account.type === 'tracking';
+  const saveTransaction = useBudgetStore((s) => s.saveTransaction);
+  const [valueText, setValueText] = useState('');
   // A debt's starting balance is shown as the positive amount owed.
   const [opening, setOpening] = useState(toAmountInput(debt ? -account.openingBalance : account.openingBalance));
   const [minimum, setMinimum] = useState(account.minimumPayment ? toAmountInput(account.minimumPayment) : '');
@@ -111,6 +119,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
     const cents = parseMoney(opening);
     if (!name.trim()) return setError(t('account.errorName'));
     if (cents === null) return setError(t(debt ? 'debt.errorOwed' : 'account.errorOpening'));
+    if (tracking) return void run(() => editAccount(account.id, { name, openingBalance: cents }));
     if (!debt) return void run(() => editAccount(account.id, { name, type, openingBalance: cents }));
     const min = minimum.trim() === '' ? null : parseMoney(minimum);
     if (minimum.trim() !== '' && (min === null || min <= 0)) return setError(t('debt.errorMinimum'));
@@ -124,7 +133,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
         {t('account.name')}
         <input {...NO_AUTOFILL} autoFocus value={name} onChange={(e) => setName(e.target.value)} className={`${field} mt-1`} />
       </label>
-      {!debt && (
+      {!debt && !tracking && (
         <label className="block text-xs font-medium text-slate-600">
           {t('account.type')}
           <select value={type} onChange={(e) => setType(e.target.value as AccountType)} className={`${field} mt-1`}>
@@ -135,7 +144,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
         </label>
       )}
       <label className="block text-xs font-medium text-slate-600">
-        {t(debt ? 'debt.owedAtStart' : 'account.opening')}
+        {t(debt ? 'debt.owedAtStart' : tracking ? 'tracking.valueAtStart' : 'account.opening')}
         <input {...NO_AUTOFILL} value={opening} onChange={(e) => setOpening(e.target.value)} inputMode="decimal" className={`${field} mt-1 text-right tabular-nums`} />
       </label>
       {debt ? (
@@ -143,6 +152,26 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
           {t('debt.minimum')}
           <input {...NO_AUTOFILL} value={minimum} onChange={(e) => setMinimum(e.target.value)} inputMode="decimal" className={`${field} mt-1 text-right tabular-nums`} />
         </label>
+      ) : tracking ? (
+        <div className="rounded border border-slate-200 bg-white p-2">
+          <label className="block text-xs font-medium text-slate-600">
+            {t('tracking.value')}
+            <input {...NO_AUTOFILL} value={valueText} onChange={(e) => setValueText(e.target.value)} placeholder={toAmountInput(balance)} inputMode="decimal" className={`${field} mt-1 text-right tabular-nums`} />
+          </label>
+          <p className="mt-1 text-xs text-slate-500">{t('tracking.updateHint')}</p>
+          <button
+            type="button"
+            onClick={() => {
+              const value = parseMoney(valueText);
+              if (value === null) return setError(t('tracking.errorValue'));
+              if (value === balance) return setValueText('');
+              void run(() => saveTransaction(valueUpdate(account.id, balance, value, toISODate(), t('tracking.valuePayee'), crypto.randomUUID())));
+            }}
+            className="mt-2 rounded border border-sky-600 px-2 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50"
+          >
+            {t('tracking.update')}
+          </button>
+        </div>
       ) : (
         <p className="text-xs text-slate-500">{t('account.openingHint')}</p>
       )}
@@ -180,7 +209,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
               const category = state.categories.find((c) => c.id === account.paymentCategoryId);
               if (debt) {
                 if (category) lines.push(t('debt.deleteKeepsCategory', { category: category.name }));
-              } else if (account.openingBalance !== 0) {
+              } else if (!tracking && account.openingBalance !== 0) {
                 lines.push(t('account.deleteOpening', { amount: formatMoney(account.openingBalance, currency) }));
               }
               if (window.confirm(lines.join('\n\n'))) void run(() => deleteAccount(account.id));
@@ -209,11 +238,13 @@ export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg
   /** Touch screens: up/down buttons instead of balances (the button only shows on phones). */
   const [reordering, setReordering] = useState(false);
   const open = state.accounts.filter((a) => !a.closed);
-  const accounts = open.filter((a) => a.type !== 'debt');
+  const accounts = open.filter((a) => !isOffBudget(a));
   const debts = open.filter((a) => a.type === 'debt');
+  const investments = open.filter((a) => a.type === 'tracking');
   const closed = state.accounts.filter((a) => a.closed);
   const total = accounts.reduce((sum, a) => sum + accountBalance(state, a.id), 0);
   const owed = debts.reduce((sum, a) => sum + accountBalance(state, a.id), 0);
+  const invested = investments.reduce((sum, a) => sum + accountBalance(state, a.id), 0);
 
   /** One list of accounts: reorder buttons, the edit form, or name and balance. */
   const accountList = (list: typeof open, dragGroup: string) => (
@@ -277,6 +308,16 @@ export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg
           <div className="mt-3 flex justify-between border-t border-slate-200 pt-2 text-sm font-medium">
             <span>{t('debt.totalOwed')}</span>
             <span className="tabular-nums">{formatMoney(owed, currency)}</span>
+          </div>
+        </>
+      )}
+      {investments.length > 0 && (
+        <>
+          <h2 className="mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">{t('tracking.heading')}</h2>
+          {accountList(investments, 'investments')}
+          <div className="mt-3 flex justify-between border-t border-slate-200 pt-2 text-sm font-medium">
+            <span>{t('account.total')}</span>
+            <span className="tabular-nums">{formatMoney(invested, currency)}</span>
           </div>
         </>
       )}
