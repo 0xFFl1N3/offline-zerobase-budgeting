@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.10.8 – 2026-11-27
+
+### Changed
+- "Record payment" moved from the Budget into the debt's payoff plan. The line under a debt's category (what's left, when it's paid off) opens the plan.
+
 ## 0.10.7 – 2026-11-27
 
 ### Added

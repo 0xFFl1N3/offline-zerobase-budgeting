@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Dialog } from '../../components/Dialog.tsx';
-import { accountBalance } from '../../engine/budget.ts';
+import { accountBalance, categoryAvailable } from '../../engine/budget.ts';
+import { useNavigation } from '../../store/navigation.ts';
 import { debtChange, nextPaymentMonth, owedHistory, payoffForecast, plannedPayment, type PayoffForecast } from '../../engine/debt.ts';
 import { useAction } from '../errors/useAction.ts';
 import { formatMoney, parseMoney, toAmountInput } from '../../engine/money.ts';
@@ -56,6 +57,18 @@ export function DebtDialog({ debtId, onClose }: { debtId: string; onClose: () =>
       setRaiseMemo('');
     });
   };
+  // Opens the transaction form filled in: from the first budget account, what is set aside this month, else the minimum.
+  const recordPayment = () => {
+    const available = debt.paymentCategoryId ? categoryAvailable(state, debt.paymentCategoryId, today.slice(0, 7)) : 0;
+    useNavigation.getState().newTransaction({
+      kind: 'transfer',
+      accountId: state.accounts.find((a) => !a.closed && a.type !== 'debt')?.id ?? '',
+      transferAccountId: debt.id,
+      categoryId: debt.paymentCategoryId ?? '',
+      amount: available > 0 ? available : (debt.minimumPayment ?? 0),
+    });
+    onClose();
+  };
   const correctTo = () => {
     const actual = parseMoney(correctText);
     if (actual === null || actual < 0) return correct.setError(t('debt.errorOwedAmount'));
@@ -73,6 +86,11 @@ export function DebtDialog({ debtId, onClose }: { debtId: string; onClose: () =>
         <p className="mt-1 text-slate-700">
           {plan ? `${t('debt.withPlan', { amount: fmt(planned!) })} ${forecastText(plan, fmt)}` : t('debt.noPlan')}
         </p>
+      )}
+      {owed > 0 && debt.paymentCategoryId && (
+        <button type="button" onClick={recordPayment} className="mt-3 rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700">
+          {t('debt.recordPayment')}
+        </button>
       )}
 
       {owed > 0 && (
