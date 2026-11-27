@@ -106,7 +106,6 @@ export const de: Messages = {
   'assign.lastMonth': 'Wie letzten Monat',
   'assign.lastMonthHint': 'Kategorien ohne Zuweisung bekommen, was sie letzten Monat bekommen haben.',
   'assign.lastMonthNone': 'Aus dem letzten Monat gibt es nichts mehr zu übernehmen.',
-  'budget.colCategory': 'Kategorie',
   'budget.colAssigned': 'Zugewiesen',
   'budget.colActivity': 'Umsätze',
   'budget.colAvailable': 'Verfügbar',

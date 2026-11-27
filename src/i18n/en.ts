@@ -109,7 +109,6 @@ export const en = {
   'assign.lastMonth': 'Same as last month',
   'assign.lastMonthHint': 'Categories with nothing assigned yet get what they got last month.',
   'assign.lastMonthNone': 'Nothing left to copy from last month.',
-  'budget.colCategory': 'Category',
   'budget.colAssigned': 'Assigned',
   'budget.colActivity': 'Activity',
   'budget.colAvailable': 'Available',

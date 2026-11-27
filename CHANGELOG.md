@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.4 – 2026-11-27
+
+### Changed
+- The budget no longer has a "Category" heading above the names. It sat above the groups too, which made it misleading, and the names don't need a heading.
+
 ## 0.19.3 – 2026-11-27
 
 ### Added

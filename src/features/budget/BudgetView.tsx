@@ -187,7 +187,6 @@ export function BudgetView() {
       {/* Each group is a card of its own; the column labels sit above them as plain text. */}
       <div className="mt-3 md:mt-6">
         <div className="flex items-center gap-3 px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 md:hidden">
-          <span>{t('budget.colCategory')}</span>
           <button
             type="button"
             onClick={() => {
@@ -201,7 +200,8 @@ export function BudgetView() {
           {!reordering && <span>{t('budget.colAvailable')}</span>}
         </div>
         <div className={`${COLUMNS} px-4 pb-2 text-xs font-medium uppercase tracking-wide text-slate-500`}>
-          <span>{t('budget.colCategory')}</span>
+          {/* The names need no heading: groups and categories speak for themselves. */}
+          <span />
           <span className="text-right">{t('budget.colAssigned')}</span>
           <span className="text-right">{t('budget.colActivity')}</span>
           <span className="text-right">{t('budget.colAvailable')}</span>
