@@ -60,6 +60,16 @@ test('Auto-assign has one goal to fund in the demo, and the money for it', () =>
   }
 });
 
+test('the demo has yearly goals whose due month lines up with their bills', () => {
+  for (const { today, language } of cases) {
+    const state = buildDemo(today, language);
+    const ins = state.goals.find((g) => g.categoryId === 'cat-ins')!;
+    assert.equal(ins.repeatMonths, 12);
+    const bills = state.transactions.filter((t) => t.categoryId === 'cat-ins').map((t) => t.date.slice(5, 7));
+    assert.ok(bills.length > 0 && bills.every((m) => m === ins.targetDate!.slice(5, 7)), `${today}: insurance bills in ${bills} but due in ${ins.targetDate}`);
+  }
+});
+
 test('the demo is the same every time and named in the chosen language', () => {
   assert.deepEqual(buildDemo('2026-11-27', 'en'), buildDemo('2026-11-27', 'en'));
   const de = buildDemo('2026-11-27', 'de');

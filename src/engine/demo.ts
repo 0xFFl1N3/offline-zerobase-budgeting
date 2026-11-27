@@ -79,9 +79,10 @@ export function buildDemo(today: string, language: DemoLanguage): BudgetState {
   // Goals of every kind: funded each month, saving towards a date (on track and behind), and an open target.
   const goals: Goal[] = [
     { id: 'goal-rent', categoryId: 'cat-rent', type: 'monthly_amount', monthlyAmount: 95000 },
-    { id: 'goal-ins', categoryId: 'cat-ins', type: 'target_balance', targetAmount: 48000, targetDate: addMonths(current, 4) },
+    // Yearly bills: insurance falls 8 months before this one (and 20), gifts every December.
+    { id: 'goal-ins', categoryId: 'cat-ins', type: 'target_balance', targetAmount: 48000, targetDate: addMonths(current, 4), repeatMonths: 12 },
     { id: 'goal-groc', categoryId: 'cat-groc', type: 'monthly_amount', monthlyAmount: 42000 },
-    { id: 'goal-gifts', categoryId: 'cat-gifts', type: 'target_balance', targetAmount: 30000, targetDate: nextDecember },
+    { id: 'goal-gifts', categoryId: 'cat-gifts', type: 'target_balance', targetAmount: 30000, targetDate: nextDecember, repeatMonths: 12 },
     { id: 'goal-emerg', categoryId: 'cat-emerg', type: 'target_balance', targetAmount: 900000 },
     { id: 'goal-hol', categoryId: 'cat-hol', type: 'target_balance', targetAmount: 200000, targetDate: addMonths(current, 7) },
     { id: 'goal-tv', categoryId: 'cat-tv', type: 'monthly_amount', monthlyAmount: 5000 },

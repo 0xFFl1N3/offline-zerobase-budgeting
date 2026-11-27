@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.15.2 – 2026-11-27
+
+### Changed
+- In the sample data, the insurance goal (due every year in the month of the insurance bill) and the gifts goal (due every December) repeat yearly.
+
 ## 0.15.1 – 2026-11-27
 
 ### Added
