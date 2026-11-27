@@ -542,6 +542,15 @@ export const en = {
   // Errors
   'error.debtSpending': 'Spending from a category has to come from a budget account, not from a debt.',
   'error.debtTransferCategory': 'Only a payment from a budget account to a debt can have a category.',
+
+  // Errors
+  'error.debtSplit': "A debt payment can't be part of a split.",
+
+  // Debts
+  'label.payment': 'Payment: {to}',
+
+  // Debts
+  'debt.recordPayment': 'Record payment',
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

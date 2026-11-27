@@ -12,6 +12,7 @@ const EXACT: Record<string, MessageKey> = {
   'Enter what is still owed as a positive amount.': 'error.owedPositive',
   'Spending from a category has to come from a budget account, not from a debt.': 'error.debtSpending',
   'Only a payment from a budget account to a debt can have a category.': 'error.debtTransferCategory',
+  'A debt payment cannot be part of a split.': 'error.debtSplit',
   'Move the remaining balance to another account before closing this one.': 'error.closeWithBalance',
   'An account with transactions cannot be deleted. Close it instead.': 'error.accountHasTransactions',
   'Categories can only be reordered within their group.': 'error.reorderGroup',

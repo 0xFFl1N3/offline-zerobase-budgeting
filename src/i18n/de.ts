@@ -539,4 +539,13 @@ export const de: Messages = {
   // Errors
   'error.debtSpending': 'Ausgaben aus einer Kategorie müssen von einem Budgetkonto kommen, nicht von einer Schuld.',
   'error.debtTransferCategory': 'Nur eine Zahlung von einem Budgetkonto an eine Schuld kann eine Kategorie haben.',
+
+  // Errors
+  'error.debtSplit': 'Eine Schuldenzahlung kann nicht Teil einer Aufteilung sein.',
+
+  // Debts
+  'label.payment': 'Rate: {to}',
+
+  // Debts
+  'debt.recordPayment': 'Rate buchen',
 };

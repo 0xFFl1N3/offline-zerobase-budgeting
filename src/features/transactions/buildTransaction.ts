@@ -13,6 +13,8 @@ export interface TxForm {
   transferAccountId: string | null;
   memo: string;
   amount: Cents;
+  /** Transfer only: true when it goes from a budget account to a debt; then it keeps its category. */
+  payment?: boolean;
   /** Outflow only: the parts of a split, amounts as positive magnitudes. null or absent = one category. */
   splits?: { categoryId: string | null; amount: Cents }[] | null;
 }
@@ -27,6 +29,7 @@ export function buildTransaction(form: TxForm, id: string): BuildResult {
   if (form.kind === 'transfer') {
     if (!form.transferAccountId) return { ok: false, error: t('tx.errorTransferTo') };
     if (form.transferAccountId === form.accountId) return { ok: false, error: t('tx.errorSameAccount') };
+    if (form.payment && !form.categoryId) return { ok: false, error: t('tx.errorCategory') };
     return {
       ok: true,
       transaction: {
@@ -34,7 +37,7 @@ export function buildTransaction(form: TxForm, id: string): BuildResult {
         accountId: form.accountId,
         date: form.date,
         payee: form.payee.trim() || t('tx.transferPayee'),
-        categoryId: null,
+        categoryId: form.payment ? form.categoryId : null,
         memo: form.memo.trim(),
         amount: -form.amount,
         transferAccountId: form.transferAccountId,

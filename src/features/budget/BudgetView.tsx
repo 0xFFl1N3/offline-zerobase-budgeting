@@ -11,6 +11,8 @@ import { MoneyField } from '../../components/MoneyField.tsx';
 import { t } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { GoalEditor } from './GoalEditor.tsx';
+import { debtForCategory } from '../../engine/debt.ts';
+import { useNavigation } from '../../store/navigation.ts';
 import { useAction } from '../errors/useAction.ts';
 import { NameCell } from './NameCell.tsx';
 import { GoalProgress } from './GoalProgress.tsx';
@@ -46,6 +48,7 @@ export function BudgetView() {
   const addGroup = useBudgetStore((s) => s.addGroup);
   const addCategory = useBudgetStore((s) => s.addCategory);
   const { run } = useAction();
+  const newTransaction = useNavigation((s) => s.newTransaction);
 
   const renameGroup = useBudgetStore((s) => s.renameGroup);
   const renameCategory = useBudgetStore((s) => s.renameCategory);
@@ -231,6 +234,18 @@ export function BudgetView() {
               {cats.map((cat, catIndex) => {
                 const available = categoryAvailable(state, cat.id, month);
                 const goal = state.goals.find((g) => g.categoryId === cat.id);
+                const debt = debtForCategory(state, cat.id);
+                // Pay what is set aside this month, else the minimum payment.
+                const recordPayment = debt
+                  ? () =>
+                      newTransaction({
+                        kind: 'transfer',
+                        accountId: state.accounts.find((a) => !a.closed && a.type !== 'debt')?.id ?? '',
+                        transferAccountId: debt.id,
+                        categoryId: cat.id,
+                        amount: available > 0 ? available : (debt.minimumPayment ?? 0),
+                      })
+                  : undefined;
                 return (
                   <div key={cat.id}>
                   <MobileCategoryRow
@@ -244,6 +259,7 @@ export function BudgetView() {
                     goal={goal ? <GoalProgress state={state} goal={goal} month={month} currency={currency} /> : null}
                     hasGoal={goal !== undefined}
                     onEditGoal={() => setEditingGoal(cat.id)}
+                    onRecordPayment={recordPayment}
                     open={open === cat.id}
                     onToggle={() => toggle(cat.id)}
                     renaming={renaming === cat.id}
@@ -280,6 +296,11 @@ export function BudgetView() {
                       ) : (
                         <button type="button" onClick={() => setEditingGoal(cat.id)} className="text-xs text-sky-700 hover:underline">
                           {t('budget.setGoal')}
+                        </button>
+                      )}
+                      {recordPayment && (
+                        <button type="button" onClick={recordPayment} className="text-xs text-sky-700 hover:underline">
+                          {t('debt.recordPayment')}
                         </button>
                       )}
                     </div>
@@ -417,10 +438,12 @@ interface CategoryRowProps extends RowActions {
   goal: ReactNode;
   hasGoal: boolean;
   onEditGoal: () => void;
+  /** For a debt's payment category. */
+  onRecordPayment?: () => void;
 }
 
 /** Phone layout of a category: name, goal and Available; tap it to assign money and for the other actions. */
-function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt, goal, hasGoal, onEditGoal, ...a }: CategoryRowProps) {
+function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt, goal, hasGoal, onEditGoal, onRecordPayment, ...a }: CategoryRowProps) {
   const pill = available < 0 ? 'bg-red-100 text-red-800' : available === 0 ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-800';
   return (
     <div className={`border-t border-slate-100 md:hidden ${a.open ? 'bg-slate-50' : ''}`}>
@@ -454,6 +477,7 @@ function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt,
             </span>
           </div>
           <div className="mt-2 flex flex-wrap gap-1">
+            {onRecordPayment && <button type="button" onClick={onRecordPayment} className={actionLink}>{t('debt.recordPayment')}</button>}
             <button type="button" onClick={onEditGoal} className={actionLink}>{hasGoal ? t('budget.editGoal') : t('budget.setGoal')}</button>
             <button type="button" onClick={a.onStartRename} className={actionLink}>{t('common.rename')}</button>
             <button type="button" onClick={a.onAction} className="rounded px-2 py-1.5 text-sm text-red-600 hover:bg-red-50">{a.actionLabel}</button>

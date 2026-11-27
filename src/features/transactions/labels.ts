@@ -4,8 +4,10 @@ import { t as tr } from '../../i18n/i18n.ts';
 /** What to show in a Category column: the category, the two accounts of a transfer, the parts of a split, or income. */
 export function categoryLabel(state: BudgetState, t: Pick<Transaction, 'accountId' | 'transferAccountId' | 'splits' | 'categoryId' | 'amount'>): string {
   if (t.transferAccountId) {
-    const from = state.accounts.find((a) => a.id === t.accountId)?.name ?? '?';
     const to = state.accounts.find((a) => a.id === t.transferAccountId)?.name ?? '?';
+    // A debt payment shows where it went; its category is the debt's, named after it.
+    if (t.categoryId !== null) return tr('label.payment', { to });
+    const from = state.accounts.find((a) => a.id === t.accountId)?.name ?? '?';
     return tr('label.transfer', { from, to });
   }
   if (t.splits && t.splits.length > 0) {

@@ -38,6 +38,13 @@ test('transfer drops the category and records the destination', () => {
   assert.equal(r.transaction.payee, 'Transfer');
 });
 
+test('a payment to a debt keeps its category, and needs one', () => {
+  const r = buildTransaction(form({ kind: 'transfer', transferAccountId: 'loan', categoryId: 'loanpay', payment: true }), 'id4');
+  assert.ok(r.ok);
+  assert.equal(r.transaction.categoryId, 'loanpay');
+  assert.equal(buildTransaction(form({ kind: 'transfer', transferAccountId: 'loan', categoryId: null, payment: true }), 'x').ok, false);
+});
+
 test('invalid forms are rejected', () => {
   assert.equal(buildTransaction(form({ amount: 0 }), 'x').ok, false);
   assert.equal(buildTransaction(form({ date: '' }), 'x').ok, false);

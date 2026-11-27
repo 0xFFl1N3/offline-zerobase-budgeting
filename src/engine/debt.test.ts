@@ -99,3 +99,18 @@ test('only payments from a budget account to a debt carry a category', async () 
   assert.throws(() => checkDebtRules(s, { accountId: 'tv', transferAccountId: null, categoryId: 'tvpay' }), /budget account/);
   assert.throws(() => checkDebtRules(s, { accountId: 'tv', transferAccountId: 'giro', categoryId: 'tvpay' }), /payment/);
 });
+
+test("an outflow booked on a debt's category becomes a payment to the debt", async () => {
+  const { asDebtPayment } = await import('./debt.ts');
+  const { payeeMemory, suggestCategory } = await import('./csvImport.ts');
+  const s = state([]);
+  const outflow = tx('o', '2026-03-10', -5000, { payee: 'Ratenzahlung', categoryId: 'tvpay' });
+  const paid = asDebtPayment(s, outflow);
+  assert.equal(paid.transferAccountId, 'tv');
+  assert.equal(accountBalance(state([paid]), 'tv'), -77000);
+  // Other outflows, income and transfers stay as they are.
+  assert.equal(asDebtPayment(s, tx('g', '2026-03-10', -500, { categoryId: 'groceries' })).transferAccountId, null);
+  assert.equal(asDebtPayment(s, tx('i', '2026-03-10', 500, { categoryId: 'tvpay' })).transferAccountId, null);
+  // The next import suggests the debt's category for the same payee.
+  assert.equal(suggestCategory(payeeMemory(state([paid])), 'Ratenzahlung', -5000), 'tvpay');
+});

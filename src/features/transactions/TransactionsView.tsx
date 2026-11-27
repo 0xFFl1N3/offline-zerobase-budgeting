@@ -43,9 +43,19 @@ export function TransactionsView() {
 
   const accounts = state.accounts.filter((a) => !a.closed);
   const budgetAccounts = accounts.filter((a) => a.type !== 'debt');
+  /** A transfer from a budget account to a debt is a payment, spent from the debt's category. */
+  const paymentCategoryFor = (fromId: string, toId: string | null): string | null => {
+    const to = state.accounts.find((a) => a.id === toId);
+    const fromBudget = budgetAccounts.some((a) => a.id === fromId);
+    return fromBudget && to?.type === 'debt' ? (to.paymentCategoryId ?? null) : null;
+  };
 
-  const [form, setForm] = useState<TxForm>(() => blankForm(accounts));
-  const [amountText, setAmountText] = useState('');
+  // "Record payment" on the Budget tab opens this tab with the form filled in.
+  const [prefill] = useState(() => useNavigation.getState().pendingTransaction);
+  const [form, setForm] = useState<TxForm>(() => (prefill ? { ...blankForm(accounts, 'transfer'), ...prefill, amount: 0 } : blankForm(accounts)));
+  const isPayment =
+    form.kind === 'transfer' && budgetAccounts.some((a) => a.id === form.accountId) && state.accounts.some((a) => a.id === form.transferAccountId && a.type === 'debt');
+  const [amountText, setAmountText] = useState(() => (prefill && prefill.amount > 0 ? toAmountInput(prefill.amount) : ''));
   /** Repeat choice for a new transaction; '' = just once. */
   const [repeat, setRepeat] = useState<Frequency | ''>('');
   /** The transaction whose "make recurring" panel is open. */
@@ -61,7 +71,10 @@ export function TransactionsView() {
   }, []);
   const [importing, setImporting] = useState(false);
   /** Phones: the add/edit form opens full-screen, filters fold away, and a tapped transaction shows its actions. */
-  const [formOpen, setFormOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(prefill !== null);
+  useEffect(() => {
+    useNavigation.getState().takePendingTransaction();
+  }, []);
   const [filtersOpen, setFiltersOpen] = useState(() => useNavigation.getState().pendingFilters !== null);
   const [openTx, setOpenTx] = useState<string | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
@@ -90,7 +103,7 @@ export function TransactionsView() {
       if (amounts.some((a) => a === null)) return setError(tr('tx.errorSplitAmount'));
       splits = splitRows.map((r, i) => ({ categoryId: r.categoryId || null, amount: Math.abs(amounts[i] as number) }));
     }
-    const result = buildTransaction({ ...form, amount: Math.abs(parsed), splits }, editingId ?? crypto.randomUUID());
+    const result = buildTransaction({ ...form, payment: isPayment, amount: Math.abs(parsed), splits }, editingId ?? crypto.randomUUID());
     if (!result.ok) return setError(result.error);
     const save =
       repeat && !editingId
@@ -229,7 +242,13 @@ export function TransactionsView() {
           </label>
           <label className="text-xs font-medium text-slate-600">
             {form.kind === 'transfer' ? tr('tx.fromAccount') : tr('tx.account')}
-            <select value={form.accountId} onChange={(e) => update({ accountId: e.target.value })} className={`${field} mt-1 block`}>
+            <select
+              value={form.accountId}
+              onChange={(e) =>
+                update({ accountId: e.target.value, ...(form.kind === 'transfer' && { categoryId: paymentCategoryFor(e.target.value, form.transferAccountId) }) })
+              }
+              className={`${field} mt-1 block`}
+            >
               {(form.kind === 'transfer' ? accounts : budgetAccounts).map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
               ))}
@@ -238,14 +257,29 @@ export function TransactionsView() {
           {form.kind === 'transfer' ? (
             <label className="text-xs font-medium text-slate-600">
               {tr('tx.toAccount')}
-              <select value={form.transferAccountId ?? ''} onChange={(e) => update({ transferAccountId: e.target.value || null })} className={`${field} mt-1 block`}>
+              <select
+                value={form.transferAccountId ?? ''}
+                onChange={(e) => update({ transferAccountId: e.target.value || null, categoryId: paymentCategoryFor(form.accountId, e.target.value || null) })}
+                className={`${field} mt-1 block`}
+              >
                 <option value="">{tr('tx.choose')}</option>
                 {accounts.filter((a) => a.id !== form.accountId).map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </select>
             </label>
-          ) : (
+          ) : null}
+          {isPayment && (
+            // A payment to a debt is spent from a category: the debt's own, unless another is chosen.
+            <label className="text-xs font-medium text-slate-600">
+              {tr('tx.category')}
+              <select value={form.categoryId ?? ''} onChange={(e) => update({ categoryId: e.target.value || null })} className={`${field} mt-1 block`}>
+                <option value="">{tr('tx.chooseCategory')}</option>
+                {categoryOptions(form.categoryId)}
+              </select>
+            </label>
+          )}
+          {form.kind !== 'transfer' && (
             <>
               <label className="min-w-0 flex-1 basis-24 text-xs font-medium text-slate-600">
                 {tr('tx.payee')}

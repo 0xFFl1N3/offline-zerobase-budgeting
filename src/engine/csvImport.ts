@@ -266,7 +266,8 @@ export function payeeMemory(state: BudgetState): Map<string, string> {
   const archived = new Set(state.categories.filter((c) => c.archived).map((c) => c.id));
   const latest = new Map<string, { date: string; categoryId: string }>();
   for (const t of state.transactions) {
-    if (t.categoryId === null || t.transferAccountId !== null || t.splits || archived.has(t.categoryId) || t.payee.trim() === '') continue;
+    // A debt payment (a transfer with a category) is remembered too, so the next import suggests the debt's category.
+    if (t.categoryId === null || t.splits || archived.has(t.categoryId) || t.payee.trim() === '') continue;
     const key = payeeKey(t.payee, t.amount);
     const prev = latest.get(key);
     if (!prev || t.date >= prev.date) latest.set(key, { date: t.date, categoryId: t.categoryId });

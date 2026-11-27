@@ -2,6 +2,13 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.10.2 – 2026-11-27
+
+### Added
+- Paying a debt: a transfer from a budget account to a debt asks for a category, already set to the debt's own. The payment is spent from that category and lowers what is owed.
+- "Record payment" on a debt's category in the Budget opens the form filled in with this month's amount.
+- Choosing a debt's category for an outflow, typed in or in the CSV import, books it as a payment to that debt. The import remembers it for the payee.
+
 ## 0.10.1 – 2026-11-27
 
 ### Added

@@ -4,7 +4,7 @@ import type { BackupFile } from '../db/backup.ts';
 import * as repo from '../db/repository.ts';
 import type { Currency } from '../engine/money.ts';
 import { addDebtAccount, type NewDebt } from '../engine/edit.ts';
-import { checkDebtRules } from '../engine/debt.ts';
+import { asDebtPayment, checkDebtRules } from '../engine/debt.ts';
 import { moveAccount, moveAccountTo, moveCategory, moveCategoryTo, moveGroup, moveGroupTo, removeAccount, removeCategories, removeGroup, setAccountClosed, setCategoryArchived, setGroupArchived, updateAccount } from '../engine/edit.ts';
 import { autoAssignPlan, planAssignments } from '../engine/autoassign.ts';
 import { addMonths } from '../engine/months.ts';
@@ -326,7 +326,8 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       return assignments.length;
     },
 
-    startRecurringSeries: async (t, frequency, endDate) => {
+    startRecurringSeries: async (input, frequency, endDate) => {
+      const t = asDebtPayment(get().state, input);
       checkDebtRules(get().state, t);
       const { transaction, recurring } = startRecurring(t, frequency, endDate, toISODate(), crypto.randomUUID());
       await repo.saveRecurringBooking(db, recurring, transaction);
@@ -384,7 +385,8 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
         return { ...s, recurring: s.recurring.filter((r) => r.id !== id) };
       }),
 
-    saveTransaction: async (t) => {
+    saveTransaction: async (input) => {
+      const t = asDebtPayment(get().state, input);
       checkDebtRules(get().state, t);
       await repo.saveTransaction(db, t);
       set((s) => ({
@@ -392,7 +394,8 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
       }));
     },
 
-    importTransactions: async (transactions) => {
+    importTransactions: async (input) => {
+      const transactions = input.map((t) => asDebtPayment(get().state, t));
       for (const t of transactions) checkDebtRules(get().state, t);
       await repo.saveTransactions(db, transactions);
       const ids = new Set(transactions.map((t) => t.id));

@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 import { NO_FILTERS, type TxFilters } from '../features/transactions/filterTransactions.ts';
-import type { Month } from '../engine/types.ts';
+import type { Cents, Month } from '../engine/types.ts';
+
+/** A transaction to start the Transactions form with (another tab asked for it). */
+export interface PendingTransaction {
+  kind: 'transfer';
+  accountId: string;
+  transferAccountId: string;
+  categoryId: string;
+  amount: Cents;
+}
 
 export type Tab = 'budget' | 'transactions' | 'analytics' | 'settings';
 
@@ -12,11 +21,22 @@ interface Navigation {
   /** Opens the Transactions tab with these filters (the rest left open). */
   showTransactions: (filters: Partial<TxFilters>) => void;
   takePendingFilters: () => TxFilters | null;
+  pendingTransaction: PendingTransaction | null;
+  /** Opens the Transactions tab with the entry form filled in. */
+  newTransaction: (prefill: PendingTransaction) => void;
+  takePendingTransaction: () => PendingTransaction | null;
 }
 
 export const useNavigation = create<Navigation>((set, get) => ({
   tab: 'budget',
   pendingFilters: null,
+  pendingTransaction: null,
+  newTransaction: (prefill) => set({ tab: 'transactions', pendingTransaction: prefill }),
+  takePendingTransaction: () => {
+    const prefill = get().pendingTransaction;
+    if (prefill) set({ pendingTransaction: null });
+    return prefill;
+  },
   setTab: (tab) => set({ tab }),
   showTransactions: (filters) => set({ tab: 'transactions', pendingFilters: { ...NO_FILTERS, ...filters } }),
   takePendingFilters: () => {
