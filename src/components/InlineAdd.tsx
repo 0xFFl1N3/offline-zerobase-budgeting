@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NO_AUTOFILL } from './noAutofill.ts';
 
 interface Props {
   label: string;
@@ -25,7 +26,7 @@ export function InlineAdd({ label, placeholder, onAdd }: Props) {
     );
   }
   return (
-    <input
+    <input {...NO_AUTOFILL}
       autoFocus
       value={name}
       placeholder={placeholder}

@@ -7,6 +7,7 @@ import { useBudgetStore } from '../../store/budgetStore.ts';
 import { LanguageSelect } from './LanguageSelect.tsx';
 import { StorageCard } from './StorageCard.tsx';
 import { AutoBackupCard } from '../backup/AutoBackupCard.tsx';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 export function SettingsView() {
   const currency = useBudgetStore((s) => s.currency);
@@ -79,7 +80,7 @@ export function SettingsView() {
           >
             <label className="text-sm">
               {t('settings.typeBefore')} <strong>{CONFIRM_WORD}</strong> {t('settings.typeAfter')}
-              <input
+              <input {...NO_AUTOFILL}
                 autoFocus
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}

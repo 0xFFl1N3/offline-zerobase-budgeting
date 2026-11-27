@@ -3,6 +3,7 @@ import { parseMoney, type Currency } from '../../engine/money.ts';
 import { useT } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { LanguageSelect } from '../settings/LanguageSelect.tsx';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 const field = 'mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2';
 
@@ -34,11 +35,11 @@ export function Setup() {
         </label>
         <label className="block text-sm font-medium">
           {t('setup.accountName')}
-          <input value={accountName} onChange={(e) => setAccountName(e.target.value)} className={field} />
+          <input {...NO_AUTOFILL} value={accountName} onChange={(e) => setAccountName(e.target.value)} className={field} />
         </label>
         <label className="block text-sm font-medium">
           {t('setup.balance')}
-          <input
+          <input {...NO_AUTOFILL}
             value={balance}
             onChange={(e) => setBalance(e.target.value)}
             inputMode="decimal"

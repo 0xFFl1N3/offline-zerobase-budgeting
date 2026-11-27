@@ -11,6 +11,7 @@ import { useBudgetStore } from '../../store/budgetStore.ts';
 import { DataTable } from '../analytics/ChartFrame.tsx';
 import { SERIES_COLORS } from '../analytics/colors.ts';
 import { LineChart } from '../analytics/LineChart.tsx';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 /** One line about when a debt is paid off, e.g. "17 payments; the last, €20.00, in April 2028". */
 export function forecastText(f: PayoffForecast, fmt: (c: number) => string): string {
@@ -99,11 +100,11 @@ export function DebtDialog({ debtId, onClose }: { debtId: string; onClose: () =>
           <div className="mt-2 flex flex-wrap items-end gap-3">
             <label className="text-xs font-medium text-slate-600">
               {t('debt.tryMonthly')}
-              <input value={monthlyText} onChange={(e) => setMonthlyText(e.target.value)} inputMode="decimal" className={`${field} mt-1 block w-28`} />
+              <input {...NO_AUTOFILL} value={monthlyText} onChange={(e) => setMonthlyText(e.target.value)} inputMode="decimal" className={`${field} mt-1 block w-28`} />
             </label>
             <label className="text-xs font-medium text-slate-600">
               {t('debt.tryExtra')}
-              <input value={extraText} onChange={(e) => setExtraText(e.target.value)} inputMode="decimal" placeholder={t('common.amountPlaceholder')} className={`${field} mt-1 block w-28`} />
+              <input {...NO_AUTOFILL} value={extraText} onChange={(e) => setExtraText(e.target.value)} inputMode="decimal" placeholder={t('common.amountPlaceholder')} className={`${field} mt-1 block w-28`} />
             </label>
           </div>
           <p className="mt-3 text-slate-700" aria-live="polite">
@@ -121,11 +122,11 @@ export function DebtDialog({ debtId, onClose }: { debtId: string; onClose: () =>
           <div className="mt-2 flex flex-wrap items-end gap-2">
             <label className="text-xs font-medium text-slate-600">
               {t('debt.raiseAmount')}
-              <input value={raiseText} onChange={(e) => setRaiseText(e.target.value)} inputMode="decimal" className={`${field} mt-1 block w-24`} />
+              <input {...NO_AUTOFILL} value={raiseText} onChange={(e) => setRaiseText(e.target.value)} inputMode="decimal" className={`${field} mt-1 block w-24`} />
             </label>
             <label className="min-w-32 flex-1 text-xs font-medium text-slate-600">
               {t('debt.raiseMemo')}
-              <input value={raiseMemo} onChange={(e) => setRaiseMemo(e.target.value)} className={`${field} mt-1 block w-full text-left`} />
+              <input {...NO_AUTOFILL} value={raiseMemo} onChange={(e) => setRaiseMemo(e.target.value)} className={`${field} mt-1 block w-full text-left`} />
             </label>
             <button type="button" onClick={owe} className={button}>{t('debt.raiseButton')}</button>
           </div>
@@ -137,7 +138,7 @@ export function DebtDialog({ debtId, onClose }: { debtId: string; onClose: () =>
           <div className="mt-2 flex flex-wrap items-end gap-2">
             <label className="text-xs font-medium text-slate-600">
               {t('debt.correctAmount')}
-              <input value={correctText} onChange={(e) => setCorrectText(e.target.value)} inputMode="decimal" placeholder={toAmountInput(Math.max(0, owed))} className={`${field} mt-1 block w-28`} />
+              <input {...NO_AUTOFILL} value={correctText} onChange={(e) => setCorrectText(e.target.value)} inputMode="decimal" placeholder={toAmountInput(Math.max(0, owed))} className={`${field} mt-1 block w-28`} />
             </label>
             <button type="button" onClick={correctTo} className={button}>{t('debt.correctButton')}</button>
           </div>

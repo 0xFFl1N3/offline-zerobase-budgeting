@@ -19,6 +19,7 @@ import { useNavigation } from '../../store/navigation.ts';
 import { buildTransaction, toForm, type TxForm, type TxKind } from './buildTransaction.ts';
 import { useAction } from '../errors/useAction.ts';
 import { overpayment } from '../../engine/debt.ts';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 const blankForm = (accounts: Account[], kind: TxKind = 'outflow'): TxForm => ({
   kind,
@@ -257,7 +258,7 @@ export function TransactionsView() {
           </label>
           <label className="text-xs font-medium text-slate-600">
             {tr('tx.date')}
-            <input type="date" value={form.date} onChange={(e) => update({ date: e.target.value })} className={`${field} mt-1 block`} />
+            <input {...NO_AUTOFILL} type="date" value={form.date} onChange={(e) => update({ date: e.target.value })} className={`${field} mt-1 block`} />
           </label>
           <label className="text-xs font-medium text-slate-600">
             {form.kind === 'transfer' ? tr('tx.fromAccount') : tr('tx.account')}
@@ -302,7 +303,7 @@ export function TransactionsView() {
             <>
               <label className="min-w-0 flex-1 basis-24 text-xs font-medium text-slate-600">
                 {tr('tx.payee')}
-                <input value={form.payee} onChange={(e) => update({ payee: e.target.value })} placeholder={tr('tx.payeePlaceholder')} className={`${field} mt-1 block w-full`} />
+                <input {...NO_AUTOFILL} value={form.payee} onChange={(e) => update({ payee: e.target.value })} placeholder={tr('tx.payeePlaceholder')} className={`${field} mt-1 block w-full`} />
               </label>
               <div className="text-xs font-medium text-slate-600">
                 <div className="flex items-baseline justify-between gap-3">
@@ -339,7 +340,7 @@ export function TransactionsView() {
           )}
           <label className="min-w-0 flex-1 basis-24 text-xs font-medium text-slate-600">
             {tr('tx.memo')}
-            <input value={form.memo} onChange={(e) => update({ memo: e.target.value })} placeholder={tr('tx.optional')} className={`${field} mt-1 block w-full`} />
+            <input {...NO_AUTOFILL} value={form.memo} onChange={(e) => update({ memo: e.target.value })} placeholder={tr('tx.optional')} className={`${field} mt-1 block w-full`} />
           </label>
           {!editingId && (
             <label className="text-xs font-medium text-slate-600">
@@ -354,7 +355,7 @@ export function TransactionsView() {
           )}
           <label className="text-xs font-medium text-slate-600">
             {tr('tx.amount')}
-            <input value={amountText} onChange={(e) => setAmountText(e.target.value)} inputMode="decimal" placeholder={tr('common.amountPlaceholder')} className={`${field} mt-1 block w-24 text-right tabular-nums`} />
+            <input {...NO_AUTOFILL} value={amountText} onChange={(e) => setAmountText(e.target.value)} inputMode="decimal" placeholder={tr('common.amountPlaceholder')} className={`${field} mt-1 block w-24 text-right tabular-nums`} />
           </label>
           <button type="submit" className="rounded bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">
             {editingId ? tr('common.save') : tr('common.add')}
@@ -378,7 +379,7 @@ export function TransactionsView() {
                   <option value="">{tr('tx.chooseCategory')}</option>
                   {categoryOptions(row.categoryId)}
                 </select>
-                <input
+                <input {...NO_AUTOFILL}
                   aria-label={tr('tx.partAmount', { n: i + 1 })}
                   value={row.text}
                   onChange={(e) => setSplitRows(splitRows.map((r, j) => (j === i ? { ...r, text: e.target.value } : r)))}
@@ -450,15 +451,15 @@ export function TransactionsView() {
         </label>
         <label className="text-xs font-medium text-slate-600">
           {tr('tx.from')}
-          <input type="date" aria-label={tr('tx.fromDate')} value={filters.from} max={filters.to || undefined} onChange={(e) => setFilter({ from: e.target.value })} className={`${field} mt-1 block`} />
+          <input {...NO_AUTOFILL} type="date" aria-label={tr('tx.fromDate')} value={filters.from} max={filters.to || undefined} onChange={(e) => setFilter({ from: e.target.value })} className={`${field} mt-1 block`} />
         </label>
         <label className="text-xs font-medium text-slate-600">
           {tr('tx.to')}
-          <input type="date" aria-label={tr('tx.toDate')} value={filters.to} min={filters.from || undefined} onChange={(e) => setFilter({ to: e.target.value })} className={`${field} mt-1 block`} />
+          <input {...NO_AUTOFILL} type="date" aria-label={tr('tx.toDate')} value={filters.to} min={filters.from || undefined} onChange={(e) => setFilter({ to: e.target.value })} className={`${field} mt-1 block`} />
         </label>
         <label className="text-xs font-medium text-slate-600">
           {tr('tx.search')}
-          <input aria-label={tr('tx.search')} value={filters.search} onChange={(e) => setFilter({ search: e.target.value })} placeholder={tr('tx.searchPlaceholder')} className={`${field} mt-1 block w-56`} />
+          <input {...NO_AUTOFILL} aria-label={tr('tx.search')} value={filters.search} onChange={(e) => setFilter({ search: e.target.value })} placeholder={tr('tx.searchPlaceholder')} className={`${field} mt-1 block w-56`} />
         </label>
         {hasActiveFilters(filters) && (
           <button type="button" onClick={() => setFilters(NO_FILTERS)} className="pb-1.5 text-sm text-sky-700 hover:underline">

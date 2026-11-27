@@ -9,6 +9,7 @@ import { t } from '../../i18n/i18n.ts';
 import { useAction } from '../errors/useAction.ts';
 import { useNavigation } from '../../store/navigation.ts';
 import { activeSeriesUsing } from '../../engine/recurring.ts';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 function AddAccountForm({ onDone }: { onDone: () => void }) {
   const addAccount = useBudgetStore((s) => s.addAccount);
@@ -43,14 +44,14 @@ function AddAccountForm({ onDone }: { onDone: () => void }) {
   const field = 'w-full rounded border border-slate-300 px-2 py-1 text-sm';
   return (
     <form onSubmit={submit} className="mt-3 space-y-2">
-      <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={t('account.namePlaceholder')} className={field} />
+      <input {...NO_AUTOFILL} autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={t('account.namePlaceholder')} className={field} />
       <select value={type} onChange={(e) => setType(e.target.value as AccountType)} className={field}>
         <option value="checking">{t('account.checking')}</option>
         <option value="cash">{t('account.cash')}</option>
         <option value="savings">{t('account.savings')}</option>
         <option value="debt">{t('debt.type')}</option>
       </select>
-      <input
+      <input {...NO_AUTOFILL}
         value={balance}
         onChange={(e) => setBalance(e.target.value)}
         placeholder={t(debt ? 'debt.owed' : 'account.balancePlaceholder')}
@@ -61,7 +62,7 @@ function AddAccountForm({ onDone }: { onDone: () => void }) {
       {debt && (
         <>
           <p className="text-xs text-slate-500">{t('debt.owedHint')}</p>
-          <input value={minimum} onChange={(e) => setMinimum(e.target.value)} placeholder={t('debt.minimum')} aria-label={t('debt.minimum')} inputMode="decimal" className={field} />
+          <input {...NO_AUTOFILL} value={minimum} onChange={(e) => setMinimum(e.target.value)} placeholder={t('debt.minimum')} aria-label={t('debt.minimum')} inputMode="decimal" className={field} />
           <label className="block text-xs font-medium text-slate-600">
             {t('debt.group')}
             <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className={`${field} mt-1`}>
@@ -122,7 +123,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
     <form onSubmit={submit} className="mt-1 mb-2 space-y-2 rounded border border-slate-200 bg-slate-50 p-2">
       <label className="block text-xs font-medium text-slate-600">
         {t('account.name')}
-        <input autoFocus value={name} onChange={(e) => setName(e.target.value)} className={`${field} mt-1`} />
+        <input {...NO_AUTOFILL} autoFocus value={name} onChange={(e) => setName(e.target.value)} className={`${field} mt-1`} />
       </label>
       {!debt && (
         <label className="block text-xs font-medium text-slate-600">
@@ -136,12 +137,12 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
       )}
       <label className="block text-xs font-medium text-slate-600">
         {t(debt ? 'debt.owedAtStart' : 'account.opening')}
-        <input value={opening} onChange={(e) => setOpening(e.target.value)} inputMode="decimal" className={`${field} mt-1 text-right tabular-nums`} />
+        <input {...NO_AUTOFILL} value={opening} onChange={(e) => setOpening(e.target.value)} inputMode="decimal" className={`${field} mt-1 text-right tabular-nums`} />
       </label>
       {debt ? (
         <label className="block text-xs font-medium text-slate-600">
           {t('debt.minimum')}
-          <input value={minimum} onChange={(e) => setMinimum(e.target.value)} inputMode="decimal" className={`${field} mt-1 text-right tabular-nums`} />
+          <input {...NO_AUTOFILL} value={minimum} onChange={(e) => setMinimum(e.target.value)} inputMode="decimal" className={`${field} mt-1 text-right tabular-nums`} />
         </label>
       ) : (
         <p className="text-xs text-slate-500">{t('account.openingHint')}</p>

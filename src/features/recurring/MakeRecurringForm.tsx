@@ -5,6 +5,7 @@ import { t } from '../../i18n/i18n.ts';
 import { useAction } from '../errors/useAction.ts';
 import type { Frequency, Transaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 /** Turns an existing transaction into the first occurrence of a recurring series. */
 export function MakeRecurringForm({ transaction, onDone }: { transaction: Transaction; onDone: () => void }) {
@@ -33,7 +34,7 @@ export function MakeRecurringForm({ transaction, onDone }: { transaction: Transa
       </label>
       <label className="text-xs font-medium text-slate-600">
         {t('recur.until')}
-        <input type="date" aria-label={t('recur.endDate')} value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`${field} mt-1 block`} />
+        <input {...NO_AUTOFILL} type="date" aria-label={t('recur.endDate')} value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`${field} mt-1 block`} />
       </label>
       <button type="button" onClick={() => void submit()} className="rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700">{t('recur.make')}</button>
       <button type="button" onClick={onDone} className="pb-1.5 text-sm text-slate-600 hover:underline">{t('common.cancel')}</button>

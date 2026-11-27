@@ -5,6 +5,7 @@ import { formatDate } from '../../engine/months.ts';
 import { t } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { useAction } from '../errors/useAction.ts';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 const field = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-sm';
 
@@ -82,7 +83,7 @@ export function ReconcilePanel({ accountId }: { accountId: string }) {
           <div className="flex flex-wrap items-end gap-3">
             <label className="text-xs font-medium text-slate-600">
               {t('rec.statement')}
-              <input
+              <input {...NO_AUTOFILL}
                 autoFocus
                 value={statementText}
                 onChange={(e) => { setStatementText(e.target.value); setError(null); }}

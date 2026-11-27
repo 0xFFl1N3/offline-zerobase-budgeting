@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { parseMoney, toAmountInput } from '../engine/money.ts';
 import type { Cents } from '../engine/types.ts';
+import { NO_AUTOFILL } from './noAutofill.ts';
 
 const toText = (cents: Cents) => toAmountInput(cents);
 
@@ -28,7 +29,7 @@ export function MoneyField({ value, onCommit, ariaLabel, className = '', boxed =
   };
 
   return (
-    <input
+    <input {...NO_AUTOFILL}
       inputMode="decimal"
       aria-label={ariaLabel}
       className={`rounded border px-2 py-1 text-right tabular-nums hover:border-slate-300 focus:border-sky-500 focus:bg-white focus:outline-none ${boxed ? 'border-slate-300 bg-white' : 'border-transparent bg-transparent'} ${className}`}

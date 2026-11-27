@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { t } from '../../i18n/i18n.ts';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 interface Props {
   name: string;
@@ -20,7 +21,7 @@ interface Props {
 export function NameCell({ name, renaming, onStartRename, onRename, onCancelRename, actionLabel, onAction, handle, extraAction }: Props) {
   if (renaming) {
     return (
-      <input
+      <input {...NO_AUTOFILL}
         autoFocus
         defaultValue={name}
         aria-label={t('budget.renameName', { name })}

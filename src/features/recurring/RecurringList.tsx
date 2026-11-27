@@ -7,6 +7,7 @@ import { useAction } from '../errors/useAction.ts';
 import type { Frequency, RecurringTransaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { categoryLabel } from '../transactions/labels.ts';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 const field = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-sm';
 
@@ -30,16 +31,16 @@ function EditForm({ rec, onDone }: { rec: RecurringTransaction; onDone: () => vo
     <div className="flex flex-wrap items-end gap-3 bg-slate-50 px-4 py-3">
       <label className="text-xs font-medium text-slate-600">
         {tr('tx.payee')}
-        <input value={payee} onChange={(e) => setPayee(e.target.value)} className={`${field} mt-1 block`} />
+        <input {...NO_AUTOFILL} value={payee} onChange={(e) => setPayee(e.target.value)} className={`${field} mt-1 block`} />
       </label>
       <label className="text-xs font-medium text-slate-600">
         {tr('tx.memo')}
-        <input value={memo} onChange={(e) => setMemo(e.target.value)} className={`${field} mt-1 block`} />
+        <input {...NO_AUTOFILL} value={memo} onChange={(e) => setMemo(e.target.value)} className={`${field} mt-1 block`} />
       </label>
       {!isSplit && (
         <label className="text-xs font-medium text-slate-600">
           {tr('tx.amount')}
-          <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" className={`${field} mt-1 block w-28 text-right tabular-nums`} />
+          <input {...NO_AUTOFILL} value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" className={`${field} mt-1 block w-28 text-right tabular-nums`} />
         </label>
       )}
       <label className="text-xs font-medium text-slate-600">
@@ -52,7 +53,7 @@ function EditForm({ rec, onDone }: { rec: RecurringTransaction; onDone: () => vo
       </label>
       <label className="text-xs font-medium text-slate-600">
         {tr('recur.until')}
-        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`${field} mt-1 block`} />
+        <input {...NO_AUTOFILL} type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`${field} mt-1 block`} />
       </label>
       <button type="button" onClick={() => void save()} className="rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700">{tr('common.save')}</button>
       <button type="button" onClick={onDone} className="pb-1.5 text-sm text-slate-600 hover:underline">{tr('common.cancel')}</button>

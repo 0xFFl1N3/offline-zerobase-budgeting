@@ -16,6 +16,7 @@ import { useNavigation } from '../../store/navigation.ts';
 import { useAction } from '../errors/useAction.ts';
 import { NameCell } from './NameCell.tsx';
 import { GoalProgress } from './GoalProgress.tsx';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 /** The desktop table layout; phones get MobileGroupRow and MobileCategoryRow instead. */
 const COLUMNS = 'hidden md:grid md:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_6.5rem] lg:grid-cols-[minmax(0,1fr)_8rem_8rem_8rem] items-center gap-2';
@@ -383,7 +384,7 @@ interface RowActions {
 /** A rename box in place of the name, as on desktop (Enter saves, Escape or leaving cancels). */
 function RenameInput({ name, onRename, onCancelRename }: { name: string; onRename: (name: string) => void; onCancelRename: () => void }) {
   return (
-    <input
+    <input {...NO_AUTOFILL}
       autoFocus
       defaultValue={name}
       aria-label={t('budget.renameName', { name })}

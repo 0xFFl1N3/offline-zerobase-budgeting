@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.11 – 2026-11-27
+
+### Fixed
+- Password managers such as LastPass took some amount fields, like the assigned amount in the budget, for password fields and offered to fill them. Every field in the app now tells the browser and the common password managers (LastPass, 1Password, Bitwarden, Dashlane) that it is not a sign-in field. A test makes sure new fields do the same.
+
 ## 0.11.10 – 2026-11-27
 
 ### Added

@@ -5,6 +5,7 @@ import { t } from '../../i18n/i18n.ts';
 import { errorText } from '../../i18n/errors.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { backupStatus } from './backupStatus.ts';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 /** `sidebar` is the compact version; `card` is the larger one on the Settings tab. */
 export function BackupPanel({ variant = 'sidebar' }: { variant?: 'sidebar' | 'card' }) {
@@ -70,7 +71,7 @@ export function BackupPanel({ variant = 'sidebar' }: { variant?: 'sidebar' | 'ca
           {t('backup.import')}
         </button>
       </div>
-      <input ref={fileInput} type="file" accept="application/json,.json" onChange={(e) => void onFile(e)} className="hidden" aria-label={t('backup.file')} />
+      <input {...NO_AUTOFILL} ref={fileInput} type="file" accept="application/json,.json" onChange={(e) => void onFile(e)} className="hidden" aria-label={t('backup.file')} />
       {message && <p className={`mt-2 ${card ? 'text-sm' : 'text-xs'} ${message.error ? 'text-red-600' : 'text-emerald-700'}`}>{message.text}</p>}
     </div>
   );

@@ -6,6 +6,7 @@ import { bookingBlocked, dueItems, type DueItem } from '../../engine/recurring.t
 import type { RecurringTransaction } from '../../engine/types.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { categoryLabel } from '../transactions/labels.ts';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 function DueRow({ item, rec }: { item: DueItem; rec: RecurringTransaction }) {
   const state = useBudgetStore((s) => s.state);
@@ -39,7 +40,7 @@ function DueRow({ item, rec }: { item: DueItem; rec: RecurringTransaction }) {
         {isSplit ? (
           <span className="tabular-nums">{formatMoney(t.amount, currency)}</span>
         ) : (
-          <input
+          <input {...NO_AUTOFILL}
             aria-label={tr('recur.amountFor', { name: t.payee || tr('recur.thisRecurring'), date: formatDate(item.date) })}
             value={amountText}
             onChange={(e) => setAmountText(e.target.value)}

@@ -5,6 +5,7 @@ import { t, type MessageKey } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { buildGoal, goalToForm } from './buildGoal.ts';
 import { useAction } from '../errors/useAction.ts';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 const TYPE_LABELS: Record<GoalType, MessageKey> = {
   target_balance: 'goal.typeTarget',
@@ -52,7 +53,7 @@ export function GoalEditor({ category, goal, onClose }: Props) {
       </label>
       <label className={label}>
         {type === 'monthly_amount' ? t('goal.perMonth') : t('goal.target')}
-        <input
+        <input {...NO_AUTOFILL}
           autoFocus
           value={amountText}
           onChange={(e) => setAmountText(e.target.value)}
@@ -64,7 +65,7 @@ export function GoalEditor({ category, goal, onClose }: Props) {
       {type !== 'monthly_amount' && (
         <label className={label}>
           {t('goal.byMonth')}
-          <input type="month" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className={`${field} mt-1 block`} />
+          <input {...NO_AUTOFILL} type="month" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className={`${field} mt-1 block`} />
         </label>
       )}
       <button type="submit" className="rounded bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">{t('goal.save')}</button>

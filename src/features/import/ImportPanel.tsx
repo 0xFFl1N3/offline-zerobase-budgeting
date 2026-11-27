@@ -22,6 +22,7 @@ import { errorText } from '../../i18n/errors.ts';
 import { useAction } from '../errors/useAction.ts';
 import { t } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
+import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 const field = 'rounded border border-slate-300 bg-white px-2 py-1 text-sm';
 
@@ -241,7 +242,7 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
         </label>
         <label className="text-xs font-medium text-slate-600">
           {t('import.file')}
-          <input
+          <input {...NO_AUTOFILL}
             type="file"
             accept=".csv,.txt,text/csv"
             onChange={(e) => void onFile(e)}
@@ -301,7 +302,7 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
               <thead className="sticky top-0 bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr className="border-b border-slate-200">
                   <th className="w-8 px-2 py-2">
-                    <input
+                    <input {...NO_AUTOFILL}
                       type="checkbox"
                       aria-label={t('import.selectAll')}
                       checked={chosen.length > 0 && chosen.length === importable.length}
@@ -327,7 +328,7 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
                   return (
                     <tr key={row.line} className={`border-b border-slate-100 last:border-b-0 ${off ? 'text-slate-400' : ''}`}>
                       <td className="px-2 py-1.5">
-                        <input
+                        <input {...NO_AUTOFILL}
                           type="checkbox"
                           aria-label={t('import.importRow', { n: row.line + 1 })}
                           disabled={row.problem !== null}
@@ -340,7 +341,7 @@ export function ImportPanel({ defaultAccountId, onClose }: { defaultAccountId: s
                         {updateOf(row) ? (
                           <span className="px-2">{updateOf(row)!.payee}</span>
                         ) : (
-                        <input
+                        <input {...NO_AUTOFILL}
                           aria-label={t('import.payeeFor', { n: row.line + 1 })}
                           value={choice.payee}
                           onChange={(e) => setChoice(row, { payee: e.target.value })}
