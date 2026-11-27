@@ -31,10 +31,8 @@ export function AgeOfMoneyCard({ state, months, currency }: { state: BudgetState
         <p className="mt-6 text-sm text-slate-500">{t('analytics.ageNotYet')}</p>
       ) : (
         <>
-          <p className="mt-3 text-lg font-semibold tabular-nums">
-            {daysText(now)}
-            {monthAgo !== null && <span className="text-sm font-normal text-slate-500"> · {t('analytics.ageMonthAgo', { days: daysText(monthAgo) })}</span>}
-          </p>
+          <p className="mt-3 text-lg font-semibold tabular-nums">{daysText(now)}</p>
+          {monthAgo !== null && <p className="text-sm text-slate-500">{t('analytics.ageMonthAgo', { days: daysText(monthAgo) })}</p>}
           {history.length > 1 && (
             <div className="mt-3">
               <LineChart

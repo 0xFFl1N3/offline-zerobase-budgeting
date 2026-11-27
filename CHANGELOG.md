@@ -2,6 +2,15 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.5 – 2026-11-27
+
+### Changed
+- Clearer button and label texts:
+  - Age of money: last month's value is now its own sentence under the number ("A month ago it was 145 days." / "Vor einem Monat waren es 145 Tage.") instead of "vor einem Monat: 145 Tage".
+  - The button that undoes a split now reads "Cancel split" / "Aufteilung aufheben" (was "Single" / "Nicht aufteilen").
+  - The row action that turns a transaction into a recurring one now reads "Make recurring…" / "Regelmäßig buchen …" (was "Repeat…" / "Wiederholen …").
+  - Due recurring transactions: "Confirm" / "Bestätigen" is now "Add now" / "Jetzt buchen".
+
 ## 0.11.4 – 2026-11-27
 
 ### Fixed

@@ -208,7 +208,7 @@ export const de: Messages = {
   'tx.payee': 'Empfänger',
   'tx.payeePlaceholder': 'Wer',
   'tx.category': 'Kategorie',
-  'tx.single': 'Nicht aufteilen',
+  'tx.single': 'Aufteilung aufheben',
   'tx.split': 'Aufteilen …',
   'tx.splitAcross': 'Auf Kategorien aufgeteilt',
   'tx.income': 'Einnahme → Noch zuzuweisen',
@@ -254,7 +254,7 @@ export const de: Messages = {
   'tx.colBalance': 'Saldo',
   'tx.noMatch': 'Keine Buchungen passen zu diesen Filtern.',
   'tx.none': 'Noch keine Buchungen.',
-  'tx.repeatAction': 'Wiederholen …',
+  'tx.repeatAction': 'Regelmäßig buchen …',
 
   // Category labels
   'label.transfer': 'Umbuchung: {from} → {to}',
@@ -299,7 +299,7 @@ export const de: Messages = {
   'recur.moreDue': '+{count} weitere danach fällig',
   'recur.amountFor': 'Betrag für {name} am {date}',
   'recur.thisRecurring': 'wiederkehrende Buchung',
-  'recur.confirm': 'Bestätigen',
+  'recur.confirm': 'Jetzt buchen',
   'recur.skip': 'Überspringen',
   'recur.dueLabel': 'Fällige wiederkehrende Buchungen',
   'recur.dueTitle': { one: '{count} wiederkehrende Buchung ist fällig', other: '{count} wiederkehrende Buchungen sind fällig' },
@@ -479,7 +479,7 @@ export const de: Messages = {
   'analytics.ageTick': '{count} T',
   'analytics.ageNotYet': 'Wird angezeigt, sobald es mindestens 10 Ausgaben gibt.',
   'analytics.ageLabel': 'Alter des Geldes am Ende jedes Monats',
-  'analytics.ageMonthAgo': 'vor einem Monat: {days}',
+  'analytics.ageMonthAgo': 'Vor einem Monat waren es {days}.',
 
   // Analytics
   'analytics.showTransactions': 'Buchungen für {name} anzeigen',

@@ -211,7 +211,7 @@ export const en = {
   'tx.payee': 'Payee',
   'tx.payeePlaceholder': 'Who',
   'tx.category': 'Category',
-  'tx.single': 'Single',
+  'tx.single': 'Cancel split',
   'tx.split': 'Split…',
   'tx.splitAcross': 'Split across categories',
   'tx.income': 'Income (Ready to Assign)',
@@ -257,7 +257,7 @@ export const en = {
   'tx.colBalance': 'Balance',
   'tx.noMatch': 'No transactions match these filters.',
   'tx.none': 'No transactions yet.',
-  'tx.repeatAction': 'Repeat…',
+  'tx.repeatAction': 'Make recurring…',
 
   // Category labels
   'label.transfer': 'Transfer: {from} → {to}',
@@ -302,7 +302,7 @@ export const en = {
   'recur.moreDue': '+{count} more due after this',
   'recur.amountFor': 'Amount for {name} on {date}',
   'recur.thisRecurring': 'recurring transaction',
-  'recur.confirm': 'Confirm',
+  'recur.confirm': 'Add now',
   'recur.skip': 'Skip',
   'recur.dueLabel': 'Due recurring transactions',
   'recur.dueTitle': { one: '{count} recurring transaction is due', other: '{count} recurring transactions are due' },
@@ -482,7 +482,7 @@ export const en = {
   'analytics.ageTick': '{count} d',
   'analytics.ageNotYet': 'Shows once there are at least 10 payments.',
   'analytics.ageLabel': 'Age of money at the end of each month',
-  'analytics.ageMonthAgo': '{days} a month ago',
+  'analytics.ageMonthAgo': 'A month ago it was {days}.',
 
   // Analytics
   'analytics.showTransactions': 'Show the transactions for {name}',
