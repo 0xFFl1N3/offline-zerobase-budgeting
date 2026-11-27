@@ -146,7 +146,7 @@ export function BudgetView() {
       </div>
 
       {overspentBefore < 0 && (
-        <p className="mt-2 text-right text-xs text-red-700">{t('budget.overspentLast', { amount: fmt(overspentBefore), month: formatMonth(addMonths(month, -1)) })}</p>
+        <p className="mt-2 text-right text-xs text-red-700">{t('budget.overspentLast', { amount: fmt(-overspentBefore), month: formatMonth(addMonths(month, -1)) })}</p>
       )}
       {autoMessage?.month === month && <p className="mt-3 text-sm text-emerald-700" role="status">{autoMessage.text}</p>}
 

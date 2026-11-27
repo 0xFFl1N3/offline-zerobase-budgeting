@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.12 – 2026-11-27
+
+### Fixed
+- The note under Ready to Assign showed a double minus ("Lowered by -€0.49"). It now reads "Lowered by €0.49 …".
+
 ## 0.11.11 – 2026-11-27
 
 ### Fixed
