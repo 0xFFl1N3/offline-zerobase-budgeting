@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.14.0 – 2026-11-27
+
+### Added
+- The payee field suggests payees you have used before while you type: names starting with what you typed first, then names containing it, the most used first. Arrow keys and Enter pick one, Escape closes the list, and a new name can still be typed. Case and extra spaces do not matter ("rewe" finds "REWE").
+- The suggestions are worked out from your transactions, so nothing new is stored and they are right after an import, an undo or a restore.
+
 ## 0.13.0 – 2026-11-27
 
 ### Added

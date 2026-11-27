@@ -21,6 +21,8 @@ import { useAction } from '../errors/useAction.ts';
 import { overpayment } from '../../engine/debt.ts';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 import { Form } from '../../components/Form.tsx';
+import { payeeMemory, type PayeeInfo } from '../../engine/payees.ts';
+import { PayeeField } from './PayeeField.tsx';
 
 const blankForm = (accounts: Account[], kind: TxKind = 'outflow'): TxForm => ({
   kind,
@@ -91,6 +93,9 @@ export function TransactionsView() {
   const setFilter = (patch: Partial<TxFilters>) => setFilters((f) => ({ ...f, ...patch }));
 
   const update = (patch: Partial<TxForm>) => setForm((f) => ({ ...f, ...patch }));
+  // Known payees, worked out from the transactions; only recomputed when they change.
+  const payees = useMemo(() => payeeMemory(state), [state.transactions]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pickPayee = (_payee: PayeeInfo) => {};
 
   const reset = (keep?: TxForm) => {
     setForm({ ...blankForm(accounts, keep?.kind), date: keep?.date ?? toISODate(), accountId: keep?.accountId ?? accounts[0]?.id ?? '' });
@@ -303,7 +308,14 @@ export function TransactionsView() {
             <>
               <label className="min-w-0 flex-1 basis-24 text-xs font-medium text-slate-600">
                 {tr('tx.payee')}
-                <input {...NO_AUTOFILL} value={form.payee} onChange={(e) => update({ payee: e.target.value })} placeholder={tr('tx.payeePlaceholder')} className={`${field} mt-1 block w-full`} />
+                <PayeeField
+                  value={form.payee}
+                  onChange={(payee) => update({ payee })}
+                  onPick={pickPayee}
+                  memory={payees}
+                  placeholder={tr('tx.payeePlaceholder')}
+                  className={`${field} mt-1 block w-full`}
+                />
               </label>
               <div className="text-xs font-medium text-slate-600">
                 <div className="flex items-baseline justify-between gap-3">

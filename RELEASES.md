@@ -2,6 +2,11 @@
 
 What changed for you in each release, newest first. The full technical list is in CHANGELOG.md.
 
+## 0.14 – Faster entry
+2026-11-27
+
+- The payee field suggests payees you have used before while you type.
+
 ## 0.13 – More ways to assign
 2026-11-27
 
