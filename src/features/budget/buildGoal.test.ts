@@ -36,3 +36,11 @@ test('goalToForm reverses buildGoal', () => {
     assert.deepEqual(goalToForm(r.goal), form);
   }
 });
+
+test('a goal with a month can repeat; without a month the repeat is dropped', () => {
+  const yearly = buildGoal({ type: 'target_balance', amount: 48000, targetDate: '2027-03', repeatMonths: 12 }, 'c', 'g');
+  assert.ok(yearly.ok && yearly.goal.repeatMonths === 12);
+  const noMonth = buildGoal({ type: 'target_balance', amount: 48000, targetDate: '', repeatMonths: 12 }, 'c', 'g');
+  assert.ok(noMonth.ok && noMonth.goal.repeatMonths === undefined);
+  assert.deepEqual(goalToForm(yearly.ok ? yearly.goal : (null as never)).repeatMonths, 12);
+});

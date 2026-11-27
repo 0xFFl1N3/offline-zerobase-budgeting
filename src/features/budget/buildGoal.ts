@@ -1,4 +1,4 @@
-import type { Cents, Goal, GoalType } from '../../engine/types.ts';
+import type { Cents, Goal, GoalType, RepeatMonths } from '../../engine/types.ts';
 import type { MessageKey } from '../../i18n/en.ts';
 
 /** What the goal editor holds. For monthly_amount, `amount` is the monthly amount. */
@@ -7,6 +7,8 @@ export interface GoalForm {
   amount: Cents;
   /** 'YYYY-MM' or '' */
   targetDate: string;
+  /** Only with a targetDate; ignored without one. */
+  repeatMonths?: RepeatMonths | null;
 }
 
 /** `error` is the text to show, as a key of the translations. */
@@ -31,6 +33,7 @@ export function buildGoal(form: GoalForm, categoryId: string, id: string): Build
           type: 'target_balance',
           targetAmount: form.amount,
           ...(date !== '' ? { targetDate: date } : {}),
+          ...(date !== '' && form.repeatMonths ? { repeatMonths: form.repeatMonths } : {}),
         },
       };
   }
@@ -41,5 +44,6 @@ export function goalToForm(goal: Goal): GoalForm {
     type: goal.type,
     amount: (goal.type === 'monthly_amount' ? goal.monthlyAmount : goal.targetAmount) ?? 0,
     targetDate: goal.targetDate ?? '',
+    ...(goal.repeatMonths ? { repeatMonths: goal.repeatMonths } : {}),
   };
 }

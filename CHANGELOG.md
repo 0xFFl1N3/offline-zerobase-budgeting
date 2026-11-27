@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.15.1 – 2026-11-27
+
+### Added
+- The goal editor has a "Repeats" choice (once, every 3 months, every 6 months, every year), shown once a month is set. The goal line shows the month it is aiming at now and how often it repeats, e.g. "320,00 € of 480,00 € by March 2027 · yearly".
+
 ## 0.15.0 – 2026-11-27
 
 ### Fixed

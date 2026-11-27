@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { parseMoney, toAmountInput } from '../../engine/money.ts';
-import type { Category, Goal, GoalType } from '../../engine/types.ts';
+import { REPEAT_MONTHS, type Category, type Goal, type GoalType, type RepeatMonths } from '../../engine/types.ts';
 import { t, type MessageKey } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { buildGoal, goalToForm } from './buildGoal.ts';
@@ -23,16 +23,17 @@ export function GoalEditor({ category, goal, onClose }: Props) {
   const saveGoal = useBudgetStore((s) => s.saveGoal);
   const removeGoal = useBudgetStore((s) => s.removeGoal);
 
-  const initial = goal ? goalToForm(goal) : { type: 'target_balance' as GoalType, amount: 0, targetDate: '' };
+  const initial = goal ? goalToForm(goal) : { type: 'target_balance' as GoalType, amount: 0, targetDate: '', repeatMonths: null };
   const [type, setType] = useState<GoalType>(initial.type);
   const [amountText, setAmountText] = useState(initial.amount ? toAmountInput(initial.amount) : '');
   const [targetDate, setTargetDate] = useState(initial.targetDate);
+  const [repeatMonths, setRepeatMonths] = useState<RepeatMonths | null>(initial.repeatMonths ?? null);
   const { run, error, setError } = useAction();
 
   const submit = () => {
     const amount = parseMoney(amountText);
     if (amount === null) return setError(t('goal.errorAmount'));
-    const result = buildGoal({ type, amount, targetDate }, category.id, goal?.id ?? crypto.randomUUID());
+    const result = buildGoal({ type, amount, targetDate, repeatMonths }, category.id, goal?.id ?? crypto.randomUUID());
     if (!result.ok) return setError(t(result.error));
     const next = result.goal;
     void run(() => saveGoal(next)).then((ok) => ok && onClose());
@@ -66,6 +67,21 @@ export function GoalEditor({ category, goal, onClose }: Props) {
         <label className={label}>
           {t('goal.byMonth')}
           <input {...NO_AUTOFILL} type="month" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className={`${field} mt-1 block`} />
+        </label>
+      )}
+      {type !== 'monthly_amount' && targetDate !== '' && (
+        <label className={label}>
+          {t('goal.repeat')}
+          <select
+            value={repeatMonths ?? ''}
+            onChange={(e) => setRepeatMonths(e.target.value ? (Number(e.target.value) as RepeatMonths) : null)}
+            className={`${field} mt-1 block`}
+          >
+            <option value="">{t('goal.repeatOnce')}</option>
+            {REPEAT_MONTHS.map((n) => (
+              <option key={n} value={n}>{t(`goal.repeatEvery${n}`)}</option>
+            ))}
+          </select>
         </label>
       )}
       <button type="submit" className="rounded bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">{t('goal.save')}</button>

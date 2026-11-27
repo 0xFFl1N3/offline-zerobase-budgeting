@@ -5,6 +5,7 @@ What changed for you in each release, newest first. The full technical list is i
 ## 0.15 – Bills that come back
 2026-11-27
 
+- Goals for bills that come back (insurance every March, car tax every year) can repeat: after the bill they start over by themselves.
 - Goals with a month no longer ask for the full amount again after you paid the bill.
 
 ## 0.14 – Faster entry
