@@ -5,7 +5,8 @@ What changed for you in each release, newest first. The full technical list is i
 ## 0.12 – Try it with sample data
 2026-11-27
 
-- Try the app with a year of sample data, in English or German.
+- New to the app? "Try with sample data" on the setup screen fills it with a year of made-up transactions, in English or German, ending today.
+- A bar at the top reminds you it is sample data. "Set up my own budget" clears it and starts the setup.
 
 ## 0.11 – A clearer look
 2026-11-27

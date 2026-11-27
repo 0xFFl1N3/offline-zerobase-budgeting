@@ -76,6 +76,7 @@ type Status = 'loading' | 'unsupported' | 'off' | 'needsAccess' | 'on';
 /** Settings card: choose the folder, see when the last automatic backup ran, allow access again. */
 export function AutoBackupCard() {
   const lastBackupAt = useBudgetStore((s) => s.lastBackupAt);
+  const demo = useBudgetStore((s) => s.demo);
   const [status, setStatus] = useState<Status>('loading');
   const [folder, setFolder] = useState<FolderHandle | null>(null);
   const [lastDate, setLastDate] = useState<string | null>(null);
@@ -129,15 +130,16 @@ export function AutoBackupCard() {
       <h2 className="text-sm font-semibold">{t('autoBackup.title')}</h2>
       <p className="mt-2 text-sm text-slate-600">{t('autoBackup.intro')}</p>
 
-      {status === 'unsupported' && <p className="mt-2 text-sm text-slate-500">{t('autoBackup.unsupported')}</p>}
+      {demo && <p className="mt-2 text-sm text-slate-500">{t('autoBackup.demoOff')}</p>}
+      {!demo && status === 'unsupported' && <p className="mt-2 text-sm text-slate-500">{t('autoBackup.unsupported')}</p>}
 
-      {status === 'off' && (
+      {!demo && status === 'off' && (
         <button type="button" onClick={() => void choose()} className={`mt-3 ${button}`}>
           {t('autoBackup.choose')}
         </button>
       )}
 
-      {(status === 'on' || status === 'needsAccess') && folder && (
+      {!demo && (status === 'on' || status === 'needsAccess') && folder && (
         <>
           <p className="mt-2 text-sm">
             {t('autoBackup.folder', { name: folder.name })}

@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.12.2 – 2026-11-27
+
+### Added
+- While the app holds sample data, a bar at the top says so ("You are looking at sample data") with a button "Set up my own budget". After a confirmation it deletes the sample data and opens the setup screen.
+- Automatic backups are off while trying the app with sample data, so the backup folder never fills with made-up budgets. Settings says so on the Automatic backup card.
+
 ## 0.12.1 – 2026-11-27
 
 ### Added

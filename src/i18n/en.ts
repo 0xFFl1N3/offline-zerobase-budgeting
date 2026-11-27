@@ -41,6 +41,12 @@ export const en = {
   'setup.start': 'Start budgeting',
   'setup.demo': 'Try with sample data',
   'setup.demoHint': 'A year of made-up transactions to look around in. You can set up your own budget at any time.',
+
+  // Sample data
+  'demo.notice': 'You are looking at sample data.',
+  'demo.leave': 'Set up my own budget',
+  'demo.leaveConfirm': 'Delete the sample data and go to setup?',
+  'autoBackup.demoOff': 'Off while you try the app with sample data.',
   'setup.errorName': 'Give the account a name.',
   'setup.errorBalance': 'Enter the current balance, e.g. 1500 or 1,500.00.',
 

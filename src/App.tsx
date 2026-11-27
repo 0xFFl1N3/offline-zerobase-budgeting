@@ -4,6 +4,7 @@ import { AccountsSidebar } from './features/accounts/AccountsSidebar.tsx';
 import { BudgetView } from './features/budget/BudgetView.tsx';
 import { SettingsView } from './features/settings/SettingsView.tsx';
 import { Setup } from './features/setup/Setup.tsx';
+import { DemoBar } from './features/demo/DemoBar.tsx';
 import { TransactionsView } from './features/transactions/TransactionsView.tsx';
 import { AnalyticsIcon, BudgetIcon, CloseIcon, MenuIcon, SettingsIcon, TransactionsIcon } from './components/icons.tsx';
 import { accountBalance } from './engine/budget.ts';
@@ -35,6 +36,7 @@ export default function App() {
   const dueCount = useBudgetStore((s) => dueItems(s.state.recurring, toISODate()).length);
   const load = useBudgetStore((s) => s.load);
   const problem = useBudgetStore((s) => s.problem);
+  const demo = useBudgetStore((s) => s.demo);
   const t = useT();
   // Changing the language redraws everything below, so amounts and dates pick up the new format too.
   const language = useLanguage();
@@ -55,7 +57,8 @@ export default function App() {
   useEffect(() => {
     if (hasBudget) void requestPersistence();
   }, [hasBudget]);
-  useAutoBackup(hasBudget);
+  // No automatic backups of sample data: they would only fill the folder with made-up budgets.
+  useAutoBackup(hasBudget && !demo);
 
   // While the drawer is open: Escape closes it and the page behind it does not scroll.
   useEffect(() => {
@@ -106,6 +109,7 @@ export default function App() {
       </div>
 
       <div className="min-w-0 flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+        <DemoBar />
         {/* Desktop: tabs along the top. */}
         <nav className="hidden gap-2 border-b border-slate-200 bg-white px-4 md:flex">
           {TABS.map((tab) => (

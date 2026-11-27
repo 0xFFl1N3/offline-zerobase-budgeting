@@ -38,6 +38,12 @@ export const de: Messages = {
   'setup.start': 'Los geht’s',
   'setup.demo': 'Mit Beispieldaten ausprobieren',
   'setup.demoHint': 'Ein Jahr erfundener Buchungen zum Umschauen. Du kannst jederzeit ein eigenes Budget anlegen.',
+
+  // Sample data
+  'demo.notice': 'Du siehst Beispieldaten.',
+  'demo.leave': 'Eigenes Budget anlegen',
+  'demo.leaveConfirm': 'Die Beispieldaten löschen und zur Einrichtung gehen?',
+  'autoBackup.demoOff': 'Aus, solange du die App mit Beispieldaten ausprobierst.',
   'setup.errorName': 'Gib dem Konto einen Namen.',
   'setup.errorBalance': 'Gib den aktuellen Kontostand ein, z. B. 1500 oder 1.500,00.',
 
