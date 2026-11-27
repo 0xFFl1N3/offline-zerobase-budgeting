@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.7 – 2026-11-27
+
+### Changed
+- The "What's new" notes for 0.11 are now a short overview: a tidier look and clearer wording.
+
 ## 0.11.6 – 2026-11-27
 
 ### Changed

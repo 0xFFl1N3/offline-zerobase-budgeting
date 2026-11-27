@@ -5,9 +5,8 @@ What changed for you in each release, newest first. The full technical list is i
 ## 0.11 – A clearer look
 2026-11-27
 
-- Budget: each category group is its own card, so groups are easy to tell apart.
-- Recurring transactions: a tidier list, soonest first, that folds away with a click on its heading.
-- Clearer German wording throughout, e.g. Statistiken, Backup and Restschuld.
+- Overhauled look: the budget and the recurring transactions are tidier and easier to scan.
+- Clearer wording: buttons and texts say plainly what they do, especially in German.
 
 ## 0.10 – Debts
 2026-11-27
