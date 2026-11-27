@@ -169,9 +169,10 @@ function balanceGoalProgress(state: BudgetState, goal: Goal, target: Cents, mont
   const id = goal.categoryId;
   const available = categoryAvailable(state, id, month);
   const due = dueMonth(goal, month);
-  const progress = (current: Cents, neededThisMonth: Cents): GoalProgress => ({
+  const progress = (current: Cents, neededThisMonth: Cents, pastDue = false): GoalProgress => ({
     goalId: goal.id, target, current, percent: clampPercent(current, target), neededThisMonth: Math.max(0, neededThisMonth),
     ...(due ? { dueMonth: due } : {}),
+    ...(pastDue ? { pastDue: true as const } : {}),
   });
   if (due === undefined) return progress(available, target - available);
 
@@ -183,10 +184,10 @@ function balanceGoalProgress(state: BudgetState, goal: Goal, target: Cents, mont
   if (month > due) {
     // Only a one-time goal gets here: a repeating one has already moved on to its next due month.
     const funded = fundedIn(due);
-    if (funded >= target) return progress(target, 0);
+    if (funded >= target) return progress(target, 0, true);
     let assignedSince = 0;
     for (let m = addMonths(due, 1); m <= month; m = addMonths(m, 1)) assignedSince += categoryAssigned(state, id, m);
-    return progress(funded + assignedSince, target - funded - assignedSince);
+    return progress(funded + assignedSince, target - funded - assignedSince, true);
   }
   if (month === due) {
     const funded = fundedIn(due);

@@ -17,13 +17,16 @@ interface Props {
   category: Category;
   goal: Goal | undefined;
   onClose: () => void;
+  /** Start from the goal's amount with no month (a new round after a past due date). */
+  fresh?: boolean;
 }
 
-export function GoalEditor({ category, goal, onClose }: Props) {
+export function GoalEditor({ category, goal, onClose, fresh = false }: Props) {
   const saveGoal = useBudgetStore((s) => s.saveGoal);
   const removeGoal = useBudgetStore((s) => s.removeGoal);
 
-  const initial = goal ? goalToForm(goal) : { type: 'target_balance' as GoalType, amount: 0, targetDate: '', repeatMonths: null };
+  // A fresh goal after a past due date keeps the amount and asks for a new month.
+  const initial = goal ? { ...goalToForm(goal), ...(fresh ? { targetDate: '', repeatMonths: null } : {}) } : { type: 'target_balance' as GoalType, amount: 0, targetDate: '', repeatMonths: null };
   const [type, setType] = useState<GoalType>(initial.type);
   const [amountText, setAmountText] = useState(initial.amount ? toAmountInput(initial.amount) : '');
   const [targetDate, setTargetDate] = useState(initial.targetDate);

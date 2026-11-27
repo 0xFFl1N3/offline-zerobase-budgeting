@@ -73,7 +73,8 @@ test('spending from the category before the due month has to be made up', () => 
 test('a one-time goal met in its due month asks for nothing afterwards; one that was not keeps asking for the rest', () => {
   const met = budget(goal(), { from: '2026-04', to: '2027-03', bills: [bill('2027-03-05', 48000)] });
   const after = goalProgress(met, met.goals[0]!, '2027-06');
-  assert.deepEqual([after.percent, after.neededThisMonth], [100, 0]);
+  assert.deepEqual([after.percent, after.neededThisMonth, after.pastDue], [100, 0, true]);
+  assert.equal(goalProgress(met, met.goals[0]!, '2027-03').pastDue, undefined, 'not in the due month itself');
   assert.deepEqual(autoAssignPlan(met, '2027-06').steps, []);
   const short = budget(goal(), { from: '2026-10', to: '2027-03', each: 5000 }); // 300 by March
   assert.equal(need(short, '2027-04'), 18000);

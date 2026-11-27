@@ -6,7 +6,7 @@ What changed for you in each release, newest first. The full technical list is i
 2026-11-27
 
 - Goals for bills that come back (insurance every March, car tax every year) can repeat: after the bill they start over by themselves.
-- Goals with a month no longer ask for the full amount again after you paid the bill.
+- Goals with a month no longer ask for the full amount again after you paid the bill. Once the month has passed, the goal says whether it was met and offers to repeat it yearly, set a new one or remove it.
 
 ## 0.14 – Faster entry
 2026-11-27

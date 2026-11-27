@@ -144,4 +144,6 @@ export interface GoalProgress {
   neededThisMonth: Cents;
   /** Goals with a date: the due month aimed at in the month shown (for a repeating goal, the next one). */
   dueMonth?: Month;
+  /** A one-time goal whose due month has passed: it is met or not, and the user decides what comes next. */
+  pastDue?: true;
 }

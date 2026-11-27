@@ -16,7 +16,7 @@ import { debtForCategory, nextPaymentMonth, payoffForecast, plannedPayment } fro
 import { useNavigation } from '../../store/navigation.ts';
 import { useAction } from '../errors/useAction.ts';
 import { NameCell } from './NameCell.tsx';
-import { GoalProgress } from './GoalProgress.tsx';
+import { DueGoalActions, GoalProgress } from './GoalProgress.tsx';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 /** The desktop table layout; phones get MobileGroupRow and MobileCategoryRow instead. */
@@ -68,6 +68,12 @@ export function BudgetView() {
   const restoreGroup = useBudgetStore((s) => s.restoreGroup);
   const [showArchived, setShowArchived] = useState(false);
   const [editingGoal, setEditingGoal] = useState<string | null>(null);
+  /** The goal editor was opened from "New goal…" after a past due date. */
+  const [freshGoal, setFreshGoal] = useState(false);
+  const openGoal = (id: string, fresh = false) => {
+    setFreshGoal(fresh);
+    setEditingGoal(id);
+  };
   const [autoMessage, setAutoMessage] = useState<{ month: string; text: string } | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   /** On phones: the group or category whose details and actions are open. */
@@ -254,7 +260,8 @@ export function BudgetView() {
                     fmt={fmt}
                     goal={goal ? <GoalProgress state={state} goal={goal} month={month} currency={currency} /> : null}
                     hasGoal={goal !== undefined}
-                    onEditGoal={() => setEditingGoal(cat.id)}
+                    onEditGoal={() => openGoal(cat.id)}
+                    dueActions={goal ? <DueGoalActions state={state} goal={goal} month={month} onNewGoal={() => openGoal(cat.id, true)} /> : null}
                     onOpenDebt={debt ? () => openDebt(debt.id) : undefined}
                     debtLine={debtLine}
                     open={open === cat.id}
@@ -281,16 +288,19 @@ export function BudgetView() {
                         }}
                         onCancelRename={() => setRenaming(null)}
                         handle={categoryDnd.handle(cat.id, cat.name, group.id)}
-                        extraAction={goal ? undefined : { label: t('budget.setGoal'), onClick: () => setEditingGoal(cat.id) }}
+                        extraAction={goal ? undefined : { label: t('budget.setGoal'), onClick: () => openGoal(cat.id) }}
                         actionLabel={hasTransactions([cat.id]) ? t('budget.archive') : t('common.delete')}
                         onAction={() =>
                           removeOrArchive(t('budget.categoryLabel', { name: cat.name }), [cat.id], () => void deleteCategory(cat.id), () => void archiveCategory(cat.id))
                         }
                       />
                       {goal && (
-                        <button type="button" aria-label={t('budget.editGoalFor', { name: cat.name })} onClick={() => setEditingGoal(cat.id)} className="block w-full text-left">
-                          <GoalProgress state={state} goal={goal} month={month} currency={currency} />
-                        </button>
+                        <>
+                          <button type="button" aria-label={t('budget.editGoalFor', { name: cat.name })} onClick={() => openGoal(cat.id)} className="block w-full text-left">
+                            <GoalProgress state={state} goal={goal} month={month} currency={currency} />
+                          </button>
+                          <DueGoalActions state={state} goal={goal} month={month} onNewGoal={() => openGoal(cat.id, true)} className="-ml-1.5" />
+                        </>
                       )}
                       {debt && (
                         <button type="button" onClick={() => openDebt(debt.id)} title={t('debt.planLink')} className="block text-xs text-slate-600 hover:text-sky-700 hover:underline">
@@ -310,7 +320,7 @@ export function BudgetView() {
                       {formatMoney(available, currency)}
                     </span>
                   </div>
-                  {editingGoal === cat.id && <GoalEditor category={cat} goal={goal} onClose={() => setEditingGoal(null)} />}
+                  {editingGoal === cat.id && <GoalEditor key={String(freshGoal)} category={cat} goal={goal} fresh={freshGoal} onClose={() => setEditingGoal(null)} />}
                   </div>
                 );
               })}
@@ -433,13 +443,15 @@ interface CategoryRowProps extends RowActions {
   goal: ReactNode;
   hasGoal: boolean;
   onEditGoal: () => void;
+  /** What to do with a goal whose due month has passed (empty otherwise). */
+  dueActions?: ReactNode;
   /** For a debt's payment category. */
   onOpenDebt?: () => void;
   debtLine?: string | null;
 }
 
 /** Phone layout of a category: name, goal and Available; tap it to assign money and for the other actions. */
-function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt, goal, hasGoal, onEditGoal, onOpenDebt, debtLine, ...a }: CategoryRowProps) {
+function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt, goal, hasGoal, onEditGoal, dueActions, onOpenDebt, debtLine, ...a }: CategoryRowProps) {
   const pill = available < 0 ? 'bg-red-100 text-red-800' : available === 0 ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-800';
   return (
     <div className={`md:hidden ${a.open ? 'bg-slate-50' : ''}`}>
@@ -464,6 +476,7 @@ function MobileCategoryRow({ name, available, activity, assigned, onAssign, fmt,
       </div>
       {a.open && !a.renaming && !a.move && (
         <div className="px-3 pb-3">
+          {dueActions && <div className="mb-2 -ml-1.5">{dueActions}</div>}
           <div className="flex items-center gap-3 text-sm">
             <label className="flex items-center gap-2">
               <span className="text-slate-600">{t('budget.colAssigned')}</span>

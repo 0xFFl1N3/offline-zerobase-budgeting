@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.15.3 – 2026-11-27
+
+### Added
+- A one-time goal whose month has passed says so instead of showing a progress bar: "Due in March 2027 · done", or "· 180,00 € still missing" if the money was not there in time. Below it: "Repeat yearly" (turns it into a yearly goal in one click), "New goal…" (opens the editor with the same amount and no month) and "Remove goal". On phones these show when you tap the category.
+
 ## 0.15.2 – 2026-11-27
 
 ### Changed
