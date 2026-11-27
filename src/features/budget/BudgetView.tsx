@@ -341,7 +341,7 @@ export function BudgetView() {
                     actionLabel={hasTransactions([cat.id]) ? t('budget.archive') : t('common.delete')}
                     onAction={() => removeOrArchive(t('budget.categoryLabel', { name: cat.name }), [cat.id], () => void deleteCategory(cat.id), () => void archiveCategory(cat.id))}
                   />
-                  <div {...categoryDnd.rowProps(cat.id, group.id)} className={`${COLUMNS} px-4 py-2 text-sm`}>
+                  <div {...categoryDnd.rowProps(cat.id, group.id)} className={`${COLUMNS} px-4 py-2 text-sm ${ticked.has(cat.id) ? 'bg-sky-50' : ''}`}>
                     {/* Lined up under the group: room for its arrow, then the tick box, then the name. */}
                     <div className="flex items-start gap-1">
                     <span className="w-7 shrink-0" />
@@ -456,7 +456,7 @@ function Tick({ label, checked, mixed = false, disabled = false, onChange, class
           if (el) el.indeterminate = mixed;
         }}
         onChange={(e) => onChange(mixed || e.target.checked)}
-        className="h-4 w-4 cursor-pointer accent-sky-600 disabled:cursor-default"
+        className="tick"
       />
     </span>
   );

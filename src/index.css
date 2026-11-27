@@ -30,6 +30,8 @@
 .dark .focus\:bg-white:focus { background-color: #0f172a; }
 
 .dark .text-sky-700 { color: #38bdf8; }
+.dark .bg-sky-50 { background-color: #0c2a3f; }
+.dark .text-sky-900 { color: #bae6fd; }
 .dark .hover\:bg-sky-50:hover { background-color: #082f49; }
 .dark .focus\:bg-sky-50:focus { background-color: #082f49; }
 
@@ -53,6 +55,38 @@
 .dark .bg-amber-200 { background-color: #92400e; }
 .dark .border-amber-300 { border-color: #b45309; }
 .dark .divide-amber-200 > :not(:last-child) { border-color: #78350f; }
+
+/*
+ * The budget's tick boxes: a thin outline that stays in the background until ticked, instead of the browser's
+ * heavy grey box (most visible in the dark theme).
+ */
+.tick {
+  appearance: none;
+  display: grid;
+  place-content: center;
+  width: 0.875rem;
+  height: 0.875rem;
+  margin: 0;
+  border: 1.5px solid #94a3b8;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+}
+.dark .tick { border-color: #64748b; }
+.tick:hover { border-color: #0284c7; }
+.tick:checked,
+.tick:indeterminate { border-color: #0284c7; background: #0284c7; }
+.tick:checked::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.3rem;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: translateY(-1px) rotate(-45deg);
+}
+.tick:indeterminate::after { content: ''; width: 0.5rem; height: 2px; background: #fff; }
+.tick:focus-visible { outline: 2px solid #0ea5e9; outline-offset: 2px; }
+.tick:disabled { cursor: default; opacity: 0.4; }
 
 /* Phones: fields use 16px text, otherwise iOS zooms the page in whenever one is focused. */
 @media (max-width: 767px) {

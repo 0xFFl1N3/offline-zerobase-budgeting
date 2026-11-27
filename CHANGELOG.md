@@ -2,6 +2,14 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.11 – 2026-11-27
+
+### Changed
+- The budget's tick boxes are now thin outlines that stay in the background until ticked, instead of the browser's heavy grey boxes. A ticked category's row is lightly tinted.
+
+### Fixed
+- In the dark theme, light-blue highlights (the payee suggestion under the cursor, the note in the Auto-assign menu) showed as bright light-blue areas; they now use a dark blue.
+
 ## 0.19.10 – 2026-11-27
 
 ### Added
