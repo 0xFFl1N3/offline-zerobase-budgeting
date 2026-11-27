@@ -21,6 +21,8 @@ export interface Settings {
   currency: Currency;
   /** ISO timestamp of the last backup export, or null if never. */
   lastBackupAt: string | null;
+  /** The data is the sample data from the setup screen. */
+  demo: boolean;
 }
 
 const DEFAULT_CURRENCY: Currency = 'EUR';
@@ -51,7 +53,7 @@ export async function loadAll(db: BudgetDB): Promise<{ state: BudgetState; setti
       transactions,
       recurring,
     },
-    settings: { currency, lastBackupAt: byKey.get('lastBackupAt') ?? null },
+    settings: { currency, lastBackupAt: byKey.get('lastBackupAt') ?? null, demo: byKey.get('demo') === 'true' },
   };
 }
 
@@ -153,6 +155,8 @@ export async function saveSettings(db: BudgetDB, s: Settings) {
   await db.settings.put({ key: 'currency', value: s.currency });
   if (s.lastBackupAt) await db.settings.put({ key: 'lastBackupAt', value: s.lastBackupAt });
   else await db.settings.delete('lastBackupAt');
+  if (s.demo) await db.settings.put({ key: 'demo', value: 'true' });
+  else await db.settings.delete('demo');
 }
 
 /** Replaces everything in the database with the given data, atomically. */

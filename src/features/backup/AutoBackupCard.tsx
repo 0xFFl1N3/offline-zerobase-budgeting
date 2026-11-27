@@ -30,11 +30,11 @@ const CHECK_EVERY_MS = 30 * 60 * 1000;
 /** Writes today's backup into the folder and remembers it. Returns false if it could not. */
 async function backUpTo(folder: FolderHandle): Promise<boolean> {
   // What is saved, not this tab's copy, which could be behind if another tab just changed something.
-  const { state, currency } = await useBudgetStore.getState().readSaved();
+  const { state, currency, demo } = await useBudgetStore.getState().readSaved();
   if (state.accounts.length === 0) return false;
   const today = toISODate();
   try {
-    await writeBackup(folder, serializeBackup(createBackup(state, currency)), today);
+    await writeBackup(folder, serializeBackup(createBackup(state, currency, new Date(), demo)), today);
   } catch {
     return false;
   }

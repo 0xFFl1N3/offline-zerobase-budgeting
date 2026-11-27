@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { parseMoney, type Currency } from '../../engine/money.ts';
-import { useT } from '../../i18n/i18n.ts';
+import { useLanguage, useT } from '../../i18n/i18n.ts';
 import { useBudgetStore } from '../../store/budgetStore.ts';
 import { LanguageSelect } from '../settings/LanguageSelect.tsx';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
@@ -11,6 +11,8 @@ const field = 'mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2';
 export function Setup() {
   const t = useT();
   const completeSetup = useBudgetStore((s) => s.completeSetup);
+  const startDemo = useBudgetStore((s) => s.startDemo);
+  const language = useLanguage();
   const [accountName, setAccountName] = useState(() => t('setup.defaultAccountName'));
   const [balance, setBalance] = useState('');
   const [currency, setCurrency] = useState<Currency>('EUR');
@@ -60,6 +62,16 @@ export function Setup() {
           {t('setup.start')}
         </button>
       </Form>
+      <div className="mt-6 border-t border-slate-200 pt-5 text-center">
+        <button
+          type="button"
+          onClick={() => void startDemo(language)}
+          className="w-full rounded border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          {t('setup.demo')}
+        </button>
+        <p className="mt-2 text-xs text-slate-500">{t('setup.demoHint')}</p>
+      </div>
     </main>
   );
 }

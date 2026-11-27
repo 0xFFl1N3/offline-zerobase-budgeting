@@ -39,6 +39,8 @@ export const en = {
   'setup.balance': 'Current balance',
   'setup.currency': 'Currency',
   'setup.start': 'Start budgeting',
+  'setup.demo': 'Try with sample data',
+  'setup.demoHint': 'A year of made-up transactions to look around in. You can set up your own budget at any time.',
   'setup.errorName': 'Give the account a name.',
   'setup.errorBalance': 'Enter the current balance, e.g. 1500 or 1,500.00.',
 

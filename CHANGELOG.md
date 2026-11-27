@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.12.1 – 2026-11-27
+
+### Added
+- The setup screen has a second button, "Try with sample data", that fills the app with the sample data in the language chosen above. It goes through the same checks as restoring a backup.
+- The app remembers that its data is sample data, also after a reload. A backup of the sample data comes back as sample data; restoring any other backup, setting up a budget or deleting all data ends it.
+
 ## 0.12.0 – 2026-11-27
 
 ### Added

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createDb, type BudgetDB } from '../db/db.ts';
-import type { BackupFile } from '../db/backup.ts';
+import { createBackup, parseBackup, serializeBackup, type BackupFile } from '../db/backup.ts';
+import { buildDemo, type DemoLanguage } from '../engine/demo.ts';
 import * as repo from '../db/repository.ts';
 import type { Currency } from '../engine/money.ts';
 import { addDebtAccount, type NewDebt } from '../engine/edit.ts';
@@ -37,6 +38,8 @@ export interface BudgetStore {
   month: Month;
   /** ISO timestamp of the last backup export, or null. */
   lastBackupAt: string | null;
+  /** The budget is the sample data from the setup screen. */
+  demo: boolean;
   /** The latest delete, until it is undone, dismissed or another change is made. */
   undo: UndoEntry | null;
   /** A failed save or load, shown in the error bar until dismissed. */
@@ -48,7 +51,9 @@ export interface BudgetStore {
   dismissUndo: () => void;
   load: () => Promise<void>;
   /** The budget as saved in the database (not this tab's copy), e.g. for backups. */
-  readSaved: () => Promise<{ state: BudgetState; currency: Currency }>;
+  readSaved: () => Promise<{ state: BudgetState; currency: Currency; demo: boolean }>;
+  /** Fills the empty app with a year of sample data, through the same checks as restoring a backup. */
+  startDemo: (language: DemoLanguage) => Promise<void>;
   completeSetup: (input: { accountName: string; initialBalance: Cents; currency: Currency }) => Promise<void>;
   addAccount: (name: string, type: AccountType, openingBalance: Cents) => Promise<void>;
   /** Adds a debt with its payment category (and a monthly goal for the minimum payment). */
@@ -175,6 +180,13 @@ function guardActions<T extends object>(actions: T, report: (problem: Problem) =
 export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth()) {
   const store = create<BudgetStore>()((set, get) => {
     /** Runs a delete and keeps the data from before it for Undo. */
+    /** The settings as they are now, with some changed; every save goes through this so none is lost on the way. */
+    const settingsNow = (changes: Partial<repo.Settings> = {}): repo.Settings => ({
+      currency: get().currency,
+      lastBackupAt: get().lastBackupAt,
+      demo: get().demo,
+      ...changes,
+    });
     const undoable = async (kind: UndoKind, run: () => Promise<BudgetState>) => {
       const before = get().state;
       const next = await run();
@@ -217,6 +229,7 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     currency: 'EUR',
     month: startMonth,
     lastBackupAt: null,
+    demo: false,
     undo: null,
     problem: null,
     reportProblem: (problem) => set({ problem }),
@@ -225,26 +238,26 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     undoDelete: async () => {
       const entry = get().undo;
       if (!entry) return;
-      await repo.replaceAll(db, entry.before, { currency: get().currency, lastBackupAt: get().lastBackupAt });
+      await repo.replaceAll(db, entry.before, settingsNow());
       set({ state: entry.before, undo: null });
     },
     dismissUndo: () => set({ undo: null }),
 
     readSaved: async () => {
       const { state, settings } = await repo.loadAll(db);
-      return { state, currency: settings.currency };
+      return { state, currency: settings.currency, demo: settings.demo };
     },
 
     load: async () => {
       const { state, settings } = await repo.loadAll(db);
-      set({ state, currency: settings.currency, lastBackupAt: settings.lastBackupAt, ready: true });
+      set({ state, currency: settings.currency, lastBackupAt: settings.lastBackupAt, demo: settings.demo, ready: true });
     },
 
     completeSetup: async ({ accountName, initialBalance, currency }) => {
       const account = newAccount(accountName, 'checking', initialBalance, 0);
-      await repo.saveSettings(db, { currency, lastBackupAt: get().lastBackupAt });
+      await repo.saveSettings(db, settingsNow({ currency, demo: false }));
       await repo.saveAccount(db, account);
-      set((s) => ({ currency, state: { ...s.state, accounts: [...s.state.accounts, account] } }));
+      set((s) => ({ currency, demo: false, state: { ...s.state, accounts: [...s.state.accounts, account] } }));
     },
 
     addAccount: async (name, type, openingBalance) => {
@@ -485,25 +498,30 @@ export function createBudgetStore(db: BudgetDB, startMonth: Month = currentMonth
     restoreGroup: (id) => applyArchive(setGroupArchived(get().state, id, false)),
 
     setCurrency: async (currency) => {
-      await repo.saveSettings(db, { currency, lastBackupAt: get().lastBackupAt });
+      await repo.saveSettings(db, settingsNow({ currency }));
       set({ currency });
     },
 
     clearAllData: async () => {
-      const settings = { currency: get().currency, lastBackupAt: null };
-      await repo.replaceAll(db, emptyState(), settings);
-      set({ state: emptyState(), lastBackupAt: null });
+      await repo.replaceAll(db, emptyState(), settingsNow({ lastBackupAt: null, demo: false }));
+      set({ state: emptyState(), lastBackupAt: null, demo: false });
     },
 
     importBackup: async (backup) => {
-      const settings = { currency: backup.settings.currency, lastBackupAt: get().lastBackupAt };
+      const settings = settingsNow({ currency: backup.settings.currency, demo: backup.settings.demo === true });
       await repo.replaceAll(db, backup.data, settings);
-      set({ state: backup.data, currency: settings.currency });
+      set({ state: backup.data, currency: settings.currency, demo: settings.demo });
+    },
+
+    startDemo: async (language) => {
+      const parsed = parseBackup(serializeBackup(createBackup(buildDemo(toISODate(), language), 'EUR', new Date(), true)));
+      if (!parsed.ok) throw new Error(parsed.error);
+      await get().importBackup(parsed.backup);
     },
 
     markBackedUp: async () => {
       const lastBackupAt = new Date().toISOString();
-      await repo.saveSettings(db, { currency: get().currency, lastBackupAt });
+      await repo.saveSettings(db, settingsNow({ lastBackupAt }));
       set({ lastBackupAt });
     },
 

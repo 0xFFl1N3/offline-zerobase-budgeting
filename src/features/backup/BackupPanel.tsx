@@ -12,6 +12,7 @@ export function BackupPanel({ variant = 'sidebar' }: { variant?: 'sidebar' | 'ca
   const state = useBudgetStore((s) => s.state);
   const currency = useBudgetStore((s) => s.currency);
   const lastBackupAt = useBudgetStore((s) => s.lastBackupAt);
+  const demo = useBudgetStore((s) => s.demo);
   const importBackup = useBudgetStore((s) => s.importBackup);
   const markBackedUp = useBudgetStore((s) => s.markBackedUp);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -20,7 +21,7 @@ export function BackupPanel({ variant = 'sidebar' }: { variant?: 'sidebar' | 'ca
   const status = backupStatus(lastBackupAt, state.accounts.length > 0);
 
   const exportFile = () => {
-    const json = serializeBackup(createBackup(state, currency));
+    const json = serializeBackup(createBackup(state, currency, new Date(), demo));
     const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
     const link = document.createElement('a');
     link.href = url;

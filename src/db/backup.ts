@@ -22,14 +22,15 @@ export interface BackupFile {
   app: typeof BACKUP_APP;
   version: number;
   exportedAt: string;
-  settings: { currency: Currency };
+  /** demo: the data is the app's sample data; it comes back as sample data when restored. */
+  settings: { currency: Currency; demo?: true };
   data: BudgetState;
 }
 
 export type ParseResult = { ok: true; backup: BackupFile } | { ok: false; error: string };
 
-export function createBackup(state: BudgetState, currency: Currency, now: Date = new Date()): BackupFile {
-  return { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: now.toISOString(), settings: { currency }, data: state };
+export function createBackup(state: BudgetState, currency: Currency, now: Date = new Date(), demo = false): BackupFile {
+  return { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: now.toISOString(), settings: demo ? { currency, demo: true } : { currency }, data: state };
 }
 
 export const serializeBackup = (backup: BackupFile): string => JSON.stringify(backup, null, 2);
@@ -268,7 +269,8 @@ export function parseBackup(text: string): ParseResult {
     const settings = json['settings'];
     const currency = isObj(settings) && settings['currency'] === 'USD' ? 'USD' : 'EUR';
     const exportedAt = typeof json['exportedAt'] === 'string' ? json['exportedAt'] : '';
-    return { ok: true, backup: { app: BACKUP_APP, version, exportedAt, settings: { currency }, data: parseData(json['data']) } };
+    const demo = isObj(settings) && settings['demo'] === true;
+    return { ok: true, backup: { app: BACKUP_APP, version, exportedAt, settings: demo ? { currency, demo } : { currency }, data: parseData(json['data']) } };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'The backup file could not be read.' };
   }

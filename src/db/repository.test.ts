@@ -33,7 +33,7 @@ test('saved records come back from loadAll', async () => {
   await saveTransaction(db, {
     id: 't', accountId: 'a', date: '2026-01-05', payee: 'X', categoryId: 'c', memo: '', amount: -100, transferAccountId: null,
   });
-  await saveSettings(db, { currency: 'USD', lastBackupAt: null });
+  await saveSettings(db, { currency: 'USD', lastBackupAt: null, demo: false });
   const { state, settings } = await loadAll(db);
   assert.equal(state.accounts[0]?.openingBalance, 5000);
   assert.deepEqual(state.groups.map((g) => g.id), ['g1', 'g2']); // sorted by sortOrder

@@ -36,6 +36,8 @@ export const de: Messages = {
   'setup.balance': 'Aktueller Kontostand',
   'setup.currency': 'Währung',
   'setup.start': 'Los geht’s',
+  'setup.demo': 'Mit Beispieldaten ausprobieren',
+  'setup.demoHint': 'Ein Jahr erfundener Buchungen zum Umschauen. Du kannst jederzeit ein eigenes Budget anlegen.',
   'setup.errorName': 'Gib dem Konto einen Namen.',
   'setup.errorBalance': 'Gib den aktuellen Kontostand ein, z. B. 1500 oder 1.500,00.',
 
