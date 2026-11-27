@@ -162,7 +162,13 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
             type="button"
             onClick={() => {
               const lines = [t('account.deleteConfirm', { name: account.name })];
-              if (account.openingBalance !== 0) lines.push(t('account.deleteOpening', { amount: formatMoney(account.openingBalance, currency) }));
+              // A debt is outside the budget: deleting it changes nothing there, but its category stays behind.
+              const category = state.categories.find((c) => c.id === account.paymentCategoryId);
+              if (debt) {
+                if (category) lines.push(t('debt.deleteKeepsCategory', { category: category.name }));
+              } else if (account.openingBalance !== 0) {
+                lines.push(t('account.deleteOpening', { amount: formatMoney(account.openingBalance, currency) }));
+              }
               if (window.confirm(lines.join('\n\n'))) void run(() => deleteAccount(account.id));
             }}
             className="ml-auto text-sm text-red-600 hover:underline"

@@ -587,4 +587,7 @@ export const de: Messages = {
 
   // Debts
   'rec.debtAdjustment': 'Die Differenz wird auf die Schuld gebucht und ändert nur den offenen Betrag; dein Budget bleibt, wie es ist.',
+
+  // Debts
+  'debt.deleteKeepsCategory': 'Die Zahlungskategorie „{category}“ bleibt in deinem Budget; archiviere oder lösche sie dort, wenn du sie nicht mehr brauchst.',
 };

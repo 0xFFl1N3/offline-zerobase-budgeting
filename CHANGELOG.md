@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app. Newest first.
 
+## 0.10.6 – 2026-11-27
+
+### Fixed
+- Deleting a debt said its balance would be removed from Ready to Assign, which debts are not part of. It now says that the debt's payment category stays in the budget.
+
 ## 0.10.5 – 2026-11-27
 
 ### Fixed

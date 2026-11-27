@@ -590,6 +590,9 @@ export const en = {
 
   // Debts
   'rec.debtAdjustment': 'The difference is booked on the debt and only changes what is owed; your budget stays as it is.',
+
+  // Debts
+  'debt.deleteKeepsCategory': "Its payment category \"{category}\" stays in your budget; archive or delete it there if you no longer need it.",
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;
