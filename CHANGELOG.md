@@ -2,6 +2,12 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.14.1 – 2026-11-27
+
+### Added
+- Choosing a payee you have used before fills in the category from last time, and switches between expense and income if needed (choosing your employer makes it income). This also happens when you type the payee out in full and leave the field.
+- It never replaces a category you already chose, leaves splits and transfers alone, and skips a category that has been archived since.
+
 ## 0.14.0 – 2026-11-27
 
 ### Added

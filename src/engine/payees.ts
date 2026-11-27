@@ -68,3 +68,20 @@ export function suggestPayees(memory: Map<string, PayeeInfo>, typed: string, lim
   const found = [...starts, ...contains].slice(0, limit);
   return found.length === 1 && payeeKey(found[0]!.name) === q ? [] : found;
 }
+
+/**
+ * What choosing a known payee fills into the entry form: the kind and category from last time. Only into an empty
+ * category: a category the user already chose is never replaced, and transfers and splits are left alone.
+ */
+export function fillFromPayee(
+  state: BudgetState,
+  form: { kind: 'outflow' | 'inflow' | 'transfer'; categoryId: string | null; split: boolean },
+  payee: PayeeInfo,
+): { kind?: 'outflow' | 'inflow'; categoryId?: string } {
+  if (form.kind === 'transfer' || form.split || form.categoryId) return {};
+  const categoryId = rememberedCategory(state, payee);
+  return {
+    ...(payee.kind !== form.kind ? { kind: payee.kind } : {}),
+    ...(categoryId ? { categoryId } : {}),
+  };
+}

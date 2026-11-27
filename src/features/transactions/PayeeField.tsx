@@ -1,6 +1,6 @@
-import { useId, useState, type KeyboardEvent } from 'react';
+import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
-import { suggestPayees, type PayeeInfo } from '../../engine/payees.ts';
+import { payeeKey, suggestPayees, type PayeeInfo } from '../../engine/payees.ts';
 
 interface Props {
   value: string;
@@ -22,9 +22,12 @@ export function PayeeField({ value, onChange, onPick, memory, placeholder, class
   const [active, setActive] = useState(-1);
   const suggestions = open ? suggestPayees(memory, value) : [];
   const shown = suggestions.length > 0;
+  /** The payee last handed to onPick, so leaving the field does not fill the same one in again. */
+  const picked = useRef<string | null>(null);
 
   const pick = (payee: PayeeInfo) => {
     onChange(payee.name);
+    picked.current = payeeKey(payee.name);
     onPick(payee);
     setOpen(false);
     setActive(-1);
@@ -62,11 +65,21 @@ export function PayeeField({ value, onChange, onPick, memory, placeholder, class
         value={value}
         onChange={(e) => {
           onChange(e.target.value);
+          picked.current = null;
           setOpen(true);
           setActive(-1);
         }}
         onKeyDown={onKeyDown}
-        onBlur={() => setOpen(false)}
+        onBlur={() => {
+          setOpen(false);
+          // A known payee typed out in full counts as chosen too (there is no list left to pick it from).
+          const key = payeeKey(value);
+          const known = memory.get(key);
+          if (known && picked.current !== key) {
+            picked.current = key;
+            onPick(known);
+          }
+        }}
         placeholder={placeholder}
         className={className}
       />

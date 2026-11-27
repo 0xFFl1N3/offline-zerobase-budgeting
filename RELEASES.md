@@ -5,7 +5,7 @@ What changed for you in each release, newest first. The full technical list is i
 ## 0.14 – Faster entry
 2026-11-27
 
-- The payee field suggests payees you have used before while you type.
+- The payee field suggests payees you have used before while you type, and fills in the category you used for them last time.
 
 ## 0.13 – More ways to assign
 2026-11-27

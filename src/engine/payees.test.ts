@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { payeeKey, payeeMemory, rememberedCategory, suggestPayees } from './payees.ts';
+import { fillFromPayee, payeeKey, payeeMemory, rememberedCategory, suggestPayees } from './payees.ts';
 import type { BudgetState, Transaction } from './types.ts';
 
 let n = 0;
@@ -63,4 +63,16 @@ test('suggestions: starting with the text first, then containing it, most used f
   assert.deepEqual(suggestPayees(m, ''), []);
   assert.deepEqual(suggestPayees(m, 'rewe'), [], 'nothing to suggest when the name is complete');
   assert.equal(suggestPayees(m, 'e', 2).length, 2);
+});
+
+test('choosing a payee fills the category and kind from last time, but never over a chosen category', () => {
+  const s = state([tx('REWE', '2026-01-02', -1000, 'groc'), tx('Employer', '2026-01-28', 260000, null), tx('Old shop', '2026-01-03', -100, 'old')]);
+  const m = payeeMemory(s);
+  const empty = { kind: 'outflow' as const, categoryId: null, split: false };
+  assert.deepEqual(fillFromPayee(s, empty, m.get('rewe')!), { categoryId: 'groc' });
+  assert.deepEqual(fillFromPayee(s, empty, m.get('employer')!), { kind: 'inflow' });
+  assert.deepEqual(fillFromPayee(s, { ...empty, categoryId: 'eat' }, m.get('rewe')!), {}, 'a chosen category stays');
+  assert.deepEqual(fillFromPayee(s, { ...empty, split: true }, m.get('rewe')!), {}, 'a split stays');
+  assert.deepEqual(fillFromPayee(s, { ...empty, kind: 'transfer' }, m.get('rewe')!), {});
+  assert.deepEqual(fillFromPayee(s, empty, m.get('old shop')!), {}, 'an archived category is not filled in');
 });

@@ -21,7 +21,7 @@ import { useAction } from '../errors/useAction.ts';
 import { overpayment } from '../../engine/debt.ts';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 import { Form } from '../../components/Form.tsx';
-import { payeeMemory, type PayeeInfo } from '../../engine/payees.ts';
+import { fillFromPayee, payeeMemory, type PayeeInfo } from '../../engine/payees.ts';
 import { PayeeField } from './PayeeField.tsx';
 
 const blankForm = (accounts: Account[], kind: TxKind = 'outflow'): TxForm => ({
@@ -95,7 +95,8 @@ export function TransactionsView() {
   const update = (patch: Partial<TxForm>) => setForm((f) => ({ ...f, ...patch }));
   // Known payees, worked out from the transactions; only recomputed when they change.
   const payees = useMemo(() => payeeMemory(state), [state.transactions]); // eslint-disable-line react-hooks/exhaustive-deps
-  const pickPayee = (_payee: PayeeInfo) => {};
+  // Choosing a known payee fills in the kind and category used last time (never over a chosen category).
+  const pickPayee = (payee: PayeeInfo) => setForm((f) => ({ ...f, ...fillFromPayee(state, { ...f, split: splitRows !== null }, payee) }));
 
   const reset = (keep?: TxForm) => {
     setForm({ ...blankForm(accounts, keep?.kind), date: keep?.date ?? toISODate(), accountId: keep?.accountId ?? accounts[0]?.id ?? '' });
