@@ -7,6 +7,7 @@ What changed for you in each release, newest first. The full technical list is i
 
 - Budget: each category group is its own card, so groups are easy to tell apart.
 - Recurring transactions: a tidier list, soonest first, that folds away with a click on its heading.
+- Clearer German wording throughout, e.g. Statistiken, Backup and Restschuld.
 
 ## 0.10 – Debts
 2026-11-27

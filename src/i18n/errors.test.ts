@@ -10,7 +10,7 @@ test('known messages are translated, row problems keep their number, unknown one
     assert.equal(errorText('Row 3: No valid date.'), 'Zeile 3: Kein gültiges Datum.');
     assert.equal(errorText(new Error('Row 7 needs a category.')), 'Zeile 7 braucht eine Kategorie.');
     assert.equal(errorText('Something odd'), 'Something odd');
-    assert.equal(errorText('Goal: unknown type "x".', 'error.backupInvalid'), 'Die Datei ist keine gültige Sicherung (Goal: unknown type "x".).');
+    assert.equal(errorText('Goal: unknown type "x".', 'error.backupInvalid'), 'Die Datei ist kein gültiges Backup (Goal: unknown type "x".).');
     assert.equal(errorText(undefined), 'Etwas ist schiefgegangen.');
   } finally {
     setLanguagePreference('en');

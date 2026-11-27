@@ -2,6 +2,16 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.3 – 2026-11-27
+
+### Changed
+- German texts reviewed: "Statistiken" instead of "Auswertungen", "Backup" instead of "Sicherung", "Restschuld" for what is still owed on a debt, "Umsätze" for the Activity column, "Ratenzahlungen" as the default group for debt payments, and clearer wording in a number of other places (closing the account list on phones, reconciling, recurring transactions, the bank import, raising or correcting a debt).
+- Net worth is described as all account balances minus debts.
+
+### Fixed
+- Two German sentences had the wrong word order (reconciling, Age of money).
+- Amount fields in the split rows and the payoff calculator showed "0.00" as a hint in German too; they now follow the language.
+
 ## 0.11.2 – 2026-11-27
 
 ### Fixed

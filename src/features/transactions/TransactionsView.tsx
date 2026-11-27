@@ -377,7 +377,7 @@ export function TransactionsView() {
                   value={row.text}
                   onChange={(e) => setSplitRows(splitRows.map((r, j) => (j === i ? { ...r, text: e.target.value } : r)))}
                   inputMode="decimal"
-                  placeholder="0.00"
+                  placeholder={tr('common.amountPlaceholder')}
                   className={`${field} w-28 text-right tabular-nums`}
                 />
                 {splitRows.length > 2 && (

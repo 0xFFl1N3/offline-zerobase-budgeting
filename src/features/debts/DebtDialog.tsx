@@ -103,7 +103,7 @@ export function DebtDialog({ debtId, onClose }: { debtId: string; onClose: () =>
             </label>
             <label className="text-xs font-medium text-slate-600">
               {t('debt.tryExtra')}
-              <input value={extraText} onChange={(e) => setExtraText(e.target.value)} inputMode="decimal" placeholder="0.00" className={`${field} mt-1 block w-28`} />
+              <input value={extraText} onChange={(e) => setExtraText(e.target.value)} inputMode="decimal" placeholder={t('common.amountPlaceholder')} className={`${field} mt-1 block w-28`} />
             </label>
           </div>
           <p className="mt-3 text-slate-700" aria-live="polite">
