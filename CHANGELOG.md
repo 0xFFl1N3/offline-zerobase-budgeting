@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.12.5 – 2026-11-27
+
+### Fixed
+- Auto-assign turned grey when every goal was already met, and the reason was only in a tooltip, which phones never show. The button now stays clickable: with nothing to do it looks muted, and clicking it says "Nothing to assign: every goal is already funded this month."
+
 ## 0.12.4 – 2026-11-27
 
 ### Fixed

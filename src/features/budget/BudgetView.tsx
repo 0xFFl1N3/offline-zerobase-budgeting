@@ -67,7 +67,7 @@ export function BudgetView() {
   const restoreGroup = useBudgetStore((s) => s.restoreGroup);
   const [showArchived, setShowArchived] = useState(false);
   const [editingGoal, setEditingGoal] = useState<string | null>(null);
-  const [autoMessage, setAutoMessage] = useState<{ month: string; text: string } | null>(null);
+  const [autoMessage, setAutoMessage] = useState<{ month: string; text: string; done: boolean } | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   /** On phones: the group or category whose details and actions are open. */
   const [open, setOpen] = useState<string | null>(null);
@@ -111,9 +111,11 @@ export function BudgetView() {
   const plan = autoAssignPlan(state, month);
   const autoAssign = useBudgetStore((s) => s.autoAssign);
   const runAutoAssign = async () => {
+    // With nothing to do the button still answers, so it never looks broken (a tooltip is not seen on phones).
+    if (plan.steps.length === 0) return setAutoMessage({ month, text: t('budget.autoAssignNone'), done: false });
     if (plan.readyAfter < 0 && !window.confirm(t('budget.autoAssignConfirm', { total: fmt(plan.total), over: fmt(-plan.readyAfter) }))) return;
     const n = await autoAssign();
-    setAutoMessage({ month, text: t('budget.autoAssignDone', { amount: fmt(plan.total), count: n }) });
+    setAutoMessage({ month, text: t('budget.autoAssignDone', { amount: fmt(plan.total), count: n }), done: true });
   };
   const groups = state.groups.filter((g) => !g.archived);
 
@@ -135,9 +137,8 @@ export function BudgetView() {
           <button
             type="button"
             onClick={() => void runAutoAssign()}
-            disabled={plan.steps.length === 0}
             title={plan.steps.length === 0 ? t('budget.autoAssignNone') : t('budget.autoAssignTitle', { amount: fmt(plan.total), count: plan.steps.length })}
-            className="ml-auto rounded border border-sky-600 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 disabled:cursor-default disabled:border-slate-300 disabled:text-slate-400 disabled:hover:bg-transparent"
+            className={`ml-auto rounded border px-3 py-2 text-sm font-medium ${plan.steps.length === 0 ? 'border-slate-300 text-slate-500 hover:bg-slate-50' : 'border-sky-600 text-sky-700 hover:bg-sky-50'}`}
           >
             {t('budget.autoAssign')}{plan.total > 0 && <span className="ml-1 hidden tabular-nums sm:inline">{fmt(plan.total)}</span>}
           </button>
@@ -148,7 +149,7 @@ export function BudgetView() {
       {overspentBefore < 0 && (
         <p className="mt-2 text-right text-xs text-red-700">{t('budget.overspentLast', { amount: fmt(-overspentBefore), month: formatMonth(addMonths(month, -1)) })}</p>
       )}
-      {autoMessage?.month === month && <p className="mt-3 text-sm text-emerald-700" role="status">{autoMessage.text}</p>}
+      {autoMessage?.month === month && <p className={`mt-3 text-sm ${autoMessage.done ? 'text-emerald-700' : 'text-slate-600'}`} role="status">{autoMessage.text}</p>}
 
       {/* Each group is a card of its own; the column labels sit above them as plain text. */}
       <div className="mt-3 md:mt-6">

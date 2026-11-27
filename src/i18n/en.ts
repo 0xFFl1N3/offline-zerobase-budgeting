@@ -77,7 +77,7 @@ export const en = {
   'budget.hintLeft': 'left to assign',
   'budget.hintOver': 'over-assigned',
   'budget.autoAssign': 'Auto-assign',
-  'budget.autoAssignNone': 'Every goal is already funded this month',
+  'budget.autoAssignNone': 'Nothing to assign: every goal is already funded this month.',
   'budget.autoAssignTitle': { one: 'Adds {amount} to {count} category so its goal is met', other: 'Adds {amount} to {count} categories so their goals are met' },
   'budget.autoAssignConfirm': 'Funding every goal needs {total}, which is {over} more than you have left to assign. Ready to Assign will go negative. Continue?',
   'budget.autoAssignDone': { one: 'Assigned {amount} to {count} category.', other: 'Assigned {amount} to {count} categories.' },

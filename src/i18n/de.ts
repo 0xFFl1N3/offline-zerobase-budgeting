@@ -74,7 +74,7 @@ export const de: Messages = {
   'budget.hintLeft': 'noch nicht verteilt',
   'budget.hintOver': 'zu viel verteilt',
   'budget.autoAssign': 'Ziele auffüllen',
-  'budget.autoAssignNone': 'Alle Ziele sind diesen Monat schon erfüllt',
+  'budget.autoAssignNone': 'Nichts zu tun: Alle Ziele sind diesen Monat schon erfüllt.',
   'budget.autoAssignTitle': { one: 'Weist {count} Kategorie {amount} zu, damit ihr Ziel erreicht ist', other: 'Weist {count} Kategorien zusammen {amount} zu, damit ihre Ziele erreicht sind' },
   'budget.autoAssignConfirm': 'Um alle Ziele zu erfüllen, brauchst du {total}, also {over} mehr, als noch zuzuweisen ist. „Noch zuzuweisen“ wird negativ. Trotzdem fortfahren?',
   'budget.autoAssignDone': { one: '{amount} auf {count} Kategorie verteilt.', other: '{amount} auf {count} Kategorien verteilt.' },
