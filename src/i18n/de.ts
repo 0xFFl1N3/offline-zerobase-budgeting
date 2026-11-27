@@ -134,6 +134,8 @@ export const de: Messages = {
   'budget.noGoal': 'Ohne Ziel',
   'budget.errorCategoryName': 'Gib der Kategorie einen Namen.',
   'budget.categoryName': 'Name der Kategorie',
+  'budget.collapseGroup': '{name} einklappen',
+  'budget.expandGroup': '{name} ausklappen',
   'budget.addGroup': 'Gruppe hinzufügen',
   'budget.groupName': 'Name der Gruppe',
   'budget.archived': 'Archiviert ({count})',

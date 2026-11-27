@@ -10,6 +10,7 @@ What changed for you in each release, newest first. The full technical list is i
 - Trying the app with sample data? "Reload sample data" starts over with a fresh copy, up to today.
 - New goal "Always keep an amount ready": the category starts every month with that amount, so whatever you spent is topped up again (300 € for groceries, spent 250 €: next month asks for 250 €). "Save up by a month" now always has a month.
 - Give a new category its goal right away: "Add goal" next to the name, then Enter creates both.
+- Collapse a budget group with the arrow in front of its name.
 
 ## 0.18 – Maths in amount fields
 2026-11-27

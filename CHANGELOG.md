@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.19.9 – 2026-11-27
+
+### Added
+- Budget groups can be collapsed with the arrow in front of their name, leaving only the heading with its totals. The arrow opens them again. Which groups are collapsed is remembered on this device.
+
 ## 0.19.8 – 2026-11-27
 
 ### Changed

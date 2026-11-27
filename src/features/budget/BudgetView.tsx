@@ -19,6 +19,7 @@ import { useAction } from '../errors/useAction.ts';
 import { NameCell } from './NameCell.tsx';
 import { DueGoalActions, GoalProgress } from './GoalProgress.tsx';
 import { MonthOverview } from './MonthOverview.tsx';
+import { useCollapsedGroups } from './collapsed.ts';
 import { NO_AUTOFILL } from '../../components/noAutofill.ts';
 
 /** The desktop table layout; phones get MobileGroupRow and MobileCategoryRow instead. */
@@ -96,6 +97,7 @@ export function BudgetView() {
   const toggle = (id: string) => setOpen((o) => (o === id ? null : id));
   /** On phones: up/down buttons instead of amounts, since dragging needs a mouse. */
   const [reordering, setReordering] = useState(false);
+  const folding = useCollapsedGroups();
 
   const hasTransactions = (ids: string[]) =>
     state.transactions.some((t) => touchesCategory(t, ids)) || state.recurring.some((r) => touchesCategory(r.template, ids));
@@ -216,10 +218,13 @@ export function BudgetView() {
         {groups.map((group, groupIndex) => {
           const cats = state.categories.filter((c) => c.groupId === group.id && !c.archived);
           const sum = (f: (id: string) => Cents) => cats.reduce((t, c) => t + f(c.id), 0);
+          const collapsed = folding.isCollapsed(group.id);
           return (
             // The whole card is the drop target for moving groups, so the drop line falls between cards.
             <section key={group.id} aria-label={group.name} {...groupDnd.rowProps(group.id, 'groups', true)} className="mb-4 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
               <MobileGroupRow
+                fold={<FoldButton name={group.name} collapsed={collapsed} onToggle={() => folding.toggle(group.id)} />}
+                collapsed={collapsed}
                 move={reordering ? <MoveButtons label={group.name} first={groupIndex === 0} last={groupIndex === groups.length - 1} onStep={(d) => void moveGroup(group.id, d)} /> : null}
                 name={group.name}
                 available={sum((id) => categoryAvailable(state, id, month))}
@@ -243,7 +248,9 @@ export function BudgetView() {
                   )
                 }
               />
-              <div className={`${COLUMNS} border-b border-slate-200 px-4 py-3 text-base font-semibold`}>
+              <div className={`${COLUMNS} ${collapsed ? '' : 'border-b border-slate-200'} px-4 py-3 text-base font-semibold`}>
+                <span className="flex min-w-0 items-center gap-1">
+                <FoldButton name={group.name} collapsed={collapsed} onToggle={() => folding.toggle(group.id)} />
                 <NameCell
                   name={group.name}
                   renaming={renaming === group.id}
@@ -264,10 +271,12 @@ export function BudgetView() {
                     )
                   }
                 />
+                </span>
                 <span className="px-2 text-right text-sm font-medium tabular-nums text-slate-600">{formatMoney(sum((id) => categoryAssigned(state, id, month)), currency)}</span>
                 <span className="px-2 text-right text-sm font-medium tabular-nums text-slate-600">{formatMoney(sum((id) => categoryActivity(state, id, month)), currency)}</span>
                 <span className="px-2 text-right text-sm font-semibold tabular-nums">{formatMoney(sum((id) => categoryAvailable(state, id, month)), currency)}</span>
               </div>
+              {!collapsed && (<>
               <div className="divide-y divide-slate-100">
               {cats.map((cat, catIndex) => {
                 const available = categoryAvailable(state, cat.id, month);
@@ -362,6 +371,7 @@ export function BudgetView() {
               <div className="border-t border-slate-100 px-3 py-2 md:px-8">
                 <AddCategory groupId={group.id} />
               </div>
+              </>)}
             </section>
           );
         })}
@@ -404,6 +414,23 @@ export function BudgetView() {
 }
 
 const rowButton = 'flex w-full items-center gap-3 text-left';
+
+/** The arrow that folds a group away to its heading, or opens it again. */
+function FoldButton({ name, collapsed, onToggle }: { name: string; collapsed: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={!collapsed}
+      aria-label={t(collapsed ? 'budget.expandGroup' : 'budget.collapseGroup', { name })}
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-100"
+    >
+      <svg viewBox="0 0 12 12" className={`h-3 w-3 transition-transform ${collapsed ? '-rotate-90' : ''}`} aria-hidden="true">
+        <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
 const actionLink = 'rounded px-2 py-1.5 text-sm text-sky-700 hover:bg-sky-50';
 
 interface RowActions {
@@ -439,10 +466,12 @@ function RenameInput({ name, onRename, onCancelRename }: { name: string; onRenam
 }
 
 /** Phone layout of a group heading: tap it for Rename and Archive/Delete. */
-function MobileGroupRow({ name, available, fmt, ...a }: RowActions & { name: string; available: Cents; fmt: (c: Cents) => string }) {
+function MobileGroupRow({ name, available, fmt, fold, collapsed, ...a }: RowActions & { name: string; available: Cents; fmt: (c: Cents) => string; fold: ReactNode; collapsed: boolean }) {
   return (
-    <div className="border-b border-slate-200 md:hidden">
-      <div className="px-3 py-3 text-base font-semibold">
+    <div className={`md:hidden ${collapsed ? '' : 'border-b border-slate-200'}`}>
+      <div className="flex items-center gap-1 py-3 pl-1 pr-3 text-base font-semibold">
+        {fold}
+        <div className="min-w-0 flex-1">
         {a.move ? (
           <span className={rowButton}>
             <span className="min-w-0 flex-1 truncate">{name}</span>
@@ -456,6 +485,7 @@ function MobileGroupRow({ name, available, fmt, ...a }: RowActions & { name: str
             <span className="tabular-nums">{fmt(available)}</span>
           </button>
         )}
+        </div>
       </div>
       {a.open && !a.renaming && !a.move && (
         <div className="flex gap-2 px-1 pb-2">

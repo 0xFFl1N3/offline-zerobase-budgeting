@@ -137,6 +137,8 @@ export const en = {
   'budget.noGoal': 'No goal',
   'budget.errorCategoryName': 'Give the category a name.',
   'budget.categoryName': 'Category name',
+  'budget.collapseGroup': 'Collapse {name}',
+  'budget.expandGroup': 'Expand {name}',
   'budget.addGroup': 'Add group',
   'budget.groupName': 'Group name',
   'budget.archived': 'Archived ({count})',
