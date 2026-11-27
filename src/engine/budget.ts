@@ -147,33 +147,63 @@ const clampPercent = (current: Cents, target: Cents): number => {
   return Math.round(pct * 10) / 10;
 };
 
-function balanceGoalProgress(
-  state: BudgetState,
-  goal: Goal,
-  target: Cents,
-  targetDate: Month | undefined,
-  month: Month,
-): GoalProgress {
-  const available = categoryAvailable(state, goal.categoryId, month);
-  let neededThisMonth: Cents;
-  if (targetDate === undefined) {
-    neededThisMonth = Math.max(0, target - available);
-  } else {
-    const monthsLeft = Math.max(1, monthsBetween(month, targetDate) + 1);
-    const availableBefore = categoryAvailable(state, goal.categoryId, addMonths(month, -1));
-    const monthly = Math.ceil(Math.max(0, target - availableBefore) / monthsLeft);
-    // This month's share, minus what already sits in the category from this month. Spending
-    // (negative activity) from the category therefore raises the amount still needed.
-    const addedThisMonth = categoryAssigned(state, goal.categoryId, month) + categoryActivity(state, goal.categoryId, month);
-    neededThisMonth = Math.max(0, monthly - addedThisMonth);
+/**
+ * The due month a dated goal aims at in `month`: its date, or for a repeating goal the first due month from `month`
+ * on (the month of a due date itself still aims at it; the next round starts the month after).
+ */
+export function dueMonth(goal: Goal, month: Month): Month | undefined {
+  if (!goal.targetDate) return undefined;
+  if (!goal.repeatMonths || goal.targetDate >= month) return goal.targetDate;
+  const rounds = Math.ceil(monthsBetween(goal.targetDate, month) / goal.repeatMonths);
+  return addMonths(goal.targetDate, rounds * goal.repeatMonths);
+}
+
+/**
+ * "Save up to an amount". Without a date: what is missing from the balance now (it refills after spending). With a
+ * date: in the due month the category has to hold the amount. Until then what is missing is spread over the months
+ * left, and spending from the category before the due month has to be made up. In the due month, what counts is
+ * whether the money was there before that month's spending took it (the bill). After the due month a one-time goal
+ * that was met asks for nothing more; one that was not keeps asking for what was missing.
+ */
+function balanceGoalProgress(state: BudgetState, goal: Goal, target: Cents, month: Month): GoalProgress {
+  const id = goal.categoryId;
+  const available = categoryAvailable(state, id, month);
+  const due = dueMonth(goal, month);
+  const progress = (current: Cents, neededThisMonth: Cents): GoalProgress => ({
+    goalId: goal.id, target, current, percent: clampPercent(current, target), neededThisMonth: Math.max(0, neededThisMonth),
+    ...(due ? { dueMonth: due } : {}),
+  });
+  if (due === undefined) return progress(available, target - available);
+
+  /** What the category holds at the start of a month: last month's balance, overspending cleared. */
+  const startOf = (m: Month) => Math.max(0, categoryAvailable(state, id, addMonths(m, -1)));
+  /** What the category held in its due month before that month's spending. */
+  const fundedIn = (m: Month) => startOf(m) + categoryAssigned(state, id, m);
+
+  if (month > due) {
+    // Only a one-time goal gets here: a repeating one has already moved on to its next due month.
+    const funded = fundedIn(due);
+    if (funded >= target) return progress(target, 0);
+    let assignedSince = 0;
+    for (let m = addMonths(due, 1); m <= month; m = addMonths(m, 1)) assignedSince += categoryAssigned(state, id, m);
+    return progress(funded + assignedSince, target - funded - assignedSince);
   }
-  return { goalId: goal.id, target, current: available, percent: clampPercent(available, target), neededThisMonth };
+  if (month === due) {
+    const funded = fundedIn(due);
+    return progress(funded, target - funded);
+  }
+  const monthsLeft = monthsBetween(month, due) + 1;
+  const monthly = Math.ceil(Math.max(0, target - startOf(month)) / monthsLeft);
+  // This month's share, minus what already went in this month. Spending from the category before the due month
+  // (negative activity) has to be made up, so it raises what is still needed.
+  const addedThisMonth = categoryAssigned(state, id, month) + categoryActivity(state, id, month);
+  return progress(available, monthly - addedThisMonth);
 }
 
 export function goalProgress(state: BudgetState, goal: Goal, month: Month): GoalProgress {
   switch (goal.type) {
     case 'target_balance':
-      return balanceGoalProgress(state, goal, goal.targetAmount ?? 0, goal.targetDate, month);
+      return balanceGoalProgress(state, goal, goal.targetAmount ?? 0, month);
     case 'monthly_amount': {
       const target = goal.monthlyAmount ?? 0;
       const assigned = categoryAssigned(state, goal.categoryId, month);

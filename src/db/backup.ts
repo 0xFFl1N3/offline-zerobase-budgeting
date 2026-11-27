@@ -9,11 +9,13 @@ import type {
   Frequency,
   Goal,
   MonthlyBudget,
+  RepeatMonths,
   RecurringTransaction,
   Transaction,
   TransactionSplit,
 } from '../engine/types.ts';
 import { RuleError } from '../engine/ruleError.ts';
+import { REPEAT_MONTHS } from '../engine/types.ts';
 
 export const BACKUP_APP = 'budgeting-app';
 export const BACKUP_VERSION = 1;
@@ -84,12 +86,17 @@ function parseGoal(o: Obj): Goal {
   if (targetDate !== undefined && (typeof targetDate !== 'string' || !MONTH.test(targetDate))) {
     throw new RuleError('Goal: "targetDate" must look like 2026-06.');
   }
+  const repeatMonths = o['repeatMonths'];
+  if (repeatMonths !== undefined && (!REPEAT_MONTHS.includes(repeatMonths as RepeatMonths) || typeof targetDate !== 'string')) {
+    throw new RuleError('Goal: "repeatMonths" must be 3, 6 or 12, and needs a "targetDate".');
+  }
   return {
     id,
     categoryId,
     type: 'target_balance', // legacy "target_by_date" is read as target_balance
     targetAmount: int(o, 'targetAmount', what),
     ...(typeof targetDate === 'string' ? { targetDate } : {}),
+    ...(repeatMonths !== undefined ? { repeatMonths: repeatMonths as RepeatMonths } : {}),
   };
 }
 

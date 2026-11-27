@@ -2,6 +2,15 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.15.0 – 2026-11-27
+
+### Fixed
+- A "save up to an amount" goal with a month asked for the whole amount again once the bill had been paid: in the due month itself, and every month after it. Now the due month only checks whether the money was there before the bill took it, and after the due month a goal that was met asks for nothing more. One that was not met keeps asking for what is missing.
+- Overspending in a goal's category no longer raises what the goal asks for the next month; like everywhere else, it is taken from Ready to Assign.
+
+### Added
+- Goals with a month can repeat every 3, 6 or 12 months: after each due month they aim at the next one and start over by themselves. Money left over after a cheaper bill counts towards the next round. Not yet in the goal editor; stored, checked in backups and used by Auto-assign.
+
 ## 0.14.2 – 2026-11-27
 
 ### Changed

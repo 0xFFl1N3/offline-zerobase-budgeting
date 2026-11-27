@@ -2,6 +2,11 @@
 
 What changed for you in each release, newest first. The full technical list is in CHANGELOG.md.
 
+## 0.15 – Bills that come back
+2026-11-27
+
+- Goals with a month no longer ask for the full amount again after you paid the bill.
+
 ## 0.14 – Faster entry
 2026-11-27
 

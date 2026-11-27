@@ -37,14 +37,23 @@ export interface Category {
 
 export type GoalType = 'target_balance' | 'monthly_amount';
 
+/** How often a goal with a date comes back: quarterly, twice a year or yearly. */
+export type RepeatMonths = 3 | 6 | 12;
+export const REPEAT_MONTHS: RepeatMonths[] = [3, 6, 12];
+
 export interface Goal {
   id: string;
   categoryId: string;
   type: GoalType;
   /** target_balance */
   targetAmount?: Cents;
-  /** 'YYYY-MM'. Optional for target_balance: if set, progress is paced over the months left. */
+  /**
+   * 'YYYY-MM'. Optional for target_balance: the due month, in which the category has to hold the amount; what is
+   * needed is spread over the months until then.
+   */
   targetDate?: Month;
+  /** With a targetDate: the goal comes back every this many months, starting over after each due month. */
+  repeatMonths?: RepeatMonths;
   /** monthly_amount */
   monthlyAmount?: Cents;
 }
@@ -133,4 +142,6 @@ export interface GoalProgress {
   percent: number;
   /** How much more to assign this month to stay on track. */
   neededThisMonth: Cents;
+  /** Goals with a date: the due month aimed at in the month shown (for a repeating goal, the next one). */
+  dueMonth?: Month;
 }
