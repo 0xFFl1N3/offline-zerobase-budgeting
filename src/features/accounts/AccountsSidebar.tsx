@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { accountBalance, isOffBudget } from '../../engine/budget.ts';
 import { valueUpdate } from '../../engine/debt.ts';
 import { toISODate } from '../../engine/months.ts';
@@ -282,11 +282,21 @@ export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg
     </ul>
   );
 
+  /** A section heading with the section's total on the right, instead of a separate total row. */
+  const heading = (title: string, amount: number, extra?: ReactNode) => (
+    <div className="flex items-baseline gap-2">
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</h2>
+      {extra}
+      <span className="ml-auto text-xs font-semibold tabular-nums text-slate-500">{formatMoney(amount, currency)}</span>
+    </div>
+  );
+
   return (
     <aside className={`shrink-0 bg-white p-4 ${className}`}>
-      <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('account.heading')}</h2>
-        {open.length > 1 && (
+      {heading(
+        t('account.heading'),
+        total,
+        open.length > 1 && (
           <button
             type="button"
             onClick={() => setReordering((v) => !v)}
@@ -294,32 +304,20 @@ export function AccountsSidebar({ className = 'w-56 border-r border-slate-200 lg
           >
             {reordering ? t('common.done') : t('budget.reorder')}
           </button>
-        )}
-      </div>
+        ),
+      )}
       {accountList(accounts, 'accounts')}
-      <div className="mt-3 flex justify-between border-t border-slate-200 pt-2 text-sm font-medium">
-        <span>{t('account.total')}</span>
-        <span className="tabular-nums">{formatMoney(total, currency)}</span>
-      </div>
       {debts.length > 0 && (
-        <>
-          <h2 className="mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">{t('debt.heading')}</h2>
+        <section className="mt-6">
+          {heading(t('debt.heading'), owed)}
           {accountList(debts, 'debts')}
-          <div className="mt-3 flex justify-between border-t border-slate-200 pt-2 text-sm font-medium">
-            <span>{t('debt.totalOwed')}</span>
-            <span className="tabular-nums">{formatMoney(owed, currency)}</span>
-          </div>
-        </>
+        </section>
       )}
       {investments.length > 0 && (
-        <>
-          <h2 className="mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">{t('tracking.heading')}</h2>
+        <section className="mt-6">
+          {heading(t('tracking.heading'), invested)}
           {accountList(investments, 'investments')}
-          <div className="mt-3 flex justify-between border-t border-slate-200 pt-2 text-sm font-medium">
-            <span>{t('account.total')}</span>
-            <span className="tabular-nums">{formatMoney(invested, currency)}</span>
-          </div>
-        </>
+        </section>
       )}
       {adding ? (
         <AddAccountForm onDone={() => setAdding(false)} />

@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.16.3 – 2026-11-27
+
+### Changed
+- Tidier accounts list: each section's total sits in its heading ("Accounts €18,211.00", "Debts −€900.00", "Investments €8,111.10") instead of in a separate total row with a line above it, and the sections are set apart by space rather than lines.
+
 ## 0.16.2 – 2026-11-27
 
 ### Added
