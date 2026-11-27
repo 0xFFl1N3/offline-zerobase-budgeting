@@ -20,5 +20,5 @@ export function categoryLabel(state: BudgetState, t: Pick<Transaction, 'accountI
     const archived = category.archived || state.groups.find((g) => g.id === category.groupId)?.archived;
     return archived ? tr('label.archived', { name: category.name }) : category.name;
   }
-  return t.amount > 0 ? tr('tx.income') : tr('tx.needsCategory');
+  return t.amount > 0 ? tr('tx.incomeLabel') : tr('tx.needsCategory');
 }

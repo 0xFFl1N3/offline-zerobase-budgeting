@@ -2,6 +2,11 @@
 
 All notable changes to the budgeting app, one entry per update, newest first. The short release notes shown in the app are in RELEASES.md.
 
+## 0.11.8 – 2026-11-27
+
+### Fixed
+- Transactions without a category showed "Income (goes to Ready to Assign)" in the list. The list says "Income" again; the longer text is only used where you pick a category.
+
 ## 0.11.7 – 2026-11-27
 
 ### Changed
